@@ -1,14 +1,18 @@
-name: Build Docker
+name: Build Docker && Deploy Stage
 
 on:
   push:
     branches:
-      - main
+      - stage
+    paths-ignore:
+      - '.github/**'
   workflow_dispatch:
 
 jobs:
   docker:
-    runs-on: ubuntu-latest
+    outputs:
+      imageTag: ${{ steps.meta.outputs.json }}
+    runs-on: self-hosted
     steps:
       - name: Get current date
         id: date
@@ -26,7 +30,19 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3.1.0
+        name: Checkout current repository
+      - uses: actions/checkout@v3.1.0
+        name: Checkout protobuf
+        with:
+          repository: Uspacy/protobuf
+          ref: 'v0.3'
+          path: 'protobuf'
+          token: ${{ secrets.DOCKER_TOKEN }}
+      - name: Build Protobuf
+        run: |
+             cd protobuf
+             make build-go
       -
         name: Docker meta
         id: meta
@@ -56,3 +72,34 @@ jobs:
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+
+  deploy-stage:
+    runs-on: self-hosted
+    needs: docker
+    if: github.ref == 'refs/heads/stage'
+    steps:
+      - name: Get image tag
+        run: echo "${{ fromJSON(needs.docker.outputs.imageTag).tags[1] }}"
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+      - uses: actions/checkout@v3.1.0
+        name: Checkout ArgoCD manifests
+        with:
+          repository: Uspacy/argocd-applications
+          ref: 'main'
+          path: '.'
+          token: ${{ secrets.DOCKER_TOKEN }}
+      - name: Set foobar to cool
+        uses: mikefarah/yq@master
+        with:
+            cmd: yq -i '(.spec.source.directory.jsonnet.extVars.[] | select(.name == "dockerImage")).value="${{ fromJSON(needs.docker.outputs.imageTag).tags[1] }}"' '${{ steps.extract_branch.outputs.branch }}/${{ github.event.repository.name }}.yaml'
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+            commit_message: Automated Change
+            branch: main
+            commit_options: '--no-verify --signoff'
+            commit_user_name: My GitHub Actions Bot # defaults to "github-actions[bot]"
+            commit_user_email: ms@uspacy.com # defaults to "github-actions[bot]@users.noreply.github.com"
+            commit_author: Author <ms@uspacy.com> # defaults to author of the commit that triggered the run
