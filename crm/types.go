@@ -1,8 +1,12 @@
-package uspacy_go_sdk
+package crm
+
+const (
+	ListFields = "/crm/v1/entity/%s/fields/"
+)
 
 type (
 
-	// CRM entity field
+	// CRM entity Field
 	Field struct {
 		Name              string      `json:"name"`
 		Code              string      `json:"code"`

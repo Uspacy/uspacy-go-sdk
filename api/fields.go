@@ -6,14 +6,14 @@ import (
 	"io"
 	"log"
 	"net/http"
-	types "uspacy-go-sdk"
+	"uspacy-go-sdk/crm"
 )
 
 // GetFields returns Fields struct for a given type of field
-func (us *Uspacy) GetFields(field string) (types.Fields, error) {
+func (us *Uspacy) GetFields(field string) (crm.Fields, error) {
 
-	var fields types.Fields
-	uri := mainHost + fmt.Sprintf(crmListFields, field)
+	var fields crm.Fields
+	uri := mainHost + fmt.Sprintf(crm.ListFields, field)
 
 	req, err := us.generateRequest(uri, http.MethodGet, emptyHeaders, nil)
 	if err != nil {

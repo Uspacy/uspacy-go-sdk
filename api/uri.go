@@ -1,9 +1,7 @@
 package api
 
-const mainHost = "https://uspacy.com.ua"
+import "os"
 
-const (
-	crmListFields = "/crm/v1/entity/%s/fields/"
-)
+var mainHost = os.Getenv("HOST")
 
 var emptyHeaders map[string]string

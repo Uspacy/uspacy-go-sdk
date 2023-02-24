@@ -38,7 +38,7 @@ func (us *Uspacy) generateRequest(url, method string, headers map[string]string,
 }
 
 func handleStatusCode(code int) bool {
-	if code < 200 && code >= 400 {
+	if code < 200 || code >= 400 {
 		return false
 	}
 	return true
