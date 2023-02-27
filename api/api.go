@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -45,7 +46,12 @@ func handleStatusCode(code int) bool {
 	return true
 }
 
-func (us *Uspacy) doRaw(req *http.Request) ([]byte, error) {
+func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.Reader) ([]byte, error) {
+
+	req, err := us.generateRequest(mainHost+fmt.Sprintf(url), method, headers, body)
+	if err != nil {
+		return nil, err
+	}
 
 	res, err := us.client.Do(req)
 	if err != nil {
@@ -54,16 +60,16 @@ func (us *Uspacy) doRaw(req *http.Request) ([]byte, error) {
 
 	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
+	responseBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	if !handleStatusCode(res.StatusCode) {
-		log.Printf("error occured while trying to (%s)\nbody - %s\ncode - %v\n", req.URL.String(), string(body), res.StatusCode)
+		log.Printf("error occured while trying to (%s)\nbody - %s\ncode - %v\n", req.URL.String(), string(responseBody), res.StatusCode)
 		return nil, err
 	}
 
-	return body, nil
+	return responseBody, nil
 
 }
