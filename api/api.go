@@ -2,6 +2,7 @@ package api
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"time"
 )
@@ -42,4 +43,27 @@ func handleStatusCode(code int) bool {
 		return false
 	}
 	return true
+}
+
+func (us *Uspacy) doRaw(req *http.Request) ([]byte, error) {
+
+	res, err := us.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if !handleStatusCode(res.StatusCode) {
+		log.Printf("error occured while trying to (%s)\nbody - %s\ncode - %v\n", req.URL.String(), string(body), res.StatusCode)
+		return nil, err
+	}
+
+	return body, nil
+
 }
