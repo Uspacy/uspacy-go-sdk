@@ -25,20 +25,6 @@ func New(token string) *Uspacy {
 	}
 }
 
-func (us *Uspacy) generateRequest(url, method string, headers map[string]string, body io.Reader) (*http.Request, error) {
-	request, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, err
-	}
-
-	request.Header.Add("Authorization", us.bearerToken)
-
-	for key, value := range headers {
-		request.Header.Add(key, value)
-	}
-	return request, nil
-}
-
 func handleStatusCode(code int) bool {
 	if code < 200 || code >= 400 {
 		return false
@@ -48,9 +34,15 @@ func handleStatusCode(code int) bool {
 
 func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.Reader) ([]byte, error) {
 
-	req, err := us.generateRequest(mainHost+fmt.Sprintf(url), method, headers, body)
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
+	}
+
+	req.Header.Add("Authorization", us.bearerToken)
+
+	for key, value := range headers {
+		req.Header.Add(key, value)
 	}
 
 	res, err := us.client.Do(req)
@@ -72,4 +64,8 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 
 	return responseBody, nil
 
+}
+
+func buildURL(host, version, route string) string {
+	return fmt.Sprintf("%s/%s/%s", host, version, route)
 }

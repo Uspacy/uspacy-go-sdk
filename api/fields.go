@@ -10,7 +10,8 @@ import (
 // GetFields returns Fields struct for a given type of field
 func (us *Uspacy) GetFields(field string) (crm.Fields, error) {
 	var fields crm.Fields
-	body, err := us.doRaw(mainHost+fmt.Sprintf(crm.ListFields, field), http.MethodGet, emptyHeaders, nil)
+
+	body, err := us.doRaw(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.GetFieldsUrl, field)), http.MethodGet, emptyHeaders, nil)
 	if err != nil {
 		return fields, err
 	}

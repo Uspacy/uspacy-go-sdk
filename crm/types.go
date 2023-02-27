@@ -1,8 +1,10 @@
 package crm
 
 const (
-	ListFields = "/crm/v1/entity/%s/fields/"
+	VersionUrl = "crm/v1/"
 )
+
+const GetFieldsUrl = "entity/%s/fields/"
 
 type (
 
