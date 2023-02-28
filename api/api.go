@@ -66,6 +66,29 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 
 }
 
+func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+
+	res, err := us.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	responseBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if !handleStatusCode(res.StatusCode) {
+		log.Printf("error occured while trying to (%s)\ncode - %v\n", req.URL.String(), string(responseBody), res.StatusCode)
+		return nil, err
+	}
+
+	return responseBody, nil
+}
+
 func buildURL(host, version, route string) string {
 	return fmt.Sprintf("%s/%s/%s", host, version, route)
 }

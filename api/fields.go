@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"uspacy-go-sdk/crm"
 )
 
@@ -11,7 +10,7 @@ import (
 func (us *Uspacy) GetFields(field string) (crm.Fields, error) {
 	var fields crm.Fields
 
-	body, err := us.doRaw(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.GetFieldsUrl, field)), http.MethodGet, emptyHeaders, nil)
+	body, err := us.doGetEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.GetFieldsUrl, field)))
 	if err != nil {
 		return fields, err
 	}
