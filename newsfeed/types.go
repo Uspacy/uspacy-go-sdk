@@ -4,7 +4,7 @@ import "github.com/google/uuid"
 
 const (
 	VersionNewsfeedUrl = "newsfeed/v1/"
-	PostsUrl           = "posts/?page=%d&list=%d"
+	PostsUrl           = "posts/?page=%d&list=%d&group_id=%d"
 )
 
 type (
@@ -28,9 +28,12 @@ type (
 	}
 
 	Meta struct {
-		Total int64 `json:"total"`
-		Page  int   `json:"page"`
-		List  int   `json:"list"`
+		CurrentPage int   `json:"current_page"`
+		From        int   `json:"from"`
+		LastPage    int   `json:"last_page"`
+		PerPage     int   `json:"per_page"`
+		To          int   `json:"to"`
+		Total       int64 `json:"total"`
 	}
 
 	Files struct {
