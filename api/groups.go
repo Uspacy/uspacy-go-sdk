@@ -9,7 +9,7 @@ import (
 func (us *Uspacy) CreateTransferGroup() (group.TransferGroupOutput, error) {
 	var groups group.TransferGroupOutput
 
-	body, err := us.doGetEmptyHeaders(buildURL(mainHost, group.VersionGroupUrl, group.GroupsUrl))
+	body, err := us.doGetEmptyHeaders(buildURL(mainHost, group.VersionGroupUrl, group.TransferGroupsUrl))
 	if err != nil {
 		return groups, err
 	}

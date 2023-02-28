@@ -9,7 +9,7 @@ import (
 func (us *Uspacy) CreateTransferTask() (task.TransferTaskOutput, error) {
 	var tasks task.TransferTaskOutput
 
-	body, err := us.doGetEmptyHeaders(buildURL(mainHost, task.VersionTaskUrl, task.TasksUrl))
+	body, err := us.doGetEmptyHeaders(buildURL(mainHost, task.VersionTaskUrl, task.TransferTasksUrl))
 	if err != nil {
 		return tasks, err
 	}

@@ -1,8 +1,8 @@
 package task
 
 const (
-	VersionTaskUrl = "tasks/v1/"
-	TasksUrl       = "transfer"
+	VersionTaskUrl   = "tasks/v1/"
+	TransferTasksUrl = "transfer"
 )
 
 type TransferTaskOutput struct {

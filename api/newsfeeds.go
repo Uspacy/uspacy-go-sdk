@@ -2,14 +2,15 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"uspacy-go-sdk/newsfeed"
 )
 
-// GetNewsFeeds gets all news feeds
-func (us *Uspacy) GetNewsFeeds() (newsfeed.SearchNewsfeed, error) {
-	var posts newsfeed.SearchNewsfeed
+// GetNewsfeeds gets all newsfeeds
+func (us *Uspacy) GetNewsfeeds(page, list int) (newsfeed.GetNewsfeed, error) {
+	var posts newsfeed.GetNewsfeed
 
-	body, err := us.doGetEmptyHeaders(buildURL(mainHost, newsfeed.VersionNewsfeedUrl, newsfeed.NewsfeedsUrl))
+	body, err := us.doGetEmptyHeaders(buildURL(mainHost, newsfeed.VersionNewsfeedUrl, fmt.Sprintf(newsfeed.PostsUrl, page, list)))
 	if err != nil {
 		return posts, err
 	}
