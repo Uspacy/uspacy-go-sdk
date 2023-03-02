@@ -73,7 +73,7 @@ jobs:
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
 
-  deploy-stage:
+  deploy:
     runs-on: self-hosted
     needs: docker
     if: github.ref == 'refs/heads/main'
