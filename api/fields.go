@@ -18,10 +18,10 @@ func (us *Uspacy) GetFields(entity string) (crm.Fields, error) {
 }
 
 // GetField returns Field struct for a given type of entity & field
-func (us *Uspacy) GetField(entity, field_type string) (crm.Field, error) {
+func (us *Uspacy) GetField(entity, fieldType string) (crm.Field, error) {
 	var field crm.Field
 
-	body, err := us.doGetEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.GetFieldsUrl, entity, field_type)))
+	body, err := us.doGetEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.GetFieldsUrl, entity, fieldType)))
 	if err != nil {
 		return field, err
 	}
