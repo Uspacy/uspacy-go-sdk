@@ -5,8 +5,9 @@ const (
 )
 
 const (
-	GetFieldsUrl    = "entity/%s/fields/"
-	CreateFunnelUrl = "entities/%s/funnel"
+	GetFieldsUrl         = "entity/%s/fields/"
+	CreateFunnelUrl      = "entities/%s/funnel"
+	CreateKanbanStageUrl = "entities/%s/kanban/stage"
 )
 
 type (
@@ -48,5 +49,13 @@ type (
 		Active     bool   `json:"active"`
 		Default    bool   `json:"default"`
 		ID         int    `json:"id"`
+	}
+	// CRM KanbanStage
+	KanbanStage struct {
+		Title     string `json:"title"`
+		StageCode string `json:"stage_code"`
+		Sort      string `json:"sort"`
+		Color     string `json:"color"`
+		ID        int    `json:"id"`
 	}
 )

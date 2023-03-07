@@ -7,7 +7,7 @@ import (
 	"uspacy-go-sdk/crm"
 )
 
-// CreateFunnel created funnel
+// CreateFunnel returns created funnel
 func (us *Uspacy) CreateFunnel(entity string, body io.Reader) (crm.Funnel, error) {
 	var funnel crm.Funnel
 
