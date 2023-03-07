@@ -6,12 +6,12 @@ import (
 )
 
 // CreateTransferTask creates a new transfer task
-func (us *Uspacy) CreateTransferTask() (task.TransferTaskOutput, error) {
+func (us *Uspacy) CreateTransferTask(body interface{}) (task.TransferTaskOutput, error) {
 	var tasks task.TransferTaskOutput
 
-	body, err := us.doGetEmptyHeaders(buildURL(mainHost, task.VersionTaskUrl, task.TransferTasksUrl))
+	resp, err := us.doPostEmptyHeaders(buildURL(mainHost, task.VersionTaskUrl, task.TransferTasksUrl), body)
 	if err != nil {
 		return tasks, err
 	}
-	return tasks, json.Unmarshal(body, &tasks)
+	return tasks, json.Unmarshal(resp, &tasks)
 }
