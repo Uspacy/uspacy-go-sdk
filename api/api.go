@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -70,8 +72,10 @@ func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
 	return us.doRaw(url, http.MethodGet, emptyHeaders, nil)
 }
 
-func (us *Uspacy) doPostEmptyHeaders(url string, body io.Reader) ([]byte, error) {
-	return us.doRaw(url, http.MethodPost, emptyHeaders, body)
+func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(body)
+	return us.doRaw(url, http.MethodPost, emptyHeaders, &buf)
 }
 
 func buildURL(host, version, route string) string {
