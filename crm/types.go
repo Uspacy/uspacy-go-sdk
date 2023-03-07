@@ -4,7 +4,10 @@ const (
 	VersionUrl = "crm/v1/"
 )
 
-const GetFieldsUrl = "entity/%s/fields/"
+const (
+	GetFieldsUrl    = "entity/%s/fields/"
+	CreateFunnelUrl = "entities/%s/funnel"
+)
 
 type (
 
