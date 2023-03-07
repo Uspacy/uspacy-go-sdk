@@ -10,9 +10,9 @@ import (
 func (us *Uspacy) CreateCanbanStage(entity string, body interface{}) (crm.KanbanStage, error) {
 	var kanbanStage crm.KanbanStage
 
-	responceBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.CreateFunnelUrl, entity)), body)
+	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.CreateFunnelUrl, entity)), body)
 	if err != nil {
 		return kanbanStage, err
 	}
-	return kanbanStage, json.Unmarshal(responceBody, &kanbanStage)
+	return kanbanStage, json.Unmarshal(responseBody, &kanbanStage)
 }
