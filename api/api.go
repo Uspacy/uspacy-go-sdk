@@ -74,7 +74,10 @@ func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
 
 func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, error) {
 	var buf bytes.Buffer
-	json.NewEncoder(&buf).Encode(body)
+	err := json.NewEncoder(&buf).Encode(body)
+	if err != nil {
+		return nil, err
+	}
 	return us.doRaw(url, http.MethodPost, emptyHeaders, &buf)
 }
 
