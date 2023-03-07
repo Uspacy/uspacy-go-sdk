@@ -17,7 +17,7 @@ func (us *Uspacy) GetFields(entity string) (crm.Fields, error) {
 	return fields, json.Unmarshal(body, &fields)
 }
 
-// GetFields returns Field struct for a given type of entity & field
+// GetField returns Field struct for a given type of entity & field
 func (us *Uspacy) GetField(entity, field_type string) (crm.Field, error) {
 	var field crm.Field
 

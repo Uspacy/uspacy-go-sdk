@@ -5,7 +5,6 @@ const (
 )
 
 const (
-	//GetFieldsUrl         = "entity/%s/fields/"
 	GetFieldsUrl         = "entities/%s/fields/%s/"
 	CreateFunnelUrl      = "entities/%s/funnel"
 	CreateKanbanStageUrl = "entities/%s/kanban/stage"
