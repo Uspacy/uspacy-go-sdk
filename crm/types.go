@@ -40,4 +40,13 @@ type (
 	Fields struct {
 		Data []Field `json:"data"`
 	}
+
+	// CRM Funnel
+	Funnel struct {
+		Title      string `json:"title"`
+		FunnelCode string `json:"funnel_code"`
+		Active     bool   `json:"active"`
+		Default    bool   `json:"default"`
+		ID         int    `json:"id"`
+	}
 )

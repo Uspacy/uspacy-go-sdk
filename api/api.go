@@ -70,6 +70,10 @@ func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
 	return us.doRaw(url, http.MethodGet, emptyHeaders, nil)
 }
 
+func (us *Uspacy) doPostEmptyHeaders(url string, body io.Reader) ([]byte, error) {
+	return us.doRaw(url, http.MethodPost, emptyHeaders, body)
+}
+
 func buildURL(host, version, route string) string {
 	return fmt.Sprintf("%s/%s/%s", host, version, route)
 }
