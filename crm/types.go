@@ -4,7 +4,11 @@ const (
 	VersionUrl = "crm/v1/"
 )
 
-const GetFieldsUrl = "entity/%s/fields/"
+const (
+	GetFieldsUrl         = "entities/%s/fields/%s/"
+	CreateFunnelUrl      = "entities/%s/funnel"
+	CreateKanbanStageUrl = "entities/%s/kanban/stage"
+)
 
 type (
 
@@ -36,5 +40,22 @@ type (
 	// CRM Fields type.
 	Fields struct {
 		Data []Field `json:"data"`
+	}
+
+	// CRM Funnel
+	Funnel struct {
+		Title      string `json:"title"`
+		FunnelCode string `json:"funnel_code"`
+		Active     bool   `json:"active"`
+		Default    bool   `json:"default"`
+		ID         int    `json:"id"`
+	}
+	// CRM KanbanStage
+	KanbanStage struct {
+		Title     string `json:"title"`
+		StageCode string `json:"stage_code"`
+		Sort      string `json:"sort"`
+		Color     string `json:"color"`
+		ID        int    `json:"id"`
 	}
 )
