@@ -36,7 +36,7 @@ jobs:
         name: Checkout protobuf
         with:
           repository: Uspacy/protobuf
-          ref: 'v0.3'
+          ref: 'v0.5'
           path: 'protobuf'
           token: ${{ secrets.DOCKER_TOKEN }}
       - name: Build Protobuf

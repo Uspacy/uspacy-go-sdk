@@ -2,7 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"uspacy-go-sdk/task"
+
+	"github.com/Uspacy/uspacy-go-sdk/task"
 )
 
 // CreateTransferTask creates a new transfer task

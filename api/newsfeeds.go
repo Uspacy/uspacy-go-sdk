@@ -3,7 +3,8 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"uspacy-go-sdk/newsfeed"
+
+	"github.com/Uspacy/uspacy-go-sdk/newsfeed"
 )
 
 // GetNewsfeeds gets all newsfeeds

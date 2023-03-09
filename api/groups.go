@@ -2,7 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"uspacy-go-sdk/group"
+
+	"github.com/Uspacy/uspacy-go-sdk/group"
 )
 
 // CreateTransferGroup creates a new transfer group
