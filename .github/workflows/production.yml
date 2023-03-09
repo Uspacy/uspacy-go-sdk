@@ -91,19 +91,46 @@ jobs:
           ref: 'main'
           path: '.'
           token: ${{ secrets.DOCKER_TOKEN }}
-      - name: Generate path to file for change
+      - name: Generate path to file for change for UA
         run: |
           if [ "${{ steps.extract_branch.outputs.branch_name }}" == "main" ]; then
             echo APPLICATION_PATH="UA/production/${{ github.event.repository.name }}.yaml" >> $GITHUB_OUTPUT
           else
             echo APPLICATION_PATH="" >> $GITHUB_OUTPUT
           fi
-
         id: argocd_path
-      - name: Set foobar to cool
+
+      - name: Generate path to file for change for COM
+        run: |
+          if [ "${{ steps.extract_branch.outputs.branch_name }}" == "main" ]; then
+            echo APPLICATION_PATH="COM/production/${{ github.event.repository.name }}.yaml" >> $GITHUB_OUTPUT
+          else
+            echo APPLICATION_PATH="" >> $GITHUB_OUTPUT
+          fi
+        id: argocd_path_com
+
+      - name: Generate path to file for change for EU
+        run: |
+          if [ "${{ steps.extract_branch.outputs.branch_name }}" == "main" ]; then
+            echo APPLICATION_PATH="EU/production/${{ github.event.repository.name }}.yaml" >> $GITHUB_OUTPUT
+          else
+            echo APPLICATION_PATH="" >> $GITHUB_OUTPUT
+          fi
+        id: argocd_path_eu
+
+      - name: Set Image UA
         uses: mikefarah/yq@master
         with:
             cmd: yq -i '(.spec.source.directory.jsonnet.extVars.[] | select(.name == "dockerImage")).value="${{ fromJSON(needs.docker.outputs.imageTag).tags[1] }}"' '${{ steps.argocd_path.outputs.APPLICATION_PATH }}'
+
+      - name: Set Image COM
+        uses: mikefarah/yq@master
+        with:
+            cmd: yq -i '(.spec.source.directory.jsonnet.extVars.[] | select(.name == "dockerImage")).value="${{ fromJSON(needs.docker.outputs.imageTag).tags[1] }}"' '${{ steps.argocd_path_com.outputs.APPLICATION_PATH }}'
+      - name: Set Image EU
+        uses: mikefarah/yq@master
+        with:
+            cmd: yq -i '(.spec.source.directory.jsonnet.extVars.[] | select(.name == "dockerImage")).value="${{ fromJSON(needs.docker.outputs.imageTag).tags[1] }}"' '${{ steps.argocd_path_eu.outputs.APPLICATION_PATH }}'
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
             commit_message: Automated Change
