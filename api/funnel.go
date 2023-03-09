@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"uspacy-go-sdk/crm"
+	"github.com/Uspacy/uspacy-go-sdk/crm"
 )
 
 // CreateFunnel returns created funnel
