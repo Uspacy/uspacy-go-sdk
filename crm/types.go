@@ -5,13 +5,16 @@ const (
 )
 
 const (
-	GetFieldsUrl         = "entities/%s/fields/%s/"
-	CreateFunnelUrl      = "entities/%s/funnel"
-	CreateKanbanStageUrl = "entities/%s/kanban/stage"
-	CreateEntity         = "entities/%s/"
+	FieldsUrl      = "entities/%s/fields/%s/"
+	ListsUrl       = "entities/%s/lists/%s/"
+	FunnelUrl      = "entities/%s/funnel"
+	KanbanStageUrl = "entities/%s/kanban/stage"
+	EntityUrl      = "entities/%s/"
 )
 
-type Entity int64
+type (
+	Entity int64
+)
 
 const (
 	Contacts Entity = iota + 1
@@ -20,13 +23,37 @@ const (
 	Companies
 )
 
-func (e Entity) GetUrl() string {
-	uris := map[Entity]string{
+var (
+	EntityType = map[Entity]string{
 		1: "contacts",
 		2: "leads",
 		3: "deals",
 		4: "companies",
 	}
+
+	StatusId = map[Entity]string{
+		1: "SOURCE",
+		2: "DEAL_TYPE",
+		3: "DEAL_STAGE",
+		4: "CONTACT_TYPE",
+		5: "COMPANY_TYPE",
+		6: "INDUSTRY",
+		7: "EMPLOYEES",
+	}
+
+	ListValue = map[Entity]string{
+		1: "source",
+		2: "deal_label",
+		3: "DEAL_STAGE", ///!!!!!!!!!!!!!!!!!!
+		4: "contact_label",
+		5: "company_label",
+		6: "industry_label",
+		7: "employees_label",
+	}
+)
+
+func (e Entity) GetUrl(list map[Entity]string) string {
+	uris := list
 	if entity, ok := uris[e]; !ok {
 		return "unknown"
 	} else {
@@ -158,30 +185,18 @@ type (
 			EntityType       string `json:"entity_type"`
 			KanbanStageId    string `json:"kanban_stage_id"`
 		} `json:"companies"`
-		Position    string `json:"position"`
-		UtmSource   string `json:"utm_source"`
-		UtmMedium   string `json:"utm_medium"`
-		UtmCampaign string `json:"utm_campaign"`
-		UtmContent  string `json:"utm_content"`
-		UtmTerm     string `json:"utm_term"`
-		Messengers  string `json:"messengers"`
-		Phone       string `json:"phone"`
-		Email       string `json:"email"`
-		Comments    string `json:"comments"`
-		Source      []struct {
-			Title    string `json:"title"`
-			Value    string `json:"value"`
-			Color    string `json:"color"`
-			Sort     string `json:"sort"`
-			Selected bool   `json:"selected"`
-		} `json:"source"`
-		ContactLabel []struct {
-			Title    string `json:"title"`
-			Value    string `json:"value"`
-			Color    string `json:"color"`
-			Sort     string `json:"sort"`
-			Selected bool   `json:"selected"`
-		} `json:"contact_label"`
+		Position         string        `json:"position"`
+		UtmSource        string        `json:"utm_source"`
+		UtmMedium        string        `json:"utm_medium"`
+		UtmCampaign      string        `json:"utm_campaign"`
+		UtmContent       string        `json:"utm_content"`
+		UtmTerm          string        `json:"utm_term"`
+		Messengers       string        `json:"messengers"`
+		Phone            string        `json:"phone"`
+		Email            string        `json:"email"`
+		Comments         string        `json:"comments"`
+		Source           []List        `json:"source"`
+		ContactLabel     []List        `json:"contact_label"`
 		Ownercopy        string        `json:"ownercopy"`
 		LastNamecopy     string        `json:"last_namecopy"`
 		Companiescopy    []interface{} `json:"companiescopy"`
@@ -201,5 +216,13 @@ type (
 		Sourcecopy       string        `json:"sourcecopy"`
 		ContactLabelcopy string        `json:"contact_labelcopy"`
 		KanbanStageId    string        `json:"kanban_stage_id"`
+	}
+
+	List struct {
+		Title    string `json:"title"`
+		Value    string `json:"value"`
+		Color    string `json:"color"`
+		Sort     string `json:"sort"`
+		Selected bool   `json:"selected"`
 	}
 )
