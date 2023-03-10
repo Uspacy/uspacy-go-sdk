@@ -7,9 +7,7 @@ import (
 )
 
 // CreateTransferGroup creates a new transfer group
-func (us *Uspacy) CreateTransferGroup(body interface{}) (group.TransferGroupOutput, error) {
-	var groups group.TransferGroupOutput
-
+func (us *Uspacy) CreateTransferGroup(body interface{}) (groups group.TransferGroupOutput, err error) {
 	resp, err := us.doPostEmptyHeaders(buildURL(mainHost, group.VersionGroupUrl, group.TransferGroupsUrl), body)
 	if err != nil {
 		return groups, err
