@@ -9,7 +9,7 @@ import (
 
 // CreateFunnel returns created funnel
 func (us *Uspacy) CreateFunnel(entity string, body interface{}) (funnel crm.Funnel, err error) {
-	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.FunnelUrl, entity)), body)
+	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionCRMUrl, fmt.Sprintf(crm.FunnelUrl, entity)), body)
 	if err != nil {
 		return funnel, err
 	}

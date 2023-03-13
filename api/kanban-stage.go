@@ -9,7 +9,7 @@ import (
 
 // CreateKanbanStage returns created kanban stage
 func (us *Uspacy) CreateKanbanStage(entity string, body interface{}) (kanbanStage crm.KanbanStage, err error) {
-	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entity)), body)
+	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionCRMUrl, fmt.Sprintf(crm.KanbanStageUrl, entity)), body)
 	if err != nil {
 		return kanbanStage, err
 	}

@@ -8,7 +8,7 @@ import (
 )
 
 func (us *Uspacy) CreateEntity(entityType crm.Entity, entity map[string]interface{}) (object crm.EntityResponse, err error) {
-	body, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl(crm.EntityType))), entity)
+	body, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionCRMUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl(crm.EntityType))), entity)
 	if err != nil {
 		return object, err
 	}

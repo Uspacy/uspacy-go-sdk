@@ -1,7 +1,7 @@
 package crm
 
 const (
-	VersionUrl = "crm/v1/"
+	VersionCRMUrl = "crm/v1/"
 )
 
 const (

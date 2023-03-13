@@ -9,7 +9,7 @@ import (
 
 // GetFields returns Fields struct for a given type of entity
 func (us *Uspacy) GetFields(entity string) (fields crm.Fields, err error) {
-	body, err := us.doGetEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entity, "")))
+	body, err := us.doGetEmptyHeaders(buildURL(mainHost, crm.VersionCRMUrl, fmt.Sprintf(crm.FieldsUrl, entity, "")))
 	if err != nil {
 		return fields, err
 	}
@@ -18,7 +18,7 @@ func (us *Uspacy) GetFields(entity string) (fields crm.Fields, err error) {
 
 // GetField returns Field struct for a given type of entity & field
 func (us *Uspacy) GetField(entity, fieldType string) (field crm.Field, err error) {
-	body, err := us.doGetEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entity, fieldType)))
+	body, err := us.doGetEmptyHeaders(buildURL(mainHost, crm.VersionCRMUrl, fmt.Sprintf(crm.FieldsUrl, entity, fieldType)))
 	if err != nil {
 		return field, err
 	}
@@ -27,7 +27,7 @@ func (us *Uspacy) GetField(entity, fieldType string) (field crm.Field, err error
 
 // CreateField in CRM entity returns created field
 func (us *Uspacy) CreateField(entityType crm.Entity, field interface{}) (createdField crm.Field, err error) {
-	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl(crm.StatusId))), field)
+	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionCRMUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl(crm.StatusId))), field)
 	if err != nil {
 		return createdField, err
 	}
