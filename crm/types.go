@@ -79,13 +79,7 @@ type (
 		Sort              string      `json:"sort"`
 		DefaultValue      string      `json:"default_value"`
 		Tooltip           string      `json:"tooltip"`
-		Values            []struct {
-			Title    string `json:"title"`
-			Value    string `json:"value"`
-			Color    string `json:"color"`
-			Sort     string `json:"sort"`
-			Selected bool   `json:"selected"`
-		} `json:"values,omitempty"`
+		Values            []List      `json:"values,omitempty"`
 	}
 
 	// CRM Fields type.

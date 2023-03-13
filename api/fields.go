@@ -25,27 +25,11 @@ func (us *Uspacy) GetField(entity, fieldType string) (field crm.Field, err error
 	return field, json.Unmarshal(body, &field)
 }
 
-// CreateField returns created field
-func (us *Uspacy) CreateField(statusID crm.Entity, field interface{}) (crm.Field, error) {
-	var createdField crm.Field
-	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.FunnelUrl, statusID.GetUrl(crm.StatusId))), field)
+// CreateField in CRM entity returns created field
+func (us *Uspacy) CreateField(entityType crm.Entity, field interface{}) (createdField crm.Field, err error) {
+	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl(crm.StatusId))), field)
 	if err != nil {
 		return createdField, err
 	}
 	return createdField, json.Unmarshal(responseBody, &createdField)
-}
-
-// CreateField returns arrey of created lists
-func (us *Uspacy) CreateList(entityType, listValue crm.Entity, field interface{}) ([]crm.List, error) {
-	var createdLists []crm.List
-	responseBody, err := us.doPostEmptyHeaders(
-		buildURL(
-			mainHost,
-			crm.VersionUrl,
-			fmt.Sprintf(crm.ListsUrl, entityType.GetUrl(crm.EntityType), listValue.GetUrl(crm.ListValue))),
-		field)
-	if err != nil {
-		return createdLists, err
-	}
-	return createdLists, json.Unmarshal(responseBody, &createdLists)
 }
