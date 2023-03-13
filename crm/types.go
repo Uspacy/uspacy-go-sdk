@@ -14,10 +14,10 @@ const (
 type Entity int64
 
 const (
-	Contacts Entity = iota + 1
-	Leads
-	Deals
-	Companies
+	ContactsNum Entity = iota + 1
+	LeadsNum
+	DealsNum
+	CompaniesNum
 )
 
 func (e Entity) GetUrl() string {
@@ -84,8 +84,32 @@ type (
 	}
 )
 
-type CompaniesRes struct {
-	Data []struct {
+type Companies struct {
+	Data  []Company `json:"data"`
+	Links Links     `json:"links"`
+	Meta  Meta      `json:"meta"`
+}
+
+type Contacts struct {
+	Data  []Contact `json:"data"`
+	Links Links     `json:"links"`
+	Meta  Meta      `json:"meta"`
+}
+
+type Deals struct {
+	Data  []Deal `json:"data"`
+	Links Links  `json:"links"`
+	Meta  Meta   `json:"meta"`
+}
+
+type Leads struct {
+	Data  []Lead `json:"data"`
+	Links Links  `json:"links"`
+	Meta  Meta   `json:"meta"`
+}
+
+type (
+	Company struct {
 		Id               int             `json:"id"`
 		CreatedAt        int             `json:"created_at"`
 		UpdatedAt        int             `json:"updated_at"`
@@ -127,13 +151,9 @@ type CompaniesRes struct {
 		Addresscopy      string          `json:"addresscopy"`
 		Contactscopy     []interface{}   `json:"contactscopy"`
 		KanbanStageId    string          `json:"kanban_stage_id"`
-	} `json:"data"`
-	Links Links `json:"links"`
-	Meta  Meta  `json:"meta"`
-}
+	}
 
-type ContactsRes struct {
-	Data []struct {
+	Contact struct {
 		Id         int         `json:"id"`
 		CreatedAt  int         `json:"created_at"`
 		UpdatedAt  int         `json:"updated_at"`
@@ -221,13 +241,9 @@ type ContactsRes struct {
 		Sourcecopy       string          `json:"sourcecopy"`
 		ContactLabelcopy string          `json:"contact_labelcopy"`
 		KanbanStageId    string          `json:"kanban_stage_id"`
-	} `json:"data"`
-	Links Links `json:"links"`
-	Meta  Meta  `json:"meta"`
-}
+	}
 
-type DealsRes struct {
-	Data []struct {
+	Deal struct {
 		Id              int         `json:"id"`
 		CreatedAt       int         `json:"created_at"`
 		UpdatedAt       int         `json:"updated_at"`
@@ -341,13 +357,9 @@ type DealsRes struct {
 		KanbanReasonId string          `json:"kanban_reason_id"`
 		Ownercopy      string          `json:"ownercopy"`
 		KanbanStageId  int             `json:"kanban_stage_id"`
-	} `json:"data"`
-	Links Links `json:"links"`
-	Meta  Meta  `json:"meta"`
-}
+	}
 
-type LeadsRes struct {
-	Data []struct {
+	Lead struct {
 		Id             int             `json:"id"`
 		CreatedAt      int             `json:"created_at"`
 		UpdatedAt      int             `json:"updated_at"`
@@ -378,10 +390,8 @@ type LeadsRes struct {
 		Sourcecopy     string          `json:"sourcecopy"`
 		LeadLabelcopy  string          `json:"lead_labelcopy"`
 		KanbanStageId  int             `json:"kanban_stage_id"`
-	} `json:"data"`
-	Links Links `json:"links"`
-	Meta  Meta  `json:"meta"`
-}
+	}
+)
 
 type (
 	Messanger struct {
