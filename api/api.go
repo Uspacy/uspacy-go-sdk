@@ -15,6 +15,7 @@ type Uspacy struct {
 	bearerToken string
 	client      *http.Client
 	unixExpTime int64
+	isExpired   bool
 }
 
 const defaultClientTimeout = 10 * time.Second
@@ -43,8 +44,14 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	if err != nil {
 		return nil, err
 	}
+	var token string
 
-	req.Header.Add("Authorization", us.getToken())
+	if us.isExpired == true {
+		token = us.bearerToken
+	} else {
+		token = us.getToken()
+	}
+	req.Header.Add("Authorization", token)
 
 	for key, value := range headers {
 		req.Header.Add(key, value)

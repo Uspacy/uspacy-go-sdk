@@ -11,9 +11,11 @@ import (
 
 func (us *Uspacy) getToken() string {
 	if time.Now().Unix() > us.unixExpTime {
+		us.isExpired = true
 		token, expDate := us.refreshToken()
 		us.bearerToken = token
 		us.unixExpTime = time.Now().Local().Add(time.Second * time.Duration(expDate)).Unix()
+		us.isExpired = false
 	}
 
 	return us.bearerToken
