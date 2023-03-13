@@ -27,7 +27,7 @@ func (us *Uspacy) refreshToken() (string, int64) {
 
 	body, err := us.doPostEmptyHeaders(mainHost+auth.VersionUrl+auth.RefreshTokenUrl, nil)
 	if err != nil {
-		log.Fatal("error while trying to refresh token: err")
+		log.Fatal("error while trying to refresh token:", err)
 	}
 	err = json.Unmarshal(body, &refresh)
 	if err != nil {
