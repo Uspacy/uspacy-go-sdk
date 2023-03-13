@@ -8,9 +8,7 @@ import (
 )
 
 // GetNewsfeeds gets all newsfeeds
-func (us *Uspacy) GetNewsfeeds(page, list, groupId int) (newsfeed.GetNewsfeed, error) {
-	var posts newsfeed.GetNewsfeed
-
+func (us *Uspacy) GetNewsfeeds(page, list, groupId int) (posts newsfeed.GetNewsfeed, err error) {
 	body, err := us.doGetEmptyHeaders(buildURL(mainHost, newsfeed.VersionNewsfeedUrl, fmt.Sprintf(newsfeed.PostsUrl, page, list, groupId)))
 	if err != nil {
 		return posts, err
