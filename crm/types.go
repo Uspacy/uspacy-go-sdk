@@ -44,11 +44,10 @@ var (
 	ListValue = map[Entity]string{
 		1: "source",
 		2: "deal_label",
-		3: "DEAL_STAGE", ///!!!!!!!!!!!!!!!!!!
-		4: "contact_label",
-		5: "company_label",
-		6: "industry_label",
-		7: "employees_label",
+		3: "contact_label",
+		4: "company_label",
+		5: "industry_label",
+		6: "employees_label",
 	}
 )
 
