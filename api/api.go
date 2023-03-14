@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,14 +14,15 @@ import (
 type Uspacy struct {
 	bearerToken string
 	client      *http.Client
+	isExpired   bool
 }
 
 const defaultClientTimeout = 10 * time.Second
 
-// New creates a Uspacy object
+// New creates an Uspacy object
 func New(token string) *Uspacy {
 	return &Uspacy{
-		bearerToken: "Bearer " + token,
+		bearerToken: token,
 		client: &http.Client{
 			Timeout: defaultClientTimeout,
 		},
@@ -41,7 +43,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", us.bearerToken)
+	req.Header.Add("Authorization", us.getToken())
 
 	for key, value := range headers {
 		req.Header.Add(key, value)
@@ -60,9 +62,19 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	}
 
 	if !handleStatusCode(res.StatusCode) {
+		if res.StatusCode == http.StatusUnauthorized {
+			if !us.isExpired {
+				us.isExpired = true
+				us.refreshToken()
+				return us.doRaw(url, method, headers, body)
+			}
+		}
 		log.Printf("error occured while trying to (%s)\nbody - %s\ncode - %v\n", req.URL.String(), string(responseBody), res.StatusCode)
-		return nil, err
+
+		return responseBody, errors.New("status code != 200")
 	}
+
+	us.isExpired = false
 
 	return responseBody, nil
 
