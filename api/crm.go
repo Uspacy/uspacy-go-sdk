@@ -53,7 +53,7 @@ func (us *Uspacy) CreateFunnel(entityType crm.Entity, funnel interface{}) (objec
 }
 
 // CreateKanbanStage returns created kanban stage
-func (us *Uspacy) CreateKanbanStage(entityType crm.Entity, stage interface{}) (object crm.KanbanStage, err error) {
+func (us *Uspacy) CreateFunnelStage(entityType crm.Entity, stage interface{}) (object crm.KanbanStage, err error) {
 	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionCRMUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl())), stage)
 	if err != nil {
 		return object, err
