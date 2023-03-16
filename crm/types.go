@@ -12,10 +12,8 @@ const (
 	EntityUrl      = "entities/%s"
 )
 
-type (
-	Entity int64
-	Lists  int64
-)
+type Entity int64
+
 
 const (
 	ContactsNum Entity = iota + 1
