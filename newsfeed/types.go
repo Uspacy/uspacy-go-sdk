@@ -12,9 +12,8 @@ const (
 
 type (
 	GetNewsfeed struct {
-		Data  []Post       `json:"data"`
-		Links common.Links `json:"links"`
-		Meta  common.Meta  `json:"meta"`
+		Data []Post      `json:"data"`
+		Meta common.Meta `json:"meta"`
 	}
 
 	Post struct {
