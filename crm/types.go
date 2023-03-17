@@ -1,5 +1,9 @@
 package crm
 
+import (
+	"github.com/Uspacy/uspacy-go-sdk/common"
+)
+
 const (
 	VersionUrl = "crm/v1/"
 )
@@ -81,27 +85,27 @@ type (
 
 type (
 	Companies struct {
-		Data  []Company `json:"data"`
-		Links Links     `json:"links"`
-		Meta  Meta      `json:"meta"`
+		Data  []Company    `json:"data"`
+		Links common.Links `json:"links"`
+		Meta  common.Meta  `json:"meta"`
 	}
 
 	Contacts struct {
-		Data  []Contact `json:"data"`
-		Links Links     `json:"links"`
-		Meta  Meta      `json:"meta"`
+		Data  []Contact    `json:"data"`
+		Links common.Links `json:"links"`
+		Meta  common.Meta  `json:"meta"`
 	}
 
 	Deals struct {
-		Data  []Deal `json:"data"`
-		Links Links  `json:"links"`
-		Meta  Meta   `json:"meta"`
+		Data  []Deal       `json:"data"`
+		Links common.Links `json:"links"`
+		Meta  common.Meta  `json:"meta"`
 	}
 
 	Leads struct {
-		Data  []Lead `json:"data"`
-		Links Links  `json:"links"`
-		Meta  Meta   `json:"meta"`
+		Data  []Lead       `json:"data"`
+		Links common.Links `json:"links"`
+		Meta  common.Meta  `json:"meta"`
 	}
 )
 
@@ -232,30 +236,6 @@ type (
 )
 
 type (
-	Meta struct {
-		CurrentPage int    `json:"current_page"`
-		From        int    `json:"from"`
-		LastPage    int    `json:"last_page"`
-		Links       []Link `json:"links"`
-		Path        string `json:"path"`
-		PerPage     int    `json:"per_page"`
-		To          int    `json:"to"`
-		Total       int    `json:"total"`
-	}
-
-	Links struct {
-		First string      `json:"first"`
-		Last  string      `json:"last"`
-		Prev  interface{} `json:"prev"`
-		Next  interface{} `json:"next"`
-	}
-
-	Link struct {
-		Url    string `json:"url"`
-		Label  string `json:"label"`
-		Active bool   `json:"active"`
-	}
-
 	Messanger struct {
 		Id   string `json:"id"`
 		Name string `json:"name"`

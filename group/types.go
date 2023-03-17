@@ -1,8 +1,8 @@
 package group
 
 const (
-	VersionGroupUrl   = "groups/v1/"
-	TransferGroupsUrl = "transfer"
+	VersionUrl  = "groups/v1/"
+	TransferUrl = "transfer"
 )
 
 type TransferGroupOutput struct {
