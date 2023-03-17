@@ -112,10 +112,10 @@ type (
 type (
 	Company struct {
 		EntityCRM
+		PersonContactData
 
 		Site    string `json:"site"`
 		Address string `json:"address"`
-		PersonContactData
 
 		CompanyLabel []Value   `json:"company_label"`
 		Contacts     []Contact `json:"contacts"`
