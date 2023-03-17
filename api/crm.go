@@ -3,29 +3,30 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/Uspacy/uspacy-go-sdk/crm"
 )
 
 // CreateFunnel returns created funnel
-func (us *Uspacy) CreateFunnel(entity string, body interface{}) (funnel crm.Funnel, err error) {
+func (us *Uspacy) CreateFunnel(entity string, body interface{}) (object crm.Funnel, err error) {
 	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.CreateFunnelUrl, entity)), body)
 	if err != nil {
-		return funnel, err
+		return object, err
 	}
-	return funnel, json.Unmarshal(responseBody, &funnel)
+	return object, json.Unmarshal(responseBody, &object)
 }
 
 // CreateKanbanStage returns created kanban stage
-func (us *Uspacy) CreateKanbanStage(entity string, body interface{}) (kanbanStage crm.KanbanStage, err error) {
+func (us *Uspacy) CreateKanbanStage(entity string, body interface{}) (object crm.KanbanStage, err error) {
 	responseBody, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.CreateFunnelUrl, entity)), body)
 	if err != nil {
-		return kanbanStage, err
+		return object, err
 	}
-	return kanbanStage, json.Unmarshal(responseBody, &kanbanStage)
+	return object, json.Unmarshal(responseBody, &object)
 }
 
 // CreateContact returns created contacts object
-func (us *Uspacy) CreateContact(entityType crm.Entity, entity map[string]interface{}) (object crm.ContactsRes, err error) {
+func (us *Uspacy) CreateContact(entityType crm.Entity, entity map[string]interface{}) (object crm.Contacts, err error) {
 	body, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.CreateEntity, entityType.GetUrl())), entity)
 	if err != nil {
 		return object, err
@@ -34,7 +35,7 @@ func (us *Uspacy) CreateContact(entityType crm.Entity, entity map[string]interfa
 }
 
 // CreateCompany returns created contacts object
-func (us *Uspacy) CreateCompany(entityType crm.Entity, entity map[string]interface{}) (object crm.CompaniesRes, err error) {
+func (us *Uspacy) CreateCompany(entityType crm.Entity, entity map[string]interface{}) (object crm.Companies, err error) {
 	body, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.CreateEntity, entityType.GetUrl())), entity)
 	if err != nil {
 		return object, err
@@ -43,7 +44,7 @@ func (us *Uspacy) CreateCompany(entityType crm.Entity, entity map[string]interfa
 }
 
 // CreateLeads returns created contacts object
-func (us *Uspacy) CreateLeads(entityType crm.Entity, entity map[string]interface{}) (object crm.LeadsRes, err error) {
+func (us *Uspacy) CreateLeads(entityType crm.Entity, entity map[string]interface{}) (object crm.Leads, err error) {
 	body, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.CreateEntity, entityType.GetUrl())), entity)
 	if err != nil {
 		return object, err
@@ -52,7 +53,7 @@ func (us *Uspacy) CreateLeads(entityType crm.Entity, entity map[string]interface
 }
 
 // CreateDeals returns created contacts object
-func (us *Uspacy) CreateDeals(entityType crm.Entity, entity map[string]interface{}) (object crm.DealsRes, err error) {
+func (us *Uspacy) CreateDeals(entityType crm.Entity, entity map[string]interface{}) (object crm.Deals, err error) {
 	body, err := us.doPostEmptyHeaders(buildURL(mainHost, crm.VersionUrl, fmt.Sprintf(crm.CreateEntity, entityType.GetUrl())), entity)
 	if err != nil {
 		return object, err
