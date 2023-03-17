@@ -111,131 +111,88 @@ type (
 
 type (
 	Company struct {
-		Id            int    `json:"id"`
-		CreatedAt     int    `json:"created_at"`
-		UpdatedAt     int    `json:"updated_at"`
-		Title         string `json:"title"`
-		Owner         int    `json:"owner"`
-		CreatedBy     int    `json:"created_by"`
-		ChangedBy     int    `json:"changed_by,string"`
-		Comments      string `json:"comments"`
-		Converted     bool   `json:"converted"`
-		KanbanStageId string `json:"kanban_stage_id"`
-		RelatedEntity bool   `json:"related_entity,omitempty"`
-		EntityType    string `json:"entity_type,omitempty"`
+		EntityCRM
 
 		Site    string `json:"site"`
 		Address string `json:"address"`
+		PersonContactData
 
-		Messengers   []Messanger   `json:"messengers"`
-		Phone        []ContactData `json:"phone"`
-		Email        []ContactData `json:"email"`
-		Source       []Value       `json:"source"`
-		CompanyLabel []Value       `json:"company_label"`
-		Contacts     []Contact     `json:"contacts"`
-
-		UtmSource   string `json:"utm_source"`
-		UtmMedium   string `json:"utm_medium"`
-		UtmCampaign string `json:"utm_campaign"`
-		UtmContent  string `json:"utm_content"`
-		UtmTerm     string `json:"utm_term"`
+		CompanyLabel []Value   `json:"company_label"`
+		Contacts     []Contact `json:"contacts"`
 	}
 
 	Contact struct {
-		Id            int    `json:"id"`
-		CreatedAt     int    `json:"created_at"`
-		UpdatedAt     int    `json:"updated_at"`
-		Title         string `json:"title"`
-		Owner         int    `json:"owner"`
-		CreatedBy     int    `json:"created_by"`
-		ChangedBy     int    `json:"changed_by,string"`
-		Comments      string `json:"comments"`
-		Converted     bool   `json:"converted"`
-		KanbanStageId string `json:"kanban_stage_id"`
-		RelatedEntity bool   `json:"related_entity,omitempty"`
-		EntityType    string `json:"entity_type,omitempty"`
+		EntityCRM
+		PersonData
+		PersonContactData
 
-		FirstName  string `json:"first_name"`
-		LastName   string `json:"last_name"`
-		Patronymic string `json:"patronymic"`
-		Position   string `json:"position"`
-
-		Messengers   []Messanger   `json:"messengers"`
-		Phone        []ContactData `json:"phone"`
-		Email        []ContactData `json:"email"`
-		Source       []Value       `json:"source"`
-		ContactLabel []Value       `json:"contact_label"`
-		Companies    []Company     `json:"companies"`
-
-		UtmSource   string `json:"utm_source"`
-		UtmMedium   string `json:"utm_medium"`
-		UtmCampaign string `json:"utm_campaign"`
-		UtmContent  string `json:"utm_content"`
-		UtmTerm     string `json:"utm_term"`
+		ContactLabel []Value   `json:"contact_label"`
+		Companies    []Company `json:"companies"`
 	}
 
 	Deal struct {
-		Id              int    `json:"id"`
-		CreatedAt       int    `json:"created_at"`
-		UpdatedAt       int    `json:"updated_at"`
-		Title           string `json:"title"`
-		Owner           int    `json:"owner"`
-		CreatedBy       int    `json:"created_by"`
-		ChangedBy       int    `json:"changed_by,string"`
-		Comments        string `json:"comments"`
-		Converted       bool   `json:"converted"`
-		KanbanStageId   int    `json:"kanban_stage_id"`
-		KanbanStatus    string `json:"kanban_status"`
-		KanbanReasonId  string `json:"kanban_reason_id"`
+		EntityCRM
+		KanbanCRM
+
 		AmountOfTheDeal string `json:"amount_of_the_deal"`
 
 		Contacts  []Contact `json:"contacts"`
 		Companies []Company `json:"companies"`
-		Source    []Value   `json:"source"`
 		DealLabel []Value   `json:"deal_label"`
-
-		UtmSource   string `json:"utm_source"`
-		UtmMedium   string `json:"utm_medium"`
-		UtmCampaign string `json:"utm_campaign"`
-		UtmContent  string `json:"utm_content"`
-		UtmTerm     string `json:"utm_term"`
 	}
 
 	Lead struct {
-		Id             int    `json:"id"`
-		CreatedAt      int    `json:"created_at"`
-		UpdatedAt      int    `json:"updated_at"`
-		Title          string `json:"title"`
-		Owner          int    `json:"owner"`
-		CreatedBy      int    `json:"created_by"`
-		ChangedBy      int    `json:"changed_by,string"`
-		Comments       string `json:"comments"`
-		Converted      bool   `json:"converted"`
-		KanbanStageId  int    `json:"kanban_stage_id"`
-		KanbanStatus   string `json:"kanban_status"`
-		KanbanReasonId int    `json:"kanban_reason_id"`
+		EntityCRM
+		KanbanCRM
+		PersonData
+		PersonContactData
 
-		FirstName   string `json:"first_name"`
-		LastName    string `json:"last_name"`
-		Patronymic  string `json:"patronymic"`
-		CompanyName string `json:"company_name"`
-		Position    string `json:"position"`
-
-		Messengers []Messanger   `json:"messengers"`
-		Phone      []ContactData `json:"phone"`
-		Email      []ContactData `json:"email"`
-		Source     []Value       `json:"source"`
-		LeadLabel  []Value       `json:"lead_label"`
-
-		UtmSource   string `json:"utm_source"`
-		UtmMedium   string `json:"utm_medium"`
-		UtmCampaign string `json:"utm_campaign"`
-		UtmContent  string `json:"utm_content"`
-		UtmTerm     string `json:"utm_term"`
+		CompanyName string  `json:"company_name"`
+		LeadLabel   []Value `json:"lead_label"`
 	}
 )
 
 type (
+	EntityCRM struct {
+		Id            int     `json:"id"`
+		CreatedAt     int     `json:"created_at"`
+		UpdatedAt     int     `json:"updated_at"`
+		Owner         int     `json:"owner"`
+		CreatedBy     int     `json:"created_by"`
+		ChangedBy     int     `json:"changed_by,string"`
+		Converted     bool    `json:"converted"`
+		RelatedEntity bool    `json:"related_entity,omitempty"`
+		Title         string  `json:"title"`
+		Comments      string  `json:"comments"`
+		EntityType    string  `json:"entity_type,omitempty"`
+		KanbanStageId string  `json:"kanban_stage_id"`
+		Source        []Value `json:"source"`
+
+		UtmSource   string `json:"utm_source"`
+		UtmMedium   string `json:"utm_medium"`
+		UtmCampaign string `json:"utm_campaign"`
+		UtmContent  string `json:"utm_content"`
+		UtmTerm     string `json:"utm_term"`
+	}
+
+	KanbanCRM struct {
+		KanbanStatus   string `json:"kanban_status"`
+		KanbanReasonId string `json:"kanban_reason_id"`
+	}
+
+	PersonContactData struct {
+		Messengers []Messanger   `json:"messengers"`
+		Phone      []ContactData `json:"phone"`
+		Email      []ContactData `json:"email"`
+	}
+
+	PersonData struct {
+		FirstName  string `json:"first_name"`
+		LastName   string `json:"last_name"`
+		Patronymic string `json:"patronymic"`
+		Position   string `json:"position"`
+	}
+
 	Messanger struct {
 		Id   string `json:"id"`
 		Name string `json:"name"`
