@@ -7,10 +7,8 @@ import (
 )
 
 // CreateTransferTask creates a new transfer task
-func (us *Uspacy) CreateTransferTask(body interface{}) (task.TransferTaskOutput, error) {
-	var tasks task.TransferTaskOutput
-
-	resp, err := us.doPostEmptyHeaders(buildURL(mainHost, task.VersionTaskUrl, task.TransferTasksUrl), body)
+func (us *Uspacy) CreateTransferTask(body interface{}) (tasks task.TransferTaskOutput, err error) {
+	resp, err := us.doPostEmptyHeaders(buildURL(mainHost, task.VersionUrl, task.TransferUrl), body)
 	if err != nil {
 		return tasks, err
 	}

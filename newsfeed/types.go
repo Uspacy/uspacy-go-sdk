@@ -1,16 +1,19 @@
 package newsfeed
 
-import "github.com/google/uuid"
+import (
+	"github.com/Uspacy/uspacy-go-sdk/common"
+	"github.com/google/uuid"
+)
 
 const (
-	VersionNewsfeedUrl = "newsfeed/v1/"
-	PostsUrl           = "posts/?page=%d&list=%d&group_id=%d"
+	VersionUrl = "newsfeed/v1/"
+	PostsUrl   = "posts/?page=%d&list=%d&group_id=%d"
 )
 
 type (
 	GetNewsfeed struct {
-		Data []Post `json:"data"`
-		Meta *Meta  `json:"meta"`
+		Data []Post      `json:"data"`
+		Meta common.Meta `json:"meta"`
 	}
 
 	Post struct {
@@ -25,15 +28,6 @@ type (
 		TotalComments int         `json:"total_comments"`
 		Files         []Files     `json:"files"`
 		Reactions     []Reactions `json:"reactions"`
-	}
-
-	Meta struct {
-		CurrentPage int   `json:"current_page"`
-		From        int   `json:"from"`
-		LastPage    int   `json:"last_page"`
-		PerPage     int   `json:"per_page"`
-		To          int   `json:"to"`
-		Total       int64 `json:"total"`
 	}
 
 	Files struct {
