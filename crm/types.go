@@ -9,10 +9,12 @@ const (
 )
 
 const (
-	GetFieldsUrl         = "entities/%s/fields/%s/"
-	CreateFunnelUrl      = "entities/%s/funnel"
-	CreateKanbanStageUrl = "entities/%s/kanban/stage"
-	CreateEntity         = "entities/%s/"
+	EntityUrl          = "entities/%s/"
+	FieldsUrl          = "entities/%s/fields/%s/"
+	ListsUrl           = "entities/%s/lists/%s"
+	FunnelUrl          = "entities/%s/funnel"
+	KanbanStageUrl     = "entities/%s/kanban/stage"
+	MoveKanbanStageUrl = "entities/%s/%d/move/stage/%s"
 )
 
 type Entity int64
@@ -106,6 +108,14 @@ type (
 		Data  []Lead       `json:"data"`
 		Links common.Links `json:"links"`
 		Meta  common.Meta  `json:"meta"`
+	}
+
+	List struct {
+		Title    string `json:"title"`
+		Value    string `json:"value"`
+		Color    string `json:"color"`
+		Sort     string `json:"sort"`
+		Selected bool   `json:"selected"`
 	}
 )
 
