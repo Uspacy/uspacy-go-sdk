@@ -14,7 +14,7 @@ func (us *Uspacy) getToken() string {
 func (us *Uspacy) refreshToken() {
 	var refresh auth.RefreshOutput
 
-	body, err := us.doPostEmptyHeaders(mainHost+auth.VersionUrl+auth.RefreshTokenUrl, nil)
+	body, err := us.doPostEmptyHeaders(auth.VersionUrl+auth.RefreshTokenUrl, nil)
 	if err != nil {
 		log.Fatal("error while trying to refresh token: ", err)
 	}

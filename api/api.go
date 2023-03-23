@@ -14,18 +14,20 @@ import (
 type Uspacy struct {
 	bearerToken string
 	client      *http.Client
+	mainHost    string
 	isExpired   bool
 }
 
 const defaultClientTimeout = 10 * time.Second
 
 // New creates an Uspacy object
-func New(token string) *Uspacy {
+func New(token, host string) *Uspacy {
 	return &Uspacy{
 		bearerToken: token,
 		client: &http.Client{
 			Timeout: defaultClientTimeout,
 		},
+		mainHost: host,
 	}
 }
 
@@ -93,6 +95,6 @@ func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, erro
 	return us.doRaw(url, http.MethodPost, emptyHeaders, &buf)
 }
 
-func buildURL(host, version, route string) string {
-	return fmt.Sprintf("%s/%s/%s", host, version, route)
+func (us *Uspacy) buildURL(version, route string) string {
+	return fmt.Sprintf("%s/%s/%s", us.mainHost, version, route)
 }

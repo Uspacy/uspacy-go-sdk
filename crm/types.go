@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	VersionUrl = "crm/v1/"
+	VersionUrl = "crm/v1"
 )
 
 const (
@@ -28,10 +28,10 @@ const (
 
 func (e Entity) GetUrl() string {
 	uris := map[Entity]string{
-		1: "contacts",
-		2: "leads",
-		3: "deals",
-		4: "companies",
+		ContactsNum:  "contacts",
+		LeadsNum:     "leads",
+		DealsNum:     "deals",
+		CompaniesNum: "companies",
 	}
 	if entity, ok := uris[e]; !ok {
 		return "unknown"
