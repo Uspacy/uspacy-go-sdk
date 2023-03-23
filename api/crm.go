@@ -7,6 +7,16 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/crm"
 )
 
+// CreateObject this method does not return any object, just error
+func (us *Uspacy) CreateObject(entityType crm.Entity, entity map[string]interface{}) error {
+	_, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
 // CreateContact returns created contact object
 func (us *Uspacy) CreateContact(entityType crm.Entity, entity map[string]interface{}) (object crm.Contacts, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
