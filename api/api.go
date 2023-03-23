@@ -95,6 +95,6 @@ func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, erro
 	return us.doRaw(url, http.MethodPost, emptyHeaders, &buf)
 }
 
-func buildURL(host, version, route string) string {
-	return fmt.Sprintf("%s/%s/%s", host, version, route)
+func (us *Uspacy) buildURL(version, route string) string {
+	return fmt.Sprintf("%s/%s/%s", us.mainHost, version, route)
 }
