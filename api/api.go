@@ -14,18 +14,20 @@ import (
 type Uspacy struct {
 	bearerToken string
 	client      *http.Client
+	mainHost    string
 	isExpired   bool
 }
 
 const defaultClientTimeout = 10 * time.Second
 
 // New creates an Uspacy object
-func New(token string) *Uspacy {
+func New(token, host string) *Uspacy {
 	return &Uspacy{
 		bearerToken: token,
 		client: &http.Client{
 			Timeout: defaultClientTimeout,
 		},
+		mainHost: host,
 	}
 }
 
