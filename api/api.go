@@ -46,6 +46,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	}
 
 	req.Header.Add("Authorization", us.getToken())
+	req.Header.Add("Content-Type", "application/json")
 
 	for key, value := range headers {
 		req.Header.Add(key, value)
