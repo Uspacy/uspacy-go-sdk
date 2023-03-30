@@ -8,8 +8,8 @@ import (
 )
 
 // CreateObject this method does not return any object, just error
-func (us *Uspacy) CreateObject(entityType crm.Entity, entity map[string]interface{}) error {
-	_, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
+func (us *Uspacy) CreateObject(service Service, entityType crm.Entity, entity map[string]interface{}) error {
+	_, err := us.doPostEmptyHeaders(us.buildURL(service.getService(), fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
 	if err != nil {
 		return err
 	}
