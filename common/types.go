@@ -1,6 +1,14 @@
 package common
 
 type (
+	ContactData struct {
+		Id    string `json:"id"`
+		Type  string `json:"type"`
+		Value string `json:"value"`
+		Main  bool   `json:"main"`
+		Sort  string `json:"sort"`
+	}
+
 	Meta struct {
 		CurrentPage int `json:"current_page"`
 		From        int `json:"from"`
@@ -15,5 +23,11 @@ type (
 		Last  string      `json:"last"`
 		Prev  interface{} `json:"prev"`
 		Next  interface{} `json:"next"`
+	}
+
+	SocialMedia struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+		Link string `json:"link"`
 	}
 )

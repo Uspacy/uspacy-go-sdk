@@ -191,9 +191,9 @@ type (
 	}
 
 	PersonContactData struct {
-		Messengers []Messanger   `json:"messengers"`
-		Phone      []ContactData `json:"phone"`
-		Email      []ContactData `json:"email"`
+		Messengers []Messanger          `json:"messengers"`
+		Phone      []common.ContactData `json:"phone"`
+		Email      []common.ContactData `json:"email"`
 	}
 
 	PersonData struct {
@@ -208,14 +208,6 @@ type (
 		Name string `json:"name"`
 		Link string `json:"link"`
 		Sort string `json:"sort"`
-	}
-
-	ContactData struct {
-		Id    string `json:"id"`
-		Type  string `json:"type"`
-		Value string `json:"value"`
-		Main  bool   `json:"main"`
-		Sort  string `json:"sort"`
 	}
 
 	Value struct {
