@@ -7,7 +7,7 @@ import (
 const (
 	VersionUrl       = "company/v1/"
 	CreateActiveUser = "invites/email/import_registered"
-	UserUrl          = "users/%d"
+	UserUrl          = "users/%s"
 )
 
 type User struct {

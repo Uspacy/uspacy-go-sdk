@@ -17,7 +17,7 @@ func (us *Uspacy) CreateActiveUsers(entity []user.User) (object []user.User, err
 }
 
 // PatchUsers patch user by Id and return it
-func (us *Uspacy) PatchUsers(entity user.User, userId int) (object user.User, err error) {
+func (us *Uspacy) PatchUsers(entity user.User, userId string) (object user.User, err error) {
 	body, err := us.doPatchEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, userId)), entity)
 	if err != nil {
 		return object, err
