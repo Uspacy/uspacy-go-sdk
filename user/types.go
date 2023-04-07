@@ -8,7 +8,14 @@ const (
 	VersionUrl       = "company/v1/"
 	CreateActiveUser = "invites/email/import_registered"
 	UserUrl          = "users/%s"
+	PagePagination   = "?page=%s"
+	AllUsersParametr = "?show=all&list=all"
 )
+
+type Users struct {
+	Data []User      `json:"data"`
+	Meta common.Meta `json:"meta"`
+}
 
 type User struct {
 	ID               int                  `json:"id"`
