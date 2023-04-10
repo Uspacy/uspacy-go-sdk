@@ -9,7 +9,7 @@ import (
 
 // GetAllUsers gets all users
 func (us *Uspacy) GetAllUsers() (object []user.User, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, user.AllUsersParametr)))
+	body, err := us.doGetEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, user.SelectAllUsersQuery)))
 	if err != nil {
 		return object, err
 	}

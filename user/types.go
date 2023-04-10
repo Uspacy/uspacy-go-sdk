@@ -5,11 +5,11 @@ import (
 )
 
 const (
-	VersionUrl       = "company/v1/"
-	CreateActiveUser = "invites/email/import_registered"
-	UserUrl          = "users/%s"
-	PagePagination   = "?page=%s"
-	AllUsersParametr = "?show=all&list=all"
+	VersionUrl          = "company/v1/"
+	CreateActiveUser    = "invites/email/import_registered"
+	UserUrl             = "users/%s"
+	PagePagination      = "?page=%s"
+	SelectAllUsersQuery = "?show=all&list=all"
 )
 
 type Users struct {
