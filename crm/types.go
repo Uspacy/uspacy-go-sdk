@@ -51,7 +51,8 @@ type (
 	Field struct {
 		Name              string      `json:"name"`
 		Code              string      `json:"code"`
-		EntityReferenceId string      `json:"entity_reference_id"`
+		EntityReferenceId interface{} `json:"entity_reference_id"`
+
 		Type              string      `json:"type"`
 		Required          bool        `json:"required"`
 		Editable          bool        `json:"editable"`
@@ -61,8 +62,8 @@ type (
 		SystemField       bool        `json:"system_field"`
 		BaseField         bool        `json:"base_field"`
 		Sort              interface{} `json:"sort"`
-		DefaultValue      string      `json:"default_value"`
-		Tooltip           string      `json:"tooltip"`
+		DefaultValue      interface{} `json:"default_value"`
+		Tooltip           interface{} `json:"tooltip"`
 		Values            []Value     `json:"values,omitempty"`
 	}
 
