@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	VersionUrl          = "company/v1/"
+	VersionUrl          = "company/v1"
 	CreateActiveUser    = "invites/email/import_registered"
-	UserUrl             = "users/%s"
+	UserUrl             = "users/%v"
 	PagePagination      = "?page=%s"
 	SelectAllUsersQuery = "?show=all&list=all"
 )
