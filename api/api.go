@@ -96,6 +96,15 @@ func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, erro
 	return us.doRaw(url, http.MethodPost, emptyHeaders, &buf)
 }
 
+func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(body)
+	if err != nil {
+		return nil, err
+	}
+	return us.doRaw(url, http.MethodPatch, emptyHeaders, &buf)
+}
+
 func (us *Uspacy) buildURL(version, route string) string {
 	return fmt.Sprintf("%s/%s/%s", us.mainHost, version, route)
 }
