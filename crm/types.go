@@ -176,7 +176,7 @@ type (
 		Title         string      `json:"title"`
 		Comments      string      `json:"comments"`
 		EntityType    string      `json:"entity_type,omitempty"`
-		KanbanStageId string      `json:"kanban_stage_id"`
+		KanbanStageId interface{} `json:"kanban_stage_id"` // int
 		Source        []Value     `json:"source"`
 
 		UtmSource   string `json:"utm_source"`
