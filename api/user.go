@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/Uspacy/uspacy-go-sdk/user"
 )
@@ -27,6 +28,9 @@ func (us *Uspacy) GetUsersByPage(page string) (object user.Users, err error) {
 
 // CreateActiveUser returns created users
 func (us *Uspacy) CreateActiveUsers(entity []user.UsersInvite) (object []user.User, err error) {
+
+	log.Printf("CreateActiveUser\n Uspacy %+v\n entity - %+v\n\n", us, entity)
+
 	body, err := us.doPostEmptyHeaders(us.buildURL(user.VersionUrl, user.CreateActiveUser), entity)
 	if err != nil {
 		return object, err

@@ -63,6 +63,9 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("doRaw\n getToken %+v\n", us.getToken())
+	log.Printf("doRaw\n res %+v\n", res)
+	log.Printf("doRaw\n StatusCode %+v\n\n", res.StatusCode)
 
 	if !handleStatusCode(res.StatusCode) {
 		if res.StatusCode == http.StatusUnauthorized {
@@ -93,6 +96,7 @@ func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("doPostEmptyHeaders\n url %+v\n\n", url)
 	return us.doRaw(url, http.MethodPost, emptyHeaders, &buf)
 }
 
