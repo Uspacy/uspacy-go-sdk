@@ -53,18 +53,18 @@ type (
 		Code              string      `json:"code"`
 		EntityReferenceId interface{} `json:"entity_reference_id"`
 
-		Type              string      `json:"type"`
-		Required          bool        `json:"required"`
-		Editable          bool        `json:"editable"`
-		Show              bool        `json:"show"`
-		Hidden            bool        `json:"hidden"`
-		Multiple          bool        `json:"multiple"`
-		SystemField       bool        `json:"system_field"`
-		BaseField         bool        `json:"base_field"`
-		Sort              interface{} `json:"sort"`
-		DefaultValue      interface{} `json:"default_value"`
-		Tooltip           interface{} `json:"tooltip"`
-		Values            []Value     `json:"values,omitempty"`
+		Type         string      `json:"type"`
+		Required     bool        `json:"required"`
+		Editable     bool        `json:"editable"`
+		Show         bool        `json:"show"`
+		Hidden       bool        `json:"hidden"`
+		Multiple     bool        `json:"multiple"`
+		SystemField  bool        `json:"system_field"`
+		BaseField    bool        `json:"base_field"`
+		Sort         interface{} `json:"sort"`
+		DefaultValue interface{} `json:"default_value"`
+		Tooltip      interface{} `json:"tooltip"`
+		Values       []Value     `json:"values,omitempty"`
 	}
 
 	// CRM Funnel
@@ -165,19 +165,19 @@ type (
 
 type (
 	EntityCRM struct {
-		Id            int     `json:"id"`
-		CreatedAt     int     `json:"created_at"`
-		UpdatedAt     int     `json:"updated_at"`
-		Owner         int     `json:"owner"`
-		CreatedBy     int     `json:"created_by"`
-		ChangedBy     int     `json:"changed_by,string"`
-		Converted     bool    `json:"converted"`
-		RelatedEntity bool    `json:"related_entity,omitempty"`
-		Title         string  `json:"title"`
-		Comments      string  `json:"comments"`
-		EntityType    string  `json:"entity_type,omitempty"`
-		KanbanStageId string  `json:"kanban_stage_id"`
-		Source        []Value `json:"source"`
+		Id            int         `json:"id"`
+		CreatedAt     interface{} `json:"created_at"` // int
+		UpdatedAt     interface{} `json:"updated_at"` // int
+		Owner         interface{} `json:"owner"`      // int
+		CreatedBy     interface{} `json:"created_by"` // int
+		ChangedBy     interface{} `json:"changed_by"` //`json:"changed_by,string"` // int
+		Converted     bool        `json:"converted"`
+		RelatedEntity bool        `json:"related_entity,omitempty"`
+		Title         string      `json:"title"`
+		Comments      string      `json:"comments"`
+		EntityType    string      `json:"entity_type,omitempty"`
+		KanbanStageId string      `json:"kanban_stage_id"`
+		Source        []Value     `json:"source"`
 
 		UtmSource   string `json:"utm_source"`
 		UtmMedium   string `json:"utm_medium"`
