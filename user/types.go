@@ -25,6 +25,11 @@ type UsersInvite struct {
 	Domain    string `json:"domain"`
 }
 
+type CreatedActiveUser struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
+}
+
 type User struct {
 	ID               int                  `json:"id"`
 	Active           bool                 `json:"active"`
