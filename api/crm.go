@@ -18,7 +18,7 @@ func (us *Uspacy) CreateObject(entityType crm.Entity, entity map[string]interfac
 }
 
 // CreateContact returns created contact object
-func (us *Uspacy) CreateContact(entityType crm.Entity, entity map[string]interface{}) (object crm.Contacts, err error) {
+func (us *Uspacy) CreateContact(entityType crm.Entity, entity map[string]interface{}) (object crm.Contact, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
 	if err != nil {
 		return object, err
@@ -27,7 +27,7 @@ func (us *Uspacy) CreateContact(entityType crm.Entity, entity map[string]interfa
 }
 
 // CreateCompany returns created company object
-func (us *Uspacy) CreateCompany(entityType crm.Entity, entity map[string]interface{}) (object crm.Companies, err error) {
+func (us *Uspacy) CreateCompany(entityType crm.Entity, entity map[string]interface{}) (object crm.Company, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
 	if err != nil {
 		return object, err
@@ -36,7 +36,7 @@ func (us *Uspacy) CreateCompany(entityType crm.Entity, entity map[string]interfa
 }
 
 // CreateLeads returns created lead object
-func (us *Uspacy) CreateLead(entityType crm.Entity, entity map[string]interface{}) (object crm.Leads, err error) {
+func (us *Uspacy) CreateLead(entityType crm.Entity, entity map[string]interface{}) (object crm.Lead, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
 	if err != nil {
 		return object, err
@@ -45,7 +45,7 @@ func (us *Uspacy) CreateLead(entityType crm.Entity, entity map[string]interface{
 }
 
 // CreateDeals returns created deal object
-func (us *Uspacy) CreateDeal(entityType crm.Entity, entity map[string]interface{}) (object crm.Deals, err error) {
+func (us *Uspacy) CreateDeal(entityType crm.Entity, entity map[string]interface{}) (object crm.Deal, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
 	if err != nil {
 		return object, err
