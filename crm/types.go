@@ -61,7 +61,7 @@ type (
 		Multiple     bool        `json:"multiple"`
 		SystemField  bool        `json:"system_field"`
 		BaseField    bool        `json:"base_field"`
-		Sort         interface{} `json:"sort"`
+		Sort         interface{} `json:"sort"` // int
 		DefaultValue interface{} `json:"default_value"`
 		Tooltip      interface{} `json:"tooltip"`
 		Values       []Value     `json:"values,omitempty"`
@@ -192,9 +192,14 @@ type (
 	}
 
 	PersonContactData struct {
-		Messengers []Messanger          `json:"messengers"`
-		Phone      []common.ContactData `json:"phone"`
-		Email      []common.ContactData `json:"email"`
+		/*
+			Messengers []Messenger          `json:"messengers"`
+			Phone      []common.ContactData `json:"phone"`
+			Email      []common.ContactData `json:"email"`
+		*/
+		Messengers interface{} `json:"messengers"`
+		Phone      interface{} `json:"phone"`
+		Email      interface{} `json:"email"`
 	}
 
 	PersonData struct {
@@ -204,7 +209,7 @@ type (
 		Position   string `json:"position"`
 	}
 
-	Messanger struct {
+	Messenger struct {
 		Id   string `json:"id"`
 		Name string `json:"name"`
 		Link string `json:"link"`
