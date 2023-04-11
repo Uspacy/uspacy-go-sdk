@@ -26,7 +26,7 @@ func (us *Uspacy) GetUsersByPage(page string) (object user.Users, err error) {
 }
 
 // CreateActiveUser returns created users
-func (us *Uspacy) CreateActiveUsers(entity []user.UsersInvite) (object []user.User, err error) {
+func (us *Uspacy) CreateActiveUsers(entity []user.UsersInvite) (object []user.CreatedActiveUser, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(user.VersionUrl, user.CreateActiveUser), entity)
 	if err != nil {
 		return object, err
