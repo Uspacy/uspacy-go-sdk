@@ -16,9 +16,9 @@ func (us *Uspacy) CreateActiveDepartment(departmentData departments.Department) 
 	return department, json.Unmarshal(body, &department)
 }
 
-// PatchDepartment patch user by Id and return it
-func (us *Uspacy) PatchDepartment(departmentData departments.Department) (department []departments.Department, err error) {
-	body, err := us.doPatchEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmentData.ID)), departmentData)
+// PatchDepartment patch department by Id and return it
+func (us *Uspacy) PatchDepartment(departmenID int, departmentData map[string]interface{}) (department departments.Department, err error) {
+	body, err := us.doPatchEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmenID)), departmentData)
 	if err != nil {
 		return department, err
 	}
