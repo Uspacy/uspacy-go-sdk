@@ -7,8 +7,8 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/crm"
 )
 
-// CreateObject this method does not return any object, just error
-func (us *Uspacy) CreateObject(entityType crm.Entity, entityData map[string]interface{}) error {
+// CreateEntity this method does not return any object, just error
+func (us *Uspacy) CreateEntity(entityType crm.Entity, entityData map[string]interface{}) error {
 	_, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entityData)
 	if err != nil {
 		return err
@@ -16,8 +16,8 @@ func (us *Uspacy) CreateObject(entityType crm.Entity, entityData map[string]inte
 	return nil
 }
 
-// PatchObject this method does not return any object, just error
-func (us *Uspacy) PatchObject(entityType crm.Entity, entityData map[string]interface{}) error {
+// PatchEntity this method does not return any object, just error
+func (us *Uspacy) PatchEntity(entityType crm.Entity, entityData map[string]interface{}) error {
 	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entityData)
 	if err != nil {
 		return err
