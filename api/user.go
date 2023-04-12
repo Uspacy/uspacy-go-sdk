@@ -8,37 +8,37 @@ import (
 )
 
 // GetAllUsers gets all users
-func (us *Uspacy) GetAllUsers() (object []user.User, err error) {
+func (us *Uspacy) GetAllUsers() (users []user.User, err error) {
 	body, err := us.doGetEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, user.SelectAllUsersQuery)))
 	if err != nil {
-		return object, err
+		return users, err
 	}
-	return object, json.Unmarshal(body, &object)
+	return users, json.Unmarshal(body, &users)
 }
 
 // GetUsersByPage gets users by page
-func (us *Uspacy) GetUsersByPage(page string) (object user.Users, err error) {
+func (us *Uspacy) GetUsersByPage(page string) (users user.Users, err error) {
 	body, err := us.doGetEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, fmt.Sprintf(user.PagePagination, page))))
 	if err != nil {
-		return object, err
+		return users, err
 	}
-	return object, json.Unmarshal(body, &object)
+	return users, json.Unmarshal(body, &users)
 }
 
 // CreateActiveUser returns created users
-func (us *Uspacy) CreateActiveUsers(entity []user.UsersInvite) (object []user.CreatedActiveUser, err error) {
-	body, err := us.doPostEmptyHeaders(us.buildURL(user.VersionUrl, user.CreateActiveUser), entity)
+func (us *Uspacy) CreateActiveUsers(usersData []user.UsersInvite) (users []user.CreatedActiveUser, err error) {
+	body, err := us.doPostEmptyHeaders(us.buildURL(user.VersionUrl, user.CreateActiveUser), usersData)
 	if err != nil {
-		return object, err
+		return users, err
 	}
-	return object, json.Unmarshal(body, &object)
+	return users, json.Unmarshal(body, &users)
 }
 
 // PatchUser patch user by Id and return it
-func (us *Uspacy) PatchUser(entity user.User) (object user.User, err error) {
-	body, err := us.doPatchEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, entity.ID)), entity)
+func (us *Uspacy) PatchUser(userData user.User) (_user user.User, err error) {
+	body, err := us.doPatchEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, userData.ID)), userData)
 	if err != nil {
-		return object, err
+		return _user, err
 	}
-	return object, json.Unmarshal(body, &object)
+	return _user, json.Unmarshal(body, &_user)
 }
