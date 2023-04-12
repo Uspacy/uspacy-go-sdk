@@ -12,8 +12,9 @@ const (
 
 type (
 	GetNewsfeed struct {
-		Data []Post      `json:"data"`
-		Meta common.Meta `json:"meta"`
+		Data  []Post       `json:"data"`
+		Links common.Links `json:"links"`
+		Meta  common.Meta  `json:"meta"`
 	}
 
 	Post struct {
@@ -22,12 +23,12 @@ type (
 		Message       string      `json:"message"`
 		Date          int         `json:"date"`
 		AuthorMood    string      `json:"author_mood"`
-		GroupID       int64       `json:"group_id"`
 		AuthorID      int         `json:"authorId"`
-		Comments      []Comments  `json:"comments"`
-		TotalComments int         `json:"total_comments"`
-		Files         []Files     `json:"files"`
-		Reactions     []Reactions `json:"reactions"`
+		GroupID       int64       `json:"group_id,omitempty"`
+		TotalComments int         `json:"total_comments,omitempty"`
+		Comments      []Comments  `json:"comments,omitempty"`
+		Files         []Files     `json:"files,omitempty"`
+		Reactions     []Reactions `json:"reactions,omitempty"`
 	}
 
 	Files struct {
