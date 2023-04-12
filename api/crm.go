@@ -14,7 +14,15 @@ func (us *Uspacy) CreateObject(entityType crm.Entity, entity map[string]interfac
 		return err
 	}
 	return nil
+}
 
+// PatchObject this method does not return any object, just error
+func (us *Uspacy) PatchObject(entityType crm.Entity, entity map[string]interface{}) error {
+	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreateContact returns created contact object
@@ -47,6 +55,15 @@ func (us *Uspacy) CreateLead(entityType crm.Entity, entity map[string]interface{
 // CreateDeals returns created deal object
 func (us *Uspacy) CreateDeal(entityType crm.Entity, entity map[string]interface{}) (object crm.Deal, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entity)
+	if err != nil {
+		return object, err
+	}
+	return object, json.Unmarshal(body, &object)
+}
+
+// CreateTask returns created task object
+func (us *Uspacy) CreateTask(entityType crm.Entity, entity map[string]interface{}) (object crm.Task, err error) {
+	body, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, "static/tasks"), entity)
 	if err != nil {
 		return object, err
 	}
