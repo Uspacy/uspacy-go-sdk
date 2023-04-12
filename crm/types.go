@@ -24,6 +24,7 @@ const (
 	LeadsNum
 	DealsNum
 	CompaniesNum
+	TasksNum
 )
 
 func (e Entity) GetUrl() string {
@@ -32,6 +33,7 @@ func (e Entity) GetUrl() string {
 		LeadsNum:     "leads",
 		DealsNum:     "deals",
 		CompaniesNum: "companies",
+		TasksNum:     "tasks",
 	}
 	if entity, ok := uris[e]; !ok {
 		return "unknown"
@@ -160,6 +162,21 @@ type (
 
 		CompanyName string  `json:"company_name"`
 		LeadLabel   []Value `json:"lead_label"`
+	}
+
+	Task struct {
+		ID            int         `json:"id"`
+		Title         string      `json:"title"`
+		Description   string      `json:"description"`
+		Type          string      `json:"type"`
+		Status        string      `json:"status"`
+		CreatedAt     interface{} `json:"created_at"`     // int
+		UpdatedAt     interface{} `json:"updated_at"`     // int
+		CreatedBy     interface{} `json:"created_by"`     // int
+		ResponsibleID interface{} `json:"responsible_id"` // int
+		StartTime     interface{} `json:"start_time"`     // int
+		EndTime       interface{} `json:"end_time"`       // int
+		Deals         []Deal      `json:"deals"`
 	}
 )
 
