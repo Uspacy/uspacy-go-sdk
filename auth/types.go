@@ -1,8 +1,8 @@
 package auth
 
-const VersionUrl = "auth/v1"
-
 const (
+	VersionUrl      = "auth/v1"
+	AuthHost        = "http://auth-service"
 	RefreshTokenUrl = "auth/refresh_token"
 )
 
