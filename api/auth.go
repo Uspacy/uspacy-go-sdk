@@ -13,8 +13,8 @@ func (us *Uspacy) getToken() string {
 
 func (us *Uspacy) refreshToken() {
 	var refresh auth.RefreshOutput
-
-	body, err := us.doPostEmptyHeaders(auth.VersionUrl+auth.RefreshTokenUrl, nil)
+	authClient := New(us.bearerToken, auth.AuthHost)
+	body, err := authClient.doPostEmptyHeaders(us.buildURL(auth.VersionUrl, auth.RefreshTokenUrl), nil)
 	if err != nil {
 		log.Fatal("error while trying to refresh token: ", err)
 	}
