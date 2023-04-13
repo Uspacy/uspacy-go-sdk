@@ -1,6 +1,6 @@
 package auth
 
-const VersionUrl = "auth/v1/"
+const VersionUrl = "auth/v1"
 
 const (
 	RefreshTokenUrl = "auth/refresh_token"
