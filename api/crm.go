@@ -17,8 +17,8 @@ func (us *Uspacy) CreateEntity(entityType crm.Entity, entityData map[string]inte
 }
 
 // PatchEntity this method does not return any object, just error
-func (us *Uspacy) PatchEntity(entityType crm.Entity, entityData map[string]interface{}) error {
-	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entityData)
+func (us *Uspacy) PatchEntity(entityType crm.Entity, id string, entityData map[string]interface{}) error {
+	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl()))+id, entityData)
 	if err != nil {
 		return err
 	}
