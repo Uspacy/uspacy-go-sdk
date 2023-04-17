@@ -13,10 +13,16 @@ type (
 	}
 
 	TokenData struct {
-		Domain      string `json:"domain"`
 		Id          int    `json:"id"`
-		Sub         string `json:"sub"`
+		FirstName   int    `json:"firstName"`
+		LastName    int    `json:"lastName"`
 		WorkspaceID string `json:"workspaceId"`
+		Domain      string `json:"domain"`
+		Email       int    `json:"email"`
+		Sub         string `json:"sub"`
+		Iat         string `json:"iat"`
+		Exp         string `json:"exp"`
+		Nbf         string `json:"nbf"`
 	}
 
 	JwtClaims struct {
