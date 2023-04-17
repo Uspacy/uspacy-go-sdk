@@ -45,7 +45,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", us.getToken())
+	req.Header.Add("Authorization", us.bearerToken)
 	req.Header.Add("Content-Type", "application/json")
 
 	for key, value := range headers {
@@ -68,19 +68,18 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		if res.StatusCode == http.StatusUnauthorized {
 			if !us.isExpired {
 				us.isExpired = true
-				us.refreshToken()
-				return us.doRaw(url, method, headers, body)
+				if us.refreshToken() == nil {
+					return us.doRaw(url, method, headers, body)
+				} else {
+					return nil, err
+				}
 			}
 		}
 		log.Printf("error occured while trying to (%s)\nbody - %s\ncode - %v\n", req.URL.String(), string(responseBody), res.StatusCode)
-
 		return responseBody, errors.New("status code != 200")
 	}
-
 	us.isExpired = false
-
 	return responseBody, nil
-
 }
 
 func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
