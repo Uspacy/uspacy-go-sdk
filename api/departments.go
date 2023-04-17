@@ -7,8 +7,8 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/departments"
 )
 
-// CreateActiveDepartment returns created department
-func (us *Uspacy) CreateActiveDepartment(departmentData departments.Department) (department []departments.Department, err error) {
+// CreateDepartment returns created department
+func (us *Uspacy) CreateDepartment(departmentData departments.Department) (department departments.Department, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(departments.VersionUrl, departments.DepartmentsUrl), departmentData)
 	if err != nil {
 		return department, err
