@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -45,8 +46,10 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		return nil, err
 	}
 
+	if len(headers) == 0 {
+		req.Header.Add("Content-Type", "application/json")
+	}
 	req.Header.Add("Authorization", us.bearerToken)
-	req.Header.Add("Content-Type", "application/json")
 
 	for key, value := range headers {
 		req.Header.Add(key, value)
@@ -83,7 +86,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 }
 
 func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
-	return us.doRaw(url, http.MethodGet, emptyHeaders, nil)
+	return us.doRaw(url, http.MethodGet, headersMap, nil)
 }
 
 func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, error) {
@@ -92,7 +95,7 @@ func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
-	return us.doRaw(url, http.MethodPost, emptyHeaders, &buf)
+	return us.doRaw(url, http.MethodPost, headersMap, &buf)
 }
 
 func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, error) {
@@ -101,7 +104,17 @@ func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-	return us.doRaw(url, http.MethodPatch, emptyHeaders, &buf)
+	return us.doRaw(url, http.MethodPatch, headersMap, &buf)
+}
+func (us *Uspacy) doPostFormData(url string, body url.Values) ([]byte, error) {
+	var buf bytes.Buffer
+	headersMap["Content-Type"] = "application/x-www-form-urlencoded"
+	headersMap["Accept"] = "application/json"
+	err := json.NewEncoder(&buf).Encode(body)
+	if err != nil {
+		return nil, err
+	}
+	return us.doRaw(url, http.MethodPost, headersMap, &buf)
 }
 
 func (us *Uspacy) buildURL(version, route string) string {

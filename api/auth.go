@@ -21,7 +21,7 @@ func (us *Uspacy) refreshToken() error {
 	body, err := us.doRaw(
 		fmt.Sprintf("%s%s/%s/%s", "https://", jwt.Domain, auth.VersionUrl, auth.RefreshTokenUrl),
 		http.MethodPost,
-		emptyHeaders,
+		headersMap,
 		nil)
 	if err != nil {
 		log.Fatal("error while trying to refresh token: ", err)

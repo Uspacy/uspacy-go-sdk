@@ -1,3 +1,3 @@
 package api
 
-var emptyHeaders map[string]string
+var headersMap map[string]string
