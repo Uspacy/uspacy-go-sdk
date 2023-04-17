@@ -32,7 +32,7 @@ func (us *Uspacy) refreshToken() {
 	us.bearerToken = refresh.Jwt
 }
 
-func (us *Uspacy) UnmarshalTokenData() (tokenData auth.TokenData) {
+func (us *Uspacy) UnmarshalTokenData() (tokenData auth.JwtClaims) {
 	strings := strings.Split(strings.Join(strings.Split(us.bearerToken, " "), "."), ".")
 	for _, _string := range strings {
 		decoded, _ := base64.RawURLEncoding.DecodeString(_string)

@@ -12,19 +12,6 @@ type (
 		ExpireInSeconds int64  `json:"expireInSeconds"`
 	}
 
-	TokenData struct {
-		Id          int    `json:"id"`
-		FirstName   int    `json:"firstName"`
-		LastName    int    `json:"lastName"`
-		WorkspaceID string `json:"workspaceId"`
-		Domain      string `json:"domain"`
-		Email       int    `json:"email"`
-		Sub         string `json:"sub"`
-		Iat         string `json:"iat"`
-		Exp         string `json:"exp"`
-		Nbf         string `json:"nbf"`
-	}
-
 	JwtClaims struct {
 		Iss         string   `json:"iss"`
 		Iat         int64    `json:"iat"`
