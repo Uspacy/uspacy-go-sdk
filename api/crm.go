@@ -62,7 +62,7 @@ func (us *Uspacy) CreateDeal(entityType crm.Entity, dealData map[string]interfac
 }
 
 // CreateTask returns created task object
-func (us *Uspacy) CreateTask(entityType crm.Entity, taskData map[string]interface{}) (task crm.Task, err error) {
+func (us *Uspacy) CreateTaskCRM(entityType crm.Entity, taskData map[string]interface{}) (task crm.Task, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, "static/tasks"), taskData)
 	if err != nil {
 		return task, err
