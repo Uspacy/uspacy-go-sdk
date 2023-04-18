@@ -20,9 +20,9 @@ const (
 type Entity int64
 
 const (
-	ContactsNum Entity = iota + 1
-	LeadsNum
+	LeadsNum Entity = iota + 1
 	DealsNum
+	ContactsNum
 	CompaniesNum
 	TasksNum
 )
