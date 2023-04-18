@@ -40,7 +40,8 @@ func (us *Uspacy) UnmarshalTokenData() (tokenData auth.JwtClaims, err error) {
 	strings := strings.Split(strings.Join(strings.Split(us.bearerToken, " "), "."), ".")
 	for _, _string := range strings {
 		decoded, _ := base64.RawURLEncoding.DecodeString(_string)
-		err = json.Unmarshal(decoded, &tokenData)
+		//err = json.Unmarshal(decoded, &tokenData)
+		json.Unmarshal(decoded, &tokenData)
 	}
 	return
 }
