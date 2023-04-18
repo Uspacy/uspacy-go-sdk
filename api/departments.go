@@ -9,7 +9,7 @@ import (
 
 // CreateDepartment returns created department
 func (us *Uspacy) CreateDepartment(departmentData departments.Department) (department departments.Department, err error) {
-	body, err := us.doPostEmptyHeaders(us.buildURL(departments.VersionUrl, departments.DepartmentsUrl), departmentData)
+	body, err := us.doPostEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), departmentData)
 	if err != nil {
 		return department, err
 	}
@@ -17,7 +17,7 @@ func (us *Uspacy) CreateDepartment(departmentData departments.Department) (depar
 }
 
 // PatchDepartment patch department by Id and return it
-func (us *Uspacy) PatchDepartment(departmenID int, departmentData map[string]interface{}) (department departments.Department, err error) {
+func (us *Uspacy) PatchDepartment(departmenID string, departmentData map[string]interface{}) (department departments.Department, err error) {
 	body, err := us.doPatchEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmenID)), departmentData)
 	if err != nil {
 		return department, err
