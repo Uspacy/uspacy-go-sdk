@@ -9,7 +9,7 @@ import (
 
 // CreateNewsfeedPost returns created post
 func (us *Uspacy) CreateNewsfeedPost(postData newsfeed.Post) (post newsfeed.Post, err error) {
-	body, err := us.doPostEmptyHeaders(newsfeed.VersionUrl, postData)
+	body, err := us.doPostEmptyHeaders(us.buildURL(newsfeed.VersionUrl, ""), postData)
 	if err != nil {
 		return post, err
 	}
