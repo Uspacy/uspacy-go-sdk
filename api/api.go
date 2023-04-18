@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -131,18 +132,12 @@ func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, err
 	}
 	return us.doRaw(url, http.MethodPatch, headersMap, &buf)
 }
-func (us *Uspacy) doPostFormData(url string, body url.Values) ([]byte, error) {
-	var (
-		buf  bytes.Buffer
-		head = make(map[string]string)
-	)
+
+func (us *Uspacy) doPostFormData(url string, values url.Values) ([]byte, error) {
+	var head = make(map[string]string)
 	head["Content-Type"] = "application/x-www-form-urlencoded"
 	head["Accept"] = "application/json"
-	err := json.NewEncoder(&buf).Encode(body)
-	if err != nil {
-		return nil, err
-	}
-	return us.doRaw(url, http.MethodPost, head, &buf)
+	return us.doRaw(url, http.MethodPost, head, strings.NewReader(values.Encode()))
 }
 
 func (us *Uspacy) buildURL(version, route string) string {
