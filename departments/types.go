@@ -6,7 +6,7 @@ import (
 
 const (
 	VersionUrl     = "company/v1"
-	DepartmentsUrl = "departments/%s"
+	DepartmentsUrl = "departments/%v"
 )
 
 type (
