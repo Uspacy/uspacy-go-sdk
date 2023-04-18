@@ -109,14 +109,17 @@ func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, err
 	return us.doRaw(url, http.MethodPatch, headersMap, &buf)
 }
 func (us *Uspacy) doPostFormData(url string, body url.Values) ([]byte, error) {
-	var buf bytes.Buffer
-	headersMap["Content-Type"] = "application/x-www-form-urlencoded"
-	headersMap["Accept"] = "application/json"
+	var (
+		buf  bytes.Buffer
+		head = make(map[string]string)
+	)
+	head["Content-Type"] = "application/x-www-form-urlencoded"
+	head["Accept"] = "application/json"
 	err := json.NewEncoder(&buf).Encode(body)
 	if err != nil {
 		return nil, err
 	}
-	return us.doRaw(url, http.MethodPost, headersMap, &buf)
+	return us.doRaw(url, http.MethodPost, head, &buf)
 }
 
 func (us *Uspacy) buildURL(version, route string) string {
