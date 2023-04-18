@@ -1,7 +1,7 @@
 package task
 
 const (
-	VersionUrl  = "tasks/v1/"
+	VersionUrl  = "tasks/v1"
 	TaskUrl     = "tasks"
 	TransferUrl = "transfer"
 )

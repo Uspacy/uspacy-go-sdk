@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	VersionUrl  = "groups/v1/"
+	VersionUrl  = "groups/v1"
 	GroupUrl    = "groups"
 	TransferUrl = "transfer"
 )

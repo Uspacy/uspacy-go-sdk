@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	VersionUrl = "newsfeed/v1/"
+	VersionUrl = "newsfeed/v1"
 	PostsUrl   = "posts/?page=%d&list=%d&group_id=%d"
 )
 
