@@ -6,18 +6,29 @@ import (
 )
 
 const (
-	VersionUrl = "newsfeed/v1"
-	PostsUrl   = "posts/?page=%d&list=%d&group_id=%d"
+	VersionUrl  = "newsfeed/v1"
+	DoPostUrl   = "posts"
+	GetPostsUrl = "posts/?page=%d&list=%d&group_id=%d"
+)
+
+type (
+	WriteData struct {
+		Title    string `json:"title"`
+		Message  string `json:"message"`
+		Date     int    `json:"date"`
+		GroupID  int    `json:"group_id"`
+		AuthorID int    `json:"author_id"`
+	}
 )
 
 type (
 	GetNewsfeed struct {
-		Data  []Post       `json:"data"`
-		Links common.Links `json:"links"`
-		Meta  common.Meta  `json:"meta"`
+		Data  []PostNewsfeed `json:"data"`
+		Links common.Links   `json:"links"`
+		Meta  common.Meta    `json:"meta"`
 	}
 
-	Post struct {
+	PostNewsfeed struct {
 		ID            int         `json:"id"`
 		Title         string      `json:"title"`
 		Message       string      `json:"message"`
