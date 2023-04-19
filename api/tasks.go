@@ -2,13 +2,14 @@ package api
 
 import (
 	"encoding/json"
+	"net/url"
 
 	"github.com/Uspacy/uspacy-go-sdk/task"
 )
 
 // CreateTask creates a new task
-func (us *Uspacy) CreateTask(taskData task.Task) (_task task.Task, err error) {
-	resp, err := us.doPostEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl), taskData)
+func (us *Uspacy) CreateTask(taskData url.Values) (_task task.Task, err error) {
+	resp, err := us.doPostFormData(us.buildURL(task.VersionUrl, task.TaskUrl), taskData)
 	if err != nil {
 		return _task, err
 	}
