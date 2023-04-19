@@ -3,13 +3,14 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/Uspacy/uspacy-go-sdk/newsfeed"
 )
 
 // CreateNewsfeedPost returns created post
-func (us *Uspacy) CreateNewsfeedPost(postData newsfeed.WriteData) (err error) {
-	_, err = us.doPostEmptyHeaders(us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData)
+func (us *Uspacy) CreateNewsfeedPost(postData url.Values) (err error) {
+	_, err = us.doPostFormData(us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData)
 	if err != nil {
 		return err
 	}
