@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -17,19 +18,31 @@ type Uspacy struct {
 	client      *http.Client
 	mainHost    string
 	isExpired   bool
+	retries     int `default0:"3"`
 }
 
-const defaultClientTimeout = 10 * time.Second
+const (
+	defaultClientTimeout = 10 * time.Second
+	defaultRetries       = 3
+)
 
 // New creates an Uspacy object
 func New(token, host string) *Uspacy {
+
 	return &Uspacy{
 		bearerToken: token,
 		client: &http.Client{
 			Timeout: defaultClientTimeout,
 		},
 		mainHost: host,
+		retries:  defaultRetries,
 	}
+}
+
+// if WithRetries not set, default value will be 3
+func (us *Uspacy) WithRetries(retries int) *Uspacy {
+	us.retries = retries
+	return us
 }
 
 func handleStatusCode(code int) bool {
@@ -40,6 +53,11 @@ func handleStatusCode(code int) bool {
 }
 
 func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.Reader) ([]byte, error) {
+
+	var (
+		res *http.Response
+		err error
+	)
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -55,7 +73,13 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		req.Header.Add(key, value)
 	}
 
-	res, err := us.client.Do(req)
+	for attempts := us.retries; attempts > 0; attempts-- {
+		res, err = us.client.Do(req)
+		if err == nil {
+			break
+		}
+
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -108,15 +132,12 @@ func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, err
 	}
 	return us.doRaw(url, http.MethodPatch, headersMap, &buf)
 }
-func (us *Uspacy) doPostFormData(url string, body url.Values) ([]byte, error) {
-	var buf bytes.Buffer
-	headersMap["Content-Type"] = "application/x-www-form-urlencoded"
-	headersMap["Accept"] = "application/json"
-	err := json.NewEncoder(&buf).Encode(body)
-	if err != nil {
-		return nil, err
-	}
-	return us.doRaw(url, http.MethodPost, headersMap, &buf)
+
+func (us *Uspacy) doPostFormData(url string, values url.Values) ([]byte, error) {
+	var head = make(map[string]string)
+	head["Content-Type"] = "application/x-www-form-urlencoded"
+	head["Accept"] = "application/json"
+	return us.doRaw(url, http.MethodPost, head, strings.NewReader(values.Encode()))
 }
 
 func (us *Uspacy) buildURL(version, route string) string {
