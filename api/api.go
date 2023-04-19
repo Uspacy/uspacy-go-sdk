@@ -105,7 +105,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		errMsg := fmt.Sprintf("error occured while trying to (%s)\nbody - %s\ncode - %v\n", req.URL.String(), string(responseBody), res.StatusCode)
 
 		log.Println(errMsg)
-		return responseBody, errors.New(errMsg)
+		return responseBody, errors.New(string(responseBody))
 	}
 	us.isExpired = false
 	return responseBody, nil
