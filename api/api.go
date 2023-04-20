@@ -14,11 +14,12 @@ import (
 )
 
 type Uspacy struct {
-	bearerToken string
-	client      *http.Client
-	mainHost    string
-	isExpired   bool
-	retries     int `default0:"3"`
+	bearerToken  string
+	refreshToken string
+	client       *http.Client
+	mainHost     string
+	isExpired    bool
+	retries      int `default0:"3"`
 }
 
 const (
@@ -27,15 +28,17 @@ const (
 )
 
 // New creates an Uspacy object
-func New(token, host string) *Uspacy {
+func New(token, refresh, host string) *Uspacy {
 
 	return &Uspacy{
-		bearerToken: token,
+		bearerToken:  token,
+		refreshToken: refresh,
 		client: &http.Client{
 			Timeout: defaultClientTimeout,
 		},
-		mainHost: host,
-		retries:  defaultRetries,
+		mainHost:  host,
+		retries:   defaultRetries,
+		isExpired: false,
 	}
 }
 
@@ -67,7 +70,13 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	if len(headers) == 0 {
 		req.Header.Add("Content-Type", "application/json")
 	}
-	req.Header.Add("Authorization", us.bearerToken)
+
+	switch us.isExpired {
+	case true:
+		req.Header.Add("Authorization", us.refreshToken)
+	default:
+		req.Header.Add("Authorization", us.bearerToken)
+	}
 
 	for key, value := range headers {
 		req.Header.Add(key, value)
@@ -95,7 +104,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		if res.StatusCode == http.StatusUnauthorized {
 			if !us.isExpired {
 				us.isExpired = true
-				if us.refreshToken() == nil {
+				if us.TokenRefresh() == nil {
 					return us.doRaw(url, method, headers, body)
 				} else {
 					return nil, err
