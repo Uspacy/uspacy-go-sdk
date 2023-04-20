@@ -129,3 +129,16 @@ func (us *Uspacy) CreateListValues(entityType crm.Entity, listName string, listV
 	}
 	return lists, json.Unmarshal(responseBody, &lists)
 }
+
+// CreateFailReasons returns all reasons for funnel with failWrite.ID
+func (us *Uspacy) CreateFailReasons(failReason crm.Fail) (reasons crm.Reasons, err error) {
+	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ReasonsUrl, failReason.ID)), crm.FailWrite{
+		Title: failReason.Title,
+		Sort:  failReason.Sort,
+		Type:  "FAIL",
+	})
+	if err != nil {
+		return reasons, err
+	}
+	return reasons, json.Unmarshal(responseBody, &reasons)
+}

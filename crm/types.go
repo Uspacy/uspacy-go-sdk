@@ -15,6 +15,7 @@ const (
 	FunnelUrl          = "entities/%s/funnel"
 	KanbanStageUrl     = "entities/%s/kanban/stage"
 	MoveKanbanStageUrl = "entities/%s/%d/move/stage/%s"
+	ReasonsUrl         = "reasons/%d"
 )
 
 type Entity int64
@@ -239,5 +240,23 @@ type (
 		Color    string `json:"color"`
 		Sort     string `json:"sort"`
 		Selected bool   `json:"selected"`
+	}
+)
+
+type (
+	Reasons struct {
+		Success []interface{} `json:"SUCCESS"`
+		Fail    []Fail        `json:"FAIL"`
+	}
+	Fail struct {
+		ID    int    `json:"id"`
+		Title string `json:"title"`
+		Sort  int    `json:"sort"`
+	}
+
+	FailWrite struct {
+		Title string `json:"title"`
+		Type  string `json:"type"`
+		Sort  int    `json:"sort"`
 	}
 )
