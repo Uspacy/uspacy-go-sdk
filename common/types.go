@@ -2,11 +2,11 @@ package common
 
 type (
 	ContactData struct {
-		Id    string `json:"id"`
-		Type  string `json:"type"`
-		Value string `json:"value"`
-		Main  bool   `json:"main"`
-		Sort  string `json:"sort"`
+		Id    string      `json:"id"`
+		Type  string      `json:"type"`
+		Value string      `json:"value"`
+		Main  bool        `json:"main"`
+		Sort  interface{} `json:"sort"`
 	}
 
 	Meta struct {

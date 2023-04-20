@@ -80,11 +80,11 @@ type (
 
 	// CRM KanbanStage
 	KanbanStage struct {
-		Title     string `json:"title"`
-		StageCode string `json:"stage_code"`
-		Sort      string `json:"sort"`
-		Color     string `json:"color"`
-		ID        int    `json:"id"`
+		Title     string      `json:"title"`
+		StageCode string      `json:"stage_code"`
+		Sort      interface{} `json:"sort"`
+		Color     string      `json:"color"`
+		ID        int         `json:"id"`
 	}
 )
 
@@ -114,11 +114,11 @@ type (
 	}
 
 	List struct {
-		Title    string `json:"title"`
-		Value    string `json:"value"`
-		Color    string `json:"color"`
-		Sort     string `json:"sort"`
-		Selected bool   `json:"selected"`
+		Title    string      `json:"title"`
+		Value    string      `json:"value"`
+		Color    string      `json:"color"`
+		Sort     interface{} `json:"sort"`
+		Selected bool        `json:"selected"`
 	}
 )
 
@@ -227,17 +227,17 @@ type (
 	}
 
 	Messenger struct {
-		Id   string `json:"id"`
-		Name string `json:"name"`
-		Link string `json:"link"`
-		Sort string `json:"sort"`
+		Id   string      `json:"id"`
+		Name string      `json:"name"`
+		Link string      `json:"link"`
+		Sort interface{} `json:"sort"`
 	}
 
 	Value struct {
-		Title    string `json:"title"`
-		Value    string `json:"value"`
-		Color    string `json:"color"`
-		Sort     string `json:"sort"`
-		Selected bool   `json:"selected"`
+		Title    string      `json:"title"`
+		Value    string      `json:"value"`
+		Color    string      `json:"color"`
+		Sort     interface{} `json:"sort"`
+		Selected bool        `json:"selected"`
 	}
 )
