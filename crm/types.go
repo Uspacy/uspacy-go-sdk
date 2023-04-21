@@ -13,7 +13,8 @@ const (
 	FieldsUrl          = "entities/%s/fields/%s/"
 	ListsUrl           = "entities/%s/lists/%s"
 	FunnelUrl          = "entities/%s/funnel"
-	KanbanStageUrl     = "entities/%s/kanban/stage"
+	KanbanStageUrl     = "entities/%s/kanban/stage/%v"
+	StageByFunnelIdUrl = "?funnel_id=%d"
 	MoveKanbanStageUrl = "entities/%s/%d/move/stage/%s"
 	ReasonsUrl         = "reasons/%d"
 )
@@ -79,13 +80,30 @@ type (
 		ID         int    `json:"id"`
 	}
 
+	// CRM KanbanStages List
+
+	KanbanStages struct {
+		Data []KanbanStage `json:"data"`
+	}
+
 	// CRM KanbanStage
 	KanbanStage struct {
-		Title     string      `json:"title"`
-		StageCode string      `json:"stage_code"`
-		Sort      interface{} `json:"sort"`
-		Color     string      `json:"color"`
-		ID        int         `json:"id"`
+		FunnelStageBase
+		ID          int      `json:"id"`
+		SystemStage bool     `json:"system_stage,omitempty"`
+		StageCode   string   `json:"stage_code"`
+		Reasons     []Reason `json:"reasons,omitempty"`
+	}
+
+	FunnelStage struct {
+		FunnelStageBase
+		FunnelId int `json:"funnel_id"`
+	}
+
+	FunnelStageBase struct {
+		Title string `json:"title"`
+		Color string `json:"color"`
+		Sort  string `json:"sort"`
 	}
 )
 
@@ -246,9 +264,9 @@ type (
 type (
 	Reasons struct {
 		Success []interface{} `json:"SUCCESS"`
-		Fail    []Fail        `json:"FAIL"`
+		Fail    []Reason      `json:"FAIL"`
 	}
-	Fail struct {
+	Reason struct {
 		ID    int    `json:"id"`
 		Title string `json:"title"`
 		Sort  int    `json:"sort"`
