@@ -99,7 +99,25 @@ func (us *Uspacy) CreateFunnel(entityType crm.Entity, funnelData interface{}) (e
 
 // CreateFunnelStage returns created kanban stage
 func (us *Uspacy) CreateFunnelStage(entityType crm.Entity, stageData interface{}) (kanbanStage crm.KanbanStage, err error) {
-	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl())), stageData)
+	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl(), "")), stageData)
+	if err != nil {
+		return kanbanStage, err
+	}
+	return kanbanStage, json.Unmarshal(responseBody, &kanbanStage)
+}
+
+// GetFunnelStage returns created kanban stage
+func (us *Uspacy) GetFunnelStage(entityType crm.Entity, id int) (kanbanStages crm.KanbanStages, err error) {
+	responseBody, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl(), fmt.Sprintf(crm.StageByFunnelIdUrl, id))))
+	if err != nil {
+		return kanbanStages, err
+	}
+	return kanbanStages, json.Unmarshal(responseBody, &kanbanStages)
+}
+
+// GetFunnelStage returns created kanban stage
+func (us *Uspacy) PatchFunnelStage(entityType crm.Entity, id int, stage crm.FunnelStage) (kanbanStage crm.KanbanStage, err error) {
+	responseBody, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl(), id)), stage)
 	if err != nil {
 		return kanbanStage, err
 	}
@@ -131,7 +149,7 @@ func (us *Uspacy) CreateListValues(entityType crm.Entity, listName string, listV
 }
 
 // CreateFailReasons returns all reasons for funnel with failWrite.ID
-func (us *Uspacy) CreateFailReasons(failReason crm.Fail) (reasons crm.Reasons, err error) {
+func (us *Uspacy) CreateFailReasons(failReason crm.Reason) (reasons crm.Reasons, err error) {
 	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ReasonsUrl, failReason.ID)), crm.FailWrite{
 		Title: failReason.Title,
 		Sort:  failReason.Sort,
