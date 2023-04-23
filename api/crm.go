@@ -115,7 +115,7 @@ func (us *Uspacy) GetFunnelStage(entityType crm.Entity, id int) (kanbanStages cr
 	return kanbanStages, json.Unmarshal(responseBody, &kanbanStages)
 }
 
-// GetFunnelStage returns created kanban stage
+// PatchFunnelStage returns kanban stage
 func (us *Uspacy) PatchFunnelStage(entityType crm.Entity, id int, stage crm.FunnelStage) (kanbanStage crm.KanbanStage, err error) {
 	responseBody, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl(), id)), stage)
 	if err != nil {
@@ -149,7 +149,7 @@ func (us *Uspacy) CreateListValues(entityType crm.Entity, listName string, listV
 }
 
 // CreateFailReasons returns all reasons for funnel with failWrite.ID
-func (us *Uspacy) CreateFailReasons(failReason crm.Reason) (reasons crm.Reasons, err error) {
+func (us *Uspacy) CreateFailReasons(failReason crm.Reason) (reasons crm.Reason, err error) {
 	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ReasonsUrl, failReason.ID)), crm.FailWrite{
 		Title: failReason.Title,
 		Sort:  failReason.Sort,
