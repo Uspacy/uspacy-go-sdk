@@ -134,8 +134,8 @@ func (us *Uspacy) PatchFunnelStage(entityType crm.Entity, id int, stage crm.Funn
 }
 
 // Move a funnel stage
-func (us *Uspacy) MoveFunnelStage(entityType crm.Entity, entityId int64, stageId string) (err error) {
-	_, err = us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.MoveKanbanStageUrl, entityType.GetUrl(), entityId, stageId)), nil)
+func (us *Uspacy) MoveFunnelStage(entityType crm.Entity, entityId int64, stageId string, reason crm.KanbanFailReasonCRM) (err error) {
+	_, err = us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.MoveKanbanStageUrl, entityType.GetUrl(), entityId, stageId)), reason)
 	return err
 }
 
