@@ -11,7 +11,7 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/auth"
 )
 
-func (us *Uspacy) refreshToken() error {
+func (us *Uspacy) TokenRefresh() error {
 	var refresh auth.RefreshOutput
 	jwt, err := us.UnmarshalTokenData()
 	if err != nil {
@@ -33,6 +33,7 @@ func (us *Uspacy) refreshToken() error {
 		return err
 	}
 	us.bearerToken = refresh.Jwt
+	us.refreshToken = refresh.RefreshToken
 	return nil
 }
 
