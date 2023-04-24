@@ -222,6 +222,10 @@ type (
 		UtmTerm     string `json:"utm_term"`
 	}
 
+	KanbanFailReasonCRM struct {
+		ReasonId string `json:"reason_id"`
+	}
+
 	KanbanCRM struct {
 		KanbanStatus   string `json:"kanban_status"`
 		KanbanReasonId string `json:"kanban_reason_id"`
