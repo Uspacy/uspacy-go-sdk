@@ -33,6 +33,7 @@ func (us *Uspacy) TokenRefresh() error {
 		return err
 	}
 	us.bearerToken = refresh.Jwt
+	us.refreshToken = refresh.RefreshToken
 	return nil
 }
 
