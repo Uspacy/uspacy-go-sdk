@@ -97,6 +97,15 @@ func (us *Uspacy) CreateFunnel(entityType crm.Entity, funnelData interface{}) (e
 	return entityFunnel, json.Unmarshal(responseBody, &entityFunnel)
 }
 
+// GetFunnels returns funnels by entityType
+func (us *Uspacy) GetFunnels(entityType crm.Entity) (funnels crm.FunnelsById, err error) {
+	responseBody, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FunnelUrl, entityType.GetUrl())))
+	if err != nil {
+		return funnels, err
+	}
+	return funnels, json.Unmarshal(responseBody, &funnels)
+}
+
 // CreateFunnelStage returns created kanban stage
 func (us *Uspacy) CreateFunnelStage(entityType crm.Entity, stageData interface{}) (kanbanStage crm.KanbanStage, err error) {
 	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl(), "")), stageData)
@@ -107,7 +116,7 @@ func (us *Uspacy) CreateFunnelStage(entityType crm.Entity, stageData interface{}
 }
 
 // GetFunnelStage returns all kanban stages
-func (us *Uspacy) GetAllFunnelStages(entityType crm.Entity, id int) (kanbanStages crm.KanbanStages, err error) {
+func (us *Uspacy) GetAllFunnelStages(entityType crm.Entity) (kanbanStages crm.KanbanStages, err error) {
 	responseBody, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl(), "")))
 	if err != nil {
 		return kanbanStages, err

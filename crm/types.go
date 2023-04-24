@@ -44,6 +44,15 @@ func (e Entity) GetUrl() string {
 	}
 }
 
+type FunnelsById []struct {
+	ID         int           `json:"id"`
+	Title      string        `json:"title"`
+	FunnelCode string        `json:"funnel_code"`
+	Default    bool          `json:"default"`
+	Active     bool          `json:"active"`
+	Stages     []KanbanStage `json:"stages"`
+}
+
 type (
 
 	// CRM Fields type.
