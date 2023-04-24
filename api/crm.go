@@ -106,8 +106,17 @@ func (us *Uspacy) CreateFunnelStage(entityType crm.Entity, stageData interface{}
 	return kanbanStage, json.Unmarshal(responseBody, &kanbanStage)
 }
 
-// GetFunnelStage returns created kanban stage
-func (us *Uspacy) GetFunnelStage(entityType crm.Entity, id int) (kanbanStages crm.KanbanStages, err error) {
+// GetFunnelStage returns all kanban stages
+func (us *Uspacy) GetAllFunnelStages(entityType crm.Entity, id int) (kanbanStages crm.KanbanStages, err error) {
+	responseBody, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl(), "")))
+	if err != nil {
+		return kanbanStages, err
+	}
+	return kanbanStages, json.Unmarshal(responseBody, &kanbanStages)
+}
+
+// GetFunnelStage returns kanban stage
+func (us *Uspacy) GetFunnelStageDyId(entityType crm.Entity, id int) (kanbanStages crm.KanbanStages, err error) {
 	responseBody, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType.GetUrl(), fmt.Sprintf(crm.StageByFunnelIdUrl, id))))
 	if err != nil {
 		return kanbanStages, err
