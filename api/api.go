@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/moul/http2curl"
 )
 
 type Uspacy struct {
@@ -76,6 +78,8 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	case true:
 		req.Header.Add("Authorization", us.refreshToken)
 	default:
+		comm, _ := http2curl.GetCurlCommand(req)
+		fmt.Printf("\n \n Curl %+v \n \n", comm)
 		req.Header.Add("Authorization", us.bearerToken)
 	}
 
