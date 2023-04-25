@@ -32,8 +32,8 @@ func (us *Uspacy) TokenRefresh() error {
 		log.Fatal("error while trying to parse token: ", err)
 		return err
 	}
-	us.bearerToken = refresh.Jwt
-	us.refreshToken = refresh.RefreshToken
+	us.bearerToken = "Bearer " + refresh.Jwt
+	us.refreshToken = "Bearer " + refresh.RefreshToken
 	return nil
 }
 
