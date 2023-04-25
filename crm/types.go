@@ -158,8 +158,8 @@ type (
 		Site    string `json:"site"`
 		Address string `json:"address"`
 
-		CompanyLabel []Value   `json:"company_label"`
-		Contacts     []Contact `json:"contacts"`
+		//CompanyLabel []Value   `json:"company_label"`
+		//Contacts     []Contact `json:"contacts"`
 	}
 
 	Contact struct {
@@ -167,8 +167,8 @@ type (
 		PersonData
 		PersonContactData
 
-		ContactLabel []Value   `json:"contact_label"`
-		Companies    []Company `json:"companies"`
+		//ContactLabel []Value   `json:"contact_label"`
+		//Companies    []Company `json:"companies"`
 	}
 
 	Deal struct {
@@ -177,9 +177,9 @@ type (
 
 		AmountOfTheDeal string `json:"amount_of_the_deal"`
 
-		Contacts  []Contact `json:"contacts"`
-		Companies []Company `json:"companies"`
-		DealLabel []Value   `json:"deal_label"`
+		//Contacts  []Contact `json:"contacts"`
+		//Companies []Company `json:"companies"`
+		//DealLabel []Value   `json:"deal_label"`
 	}
 
 	Lead struct {
@@ -188,8 +188,8 @@ type (
 		PersonData
 		PersonContactData
 
-		CompanyName string  `json:"company_name"`
-		LeadLabel   []Value `json:"lead_label"`
+		CompanyName string `json:"company_name"`
+		//LeadLabel   []Value `json:"lead_label"`
 	}
 
 	Task struct {
@@ -204,7 +204,7 @@ type (
 		ResponsibleID interface{} `json:"responsible_id"` // int
 		StartTime     interface{} `json:"start_time"`     // int
 		EndTime       interface{} `json:"end_time"`       // int
-		Deals         []Deal      `json:"deals"`
+		//Deals         []Deal      `json:"deals"`
 	}
 )
 
