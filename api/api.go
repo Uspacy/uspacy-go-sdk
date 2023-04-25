@@ -26,14 +26,15 @@ type Uspacy struct {
 const (
 	defaultClientTimeout = 10 * time.Second
 	defaultRetries       = 3
+	tokenPrefix          = "Bearer "
 )
 
 // New creates an Uspacy object
 func New(token, refresh, host string) *Uspacy {
 
 	return &Uspacy{
-		bearerToken:  token,
-		refreshToken: refresh,
+		bearerToken:  strings.TrimPrefix(token, tokenPrefix),
+		refreshToken: strings.TrimPrefix(refresh, tokenPrefix),
 		client: &http.Client{
 			Timeout: defaultClientTimeout,
 		},
@@ -84,9 +85,9 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 
 	switch us.isExpired {
 	case true:
-		req.Header.Add("Authorization", us.refreshToken)
+		req.Header.Add("Authorization", tokenPrefix+us.refreshToken)
 	default:
-		req.Header.Add("Authorization", us.bearerToken)
+		req.Header.Add("Authorization", tokenPrefix+us.bearerToken)
 	}
 
 	for key, value := range headers {
