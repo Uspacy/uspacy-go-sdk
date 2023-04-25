@@ -12,8 +12,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/moul/http2curl"
 )
 
 type Uspacy struct {
@@ -28,14 +26,15 @@ type Uspacy struct {
 const (
 	defaultClientTimeout = 10 * time.Second
 	defaultRetries       = 3
+	tokenPrefix          = "Bearer "
 )
 
 // New creates an Uspacy object
 func New(token, refresh, host string) *Uspacy {
 
 	return &Uspacy{
-		bearerToken:  token,
-		refreshToken: refresh,
+		bearerToken:  strings.TrimPrefix(token, tokenPrefix),
+		refreshToken: strings.TrimPrefix(refresh, tokenPrefix),
 		client: &http.Client{
 			Timeout: defaultClientTimeout,
 		},
@@ -65,6 +64,16 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		err error
 	)
 
+	if len(us.refreshToken) == 0 {
+		us.isExpired = true
+		us.refreshToken = us.bearerToken
+		if us.TokenRefresh() == nil {
+			return us.doRaw(url, method, headers, body)
+		} else {
+			return nil, err
+		}
+	}
+
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -76,11 +85,9 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 
 	switch us.isExpired {
 	case true:
-		req.Header.Add("Authorization", us.refreshToken)
+		req.Header.Add("Authorization", tokenPrefix+us.refreshToken)
 	default:
-		comm, _ := http2curl.GetCurlCommand(req)
-		fmt.Printf("\n \n Curl %+v \n \n", comm)
-		req.Header.Add("Authorization", us.bearerToken)
+		req.Header.Add("Authorization", tokenPrefix+us.bearerToken)
 	}
 
 	for key, value := range headers {
