@@ -162,6 +162,11 @@ func (us *Uspacy) doPostFormData(url string, values url.Values) ([]byte, error) 
 	return us.doRaw(url, http.MethodPost, head, strings.NewReader(values.Encode()))
 }
 
+func (us *Uspacy) doDeleteEmptyHeaders(url string) (err error) {
+	_, err = us.doRaw(url, http.MethodDelete, headersMap, nil)
+	return err
+}
+
 func (us *Uspacy) buildURL(version, route string) string {
 	return fmt.Sprintf("%s/%s/%s", us.mainHost, version, route)
 }
