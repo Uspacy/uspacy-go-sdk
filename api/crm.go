@@ -79,6 +79,11 @@ func (us *Uspacy) GetField(entityType crm.Entity, fieldType string) (field crm.F
 	return field, json.Unmarshal(body, &field)
 }
 
+// DeleteField delete selected field for given type of entity
+func (us *Uspacy) DeleteField(entityType crm.Entity, codeField string) (err error) {
+	return us.doDeleteEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType.GetUrl(), codeField)))
+}
+
 // GetFields returns Fields struct for a given type of entity
 func (us *Uspacy) GetFields(entityType crm.Entity) (fields crm.Fields, err error) {
 	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType.GetUrl(), "")))
