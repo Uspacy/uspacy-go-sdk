@@ -11,6 +11,7 @@ const (
 const (
 	EntityUrl          = "entities/%s/"
 	FieldsUrl          = "entities/%s/fields/%s/"
+	CreateFieldUrl     = "entities/%s/fields"
 	ListsUrl           = "entities/%s/lists/%s"
 	FunnelUrl          = "entities/%s/funnel"
 	KanbanStageUrl     = "entities/%s/kanban/stage/%v"
