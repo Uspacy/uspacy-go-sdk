@@ -155,7 +155,7 @@ func (us *Uspacy) MoveFunnelStage(entityType crm.Entity, entityId int64, stageId
 
 // CreateCRMField in CRM entity returns created field
 func (us *Uspacy) CreateCRMField(entityType crm.Entity, fieldData interface{}) (entityField crm.Field, err error) {
-	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType.GetUrl(), "")), fieldData)
+	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.CreateFieldUrl, entityType.GetUrl())), fieldData)
 	if err != nil {
 		return entityField, err
 	}

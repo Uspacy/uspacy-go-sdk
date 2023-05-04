@@ -113,7 +113,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	}
 
 	if !handleStatusCode(res.StatusCode) {
-		if res.StatusCode == http.StatusUnauthorized {
+		if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusForbidden {
 			if !us.isExpired {
 				us.isExpired = true
 				if us.TokenRefresh() == nil {
