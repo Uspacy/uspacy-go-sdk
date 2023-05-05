@@ -10,7 +10,7 @@ import (
 
 // CreateNewsfeedPost returns created post
 func (us *Uspacy) CreateNewsfeedPost(postData url.Values) (err error) {
-	_, err = us.doPostFormData(us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData)
+	_, err = us.doPostEncodedForm(us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData)
 	if err != nil {
 		return err
 	}

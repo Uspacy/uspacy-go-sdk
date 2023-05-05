@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 
 	//"log"
 	"net/http"
@@ -155,7 +156,7 @@ func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, err
 	return us.doRaw(url, http.MethodPatch, headersMap, &buf)
 }
 
-func (us *Uspacy) doPostFormData(url string, values url.Values) ([]byte, error) {
+func (us *Uspacy) doPostEncodedForm(url string, values url.Values) ([]byte, error) {
 	var head = make(map[string]string)
 	head["Content-Type"] = "application/x-www-form-urlencoded"
 	head["Accept"] = "application/json"
@@ -169,4 +170,32 @@ func (us *Uspacy) doDeleteEmptyHeaders(url string) (err error) {
 
 func (us *Uspacy) buildURL(version, route string) string {
 	return fmt.Sprintf("%s/%s/%s", us.mainHost, version, route)
+}
+
+func (us *Uspacy) doPostFormData(url string, textParams map[string]string, files map[string]io.ReadCloser) ([]byte, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	headers := make(map[string]string)
+
+	for filename, file := range files {
+
+		fileField, err := writer.CreateFormFile("files", filename)
+		if err != nil {
+			return nil, err
+		}
+		_, err = io.Copy(fileField, file)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for name, value := range textParams {
+		writer.WriteField(name, value)
+	}
+
+	headers["Content-Type"] = writer.FormDataContentType()
+	headers["Accept"] = "application/json"
+
+	return us.doRaw(url, http.MethodPost, headers, body)
+
 }
