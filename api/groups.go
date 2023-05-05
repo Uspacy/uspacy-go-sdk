@@ -9,7 +9,7 @@ import (
 
 // CreateGroup returns created group object
 func (us *Uspacy) CreateGroup(groupData url.Values) (_group group.Group, err error) {
-	body, err := us.doPostFormData(us.buildURL(group.VersionUrl, group.GroupUrl), groupData)
+	body, err := us.doPostEncodedForm(us.buildURL(group.VersionUrl, group.GroupUrl), groupData)
 	if err != nil {
 		return _group, err
 	}
