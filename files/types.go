@@ -1,7 +1,7 @@
 package files
 
 const (
-	VersionUrl = "files/v1/"
+	VersionUrl = "files/v1"
 	FilesUrl   = "files"
 )
 

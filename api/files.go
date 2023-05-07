@@ -15,6 +15,6 @@ func (us *Uspacy) CreateFile(entityType, entityId string, filesMap map[string]io
 	if err != nil {
 		return file, err
 	}
-	return file, json.Unmarshal(body, file)
+	return file, json.Unmarshal(body, &file)
 
 }
