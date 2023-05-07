@@ -114,7 +114,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	}
 
 	if !handleStatusCode(res.StatusCode) {
-		if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusForbidden {
+		if res.StatusCode == http.StatusUnauthorized {
 			if !us.isExpired {
 				us.isExpired = true
 				if us.TokenRefresh() == nil {
@@ -179,7 +179,7 @@ func (us *Uspacy) doPostFormData(url string, textParams map[string]string, files
 
 	for filename, file := range files {
 
-		fileField, err := writer.CreateFormFile("files", filename)
+		fileField, err := writer.CreateFormFile("files[]", filename)
 		if err != nil {
 			return nil, err
 		}
