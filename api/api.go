@@ -17,7 +17,7 @@ import (
 
 type Uspacy struct {
 	bearerToken  string
-	refreshToken string
+	RefreshToken string
 	client       *http.Client
 	mainHost     string
 	isExpired    bool
@@ -35,7 +35,7 @@ func New(token, refresh, host string) *Uspacy {
 
 	return &Uspacy{
 		bearerToken:  strings.TrimPrefix(token, tokenPrefix),
-		refreshToken: strings.TrimPrefix(refresh, tokenPrefix),
+		RefreshToken: strings.TrimPrefix(refresh, tokenPrefix),
 		client: &http.Client{
 			Timeout: defaultClientTimeout,
 		},
@@ -65,9 +65,9 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		err error
 	)
 
-	if len(us.refreshToken) == 0 {
+	if len(us.RefreshToken) == 0 {
 		us.isExpired = true
-		us.refreshToken = us.bearerToken
+		us.RefreshToken = us.bearerToken
 		if us.TokenRefresh() == nil {
 			return us.doRaw(url, method, headers, body)
 		} else {
@@ -86,7 +86,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 
 	switch us.isExpired {
 	case true:
-		req.Header.Add("Authorization", tokenPrefix+us.refreshToken)
+		req.Header.Add("Authorization", tokenPrefix+us.RefreshToken)
 	default:
 		req.Header.Add("Authorization", tokenPrefix+us.bearerToken)
 	}
