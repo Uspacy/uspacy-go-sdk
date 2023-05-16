@@ -183,3 +183,12 @@ func (us *Uspacy) CreateFailReasons(failReason crm.Reason) (reasons crm.Reason, 
 	}
 	return reasons, json.Unmarshal(responseBody, &reasons)
 }
+
+func (us *Uspacy) CreateCall(taskData map[string]interface{}) (call crm.Call, err error) {
+	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, crm.CallsUrl), taskData)
+	if err != nil {
+		return call, err
+	}
+	return call, json.Unmarshal(responseBody, &call)
+
+}
