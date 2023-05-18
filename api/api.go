@@ -25,7 +25,7 @@ type Uspacy struct {
 }
 
 const (
-	defaultClientTimeout = 10 * time.Second
+	defaultClientTimeout = 20 * time.Second
 	defaultRetries       = 3
 	tokenPrefix          = "Bearer "
 )

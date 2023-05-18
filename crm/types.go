@@ -176,11 +176,16 @@ type (
 		EntityCRM
 		KanbanCRM
 
-		AmountOfTheDeal string `json:"amount_of_the_deal"`
+		AmountOfTheDeal AmountOfTheDealData `json:"amount_of_the_deal"`
 
 		//Contacts  []Contact `json:"contacts"`
 		//Companies []Company `json:"companies"`
 		//DealLabel []Value   `json:"deal_label"`
+	}
+
+	AmountOfTheDealData struct {
+		Currency string `json:"currency"`
+		Value    string `json:"value"`
 	}
 
 	Lead struct {
