@@ -18,6 +18,7 @@ const (
 	StageByFunnelIdUrl = "?funnel_id=%d"
 	MoveKanbanStageUrl = "entities/%s/%d/move/stage/%s"
 	ReasonsUrl         = "reasons/%d"
+	TaskUrl            = "static/tasks/%s"
 )
 
 type Entity int64
@@ -176,7 +177,7 @@ type (
 		EntityCRM
 		KanbanCRM
 
-		AmountOfTheDeal AmountOfTheDealData `json:"amount_of_the_deal"`
+		AmountOfTheDeal interface{} `json:"amount_of_the_deal"`
 
 		//Contacts  []Contact `json:"contacts"`
 		//Companies []Company `json:"companies"`
