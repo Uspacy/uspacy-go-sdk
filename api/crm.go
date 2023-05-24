@@ -193,7 +193,7 @@ func (us *Uspacy) CreateFailReasons(failReason crm.Reason) (reasons crm.Reason, 
 	return reasons, json.Unmarshal(responseBody, &reasons)
 }
 
-// CreateListValues returns arrey of values for given type of CRM list
+// CreateCall returns created call
 func (us *Uspacy) CreateCall(callValue crm.Call) (call crm.Call, err error) {
 	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, crm.CallUrl), callValue)
 	if err != nil {
