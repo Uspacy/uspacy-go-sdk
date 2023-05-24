@@ -19,6 +19,7 @@ const (
 	MoveKanbanStageUrl = "entities/%s/%d/move/stage/%s"
 	ReasonsUrl         = "reasons/%d"
 	TaskUrl            = "static/tasks/%s"
+	CallUrl            = "events/call"
 )
 
 type Entity int64
@@ -296,5 +297,32 @@ type (
 		Title string `json:"title"`
 		Type  string `json:"type"`
 		Sort  int    `json:"sort"`
+	}
+)
+
+type (
+	Call struct {
+		IntegrationCode string `json:"integration_code"`
+		ExternalID      int    `json:"external_id"`
+		TmpID           int    `json:"tmp_id"`
+		TaskID          any    `json:"task_id"`
+		ContactID       any    `json:"contact_id"`
+		CompanyID       any    `json:"company_id"`
+		LeadID          any    `json:"lead_id"`
+		DealID          any    `json:"deal_id"`
+		EntityTable     string `json:"entity_table"`
+		Employees       []int  `json:"employees"`
+		Contacts        []int  `json:"contacts"`
+		Companies       []int  `json:"companies"`
+		Subject         string `json:"subject"`
+		CallType        string `json:"call_type"`
+		EndedCallStatus any    `json:"ended_call_status"`
+		From            int64  `json:"from"`
+		To              any    `json:"to"`
+		BeginTime       int    `json:"begin_time"`
+		EndTime         int    `json:"end_time"`
+		Duration        int    `json:"duration"`
+		CallRecordLink  any    `json:"call_record_link"`
+		Note            string `json:"note"`
 	}
 )
