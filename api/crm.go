@@ -171,6 +171,15 @@ func (us *Uspacy) CreateCRMField(entityType crm.Entity, fieldData interface{}) (
 	return entityField, json.Unmarshal(responseBody, &entityField)
 }
 
+// GetListValues returns arrey of values for given type of CRM list
+func (us *Uspacy) GetListValues(entityType crm.Entity, listName string) (lists []crm.List, err error) {
+	responseBody, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, entityType.GetUrl(), listName)))
+	if err != nil {
+		return lists, err
+	}
+	return lists, json.Unmarshal(responseBody, &lists)
+}
+
 // CreateListValues returns arrey of values for given type of CRM list
 func (us *Uspacy) CreateListValues(entityType crm.Entity, listName string, listValue interface{}) (lists []crm.List, err error) {
 	responseBody, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, entityType.GetUrl(), listName)), listValue)

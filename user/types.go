@@ -44,8 +44,8 @@ type User struct {
 	Country          string               `json:"country"`
 	City             string               `json:"city"`
 	Avatar           string               `json:"avatar"`
-	EmailInvitation  string               `json:"emailInvitation"`
-	DateOfInvitation string               `json:"dateOfInvitation"`
+	EmailInvitation  interface{}          `json:"emailInvitation"`
+	DateOfInvitation interface{}          `json:"dateOfInvitation"`
 	Registered       bool                 `json:"registered"`
 	Email            []common.ContactData `json:"email"`
 	Phone            []common.ContactData `json:"phone"`
