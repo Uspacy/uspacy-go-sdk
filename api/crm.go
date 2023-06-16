@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/Uspacy/uspacy-go-sdk/crm"
 )
@@ -14,6 +15,15 @@ func (us *Uspacy) CreateEntity(entityType crm.Entity, entityData map[string]inte
 		return err
 	}
 	return nil
+}
+
+// GetEntities this method return arrey of objects and error
+func (us *Uspacy) GetEntities(entityType crm.Entity, params url.Values) (entities crm.CRMEntity, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())) + "?" + params.Encode())
+	if err != nil {
+		return entities, err
+	}
+	return entities, json.Unmarshal(body, &entities)
 }
 
 // PatchEntity this method does not return any object, just error
