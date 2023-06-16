@@ -119,6 +119,15 @@ type (
 )
 
 type (
+	CRMEntity struct {
+		Data []struct {
+			ID    int    `json:"id"`
+			Title string `json:"title"`
+		} `json:"data"`
+		Links common.Links `json:"links"`
+		Meta  common.Meta  `json:"meta"`
+	}
+
 	Companies struct {
 		Data  []Company    `json:"data"`
 		Links common.Links `json:"links"`
