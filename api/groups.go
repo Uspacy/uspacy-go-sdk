@@ -7,6 +7,15 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/group"
 )
 
+// GetGroups returns  list of groups
+func (us *Uspacy) GetGroups() (groups group.Groups, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(group.VersionUrl, group.GroupUrl))
+	if err != nil {
+		return groups, err
+	}
+	return groups, json.Unmarshal(body, &groups)
+}
+
 // CreateGroup returns created group object
 func (us *Uspacy) CreateGroup(groupData url.Values) (_group group.Group, err error) {
 	body, err := us.doPostEncodedForm(us.buildURL(group.VersionUrl, group.GroupUrl), groupData)
