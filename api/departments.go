@@ -7,6 +7,15 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/departments"
 )
 
+// GetDepartments returns list of departments
+func (us *Uspacy) GetDepartments() (departmentsArrey departments.Departments, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")))
+	if err != nil {
+		return departmentsArrey, err
+	}
+	return departmentsArrey, json.Unmarshal(body, &departmentsArrey)
+}
+
 // CreateDepartment returns created department
 func (us *Uspacy) CreateDepartment(departmentData departments.Department) (department departments.Department, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), departmentData)
