@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	VersionUrl     = "company/v1"
-	DepartmentsUrl = "departments/%v"
+	VersionUrl          = "company/v1"
+	DepartmentsUrl      = "departments/%v"
+	DepartmentsAddUsers = "departments/%d/addUsers"
 )
 
 type (
