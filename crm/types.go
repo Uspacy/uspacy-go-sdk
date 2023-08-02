@@ -233,13 +233,13 @@ type (
 		Owner         interface{} `json:"owner"`      // int
 		CreatedBy     interface{} `json:"created_by"` // int
 		ChangedBy     interface{} `json:"changed_by"` //`json:"changed_by,string"` // int
-		Converted     bool        `json:"converted"`
+		Converted     interface{} `json:"converted"`  // bool
 		RelatedEntity bool        `json:"related_entity,omitempty"`
 		Title         string      `json:"title"`
 		Comments      string      `json:"comments"`
 		EntityType    string      `json:"entity_type,omitempty"`
 		KanbanStageId interface{} `json:"kanban_stage_id"` // int
-		Source        []Value     `json:"source"`
+		Source        interface{} `json:"source"`          // []Value
 
 		UtmSource   string `json:"utm_source"`
 		UtmMedium   string `json:"utm_medium"`
