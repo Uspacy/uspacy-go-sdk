@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 
 	"github.com/Uspacy/uspacy-go-sdk/task"
@@ -32,4 +33,13 @@ func (us *Uspacy) CreateTransferTask(body interface{}) (tasks task.TransferTaskO
 		return tasks, err
 	}
 	return tasks, json.Unmarshal(resp, &tasks)
+}
+
+// PatchTask patch task by Id
+func (us *Uspacy) PatchTask(taskId int, taskData map[string]interface{}) (_task task.Task, err error) {
+	resp, err := us.doPatchEmptyHeaders(us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)), taskData)
+	if err != nil {
+		return _task, err
+	}
+	return _task, json.Unmarshal(resp, &_task)
 }
