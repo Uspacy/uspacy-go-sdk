@@ -20,6 +20,7 @@ const (
 	ReasonsUrl         = "reasons/%d"
 	TaskUrl            = "static/tasks/%s"
 	CallUrl            = "events/call"
+	ProductIdUrl       = "static/products/%s"
 )
 
 type Entity int64
@@ -333,5 +334,77 @@ type (
 		Duration        int    `json:"duration"`
 		CallRecordLink  any    `json:"call_record_link"`
 		Note            string `json:"note"`
+	}
+)
+
+type (
+	Products struct {
+		Data  []Product    `json:"data"`
+		Links common.Links `json:"links"`
+	}
+
+	Product struct {
+		ID                int             `json:"id"`
+		ProductCategoryID any             `json:"product_category_id"`
+		MeasurementUnitID int             `json:"measurement_unit_id"`
+		Title             string          `json:"title"`
+		Article           any             `json:"article"`
+		Type              string          `json:"type"`
+		IsActive          int             `json:"is_active"`
+		Availability      string          `json:"availability"`
+		Quantity          any             `json:"quantity"`
+		ReservedQuantity  any             `json:"reserved_quantity"`
+		Description       any             `json:"description"`
+		Comment           any             `json:"comment"`
+		Link              any             `json:"link"`
+		CreatedAt         int             `json:"created_at"`
+		UpdatedAt         int             `json:"updated_at"`
+		ProductCategory   ProductCategory `json:"product_category"`
+		MeasurementUnit   MeasurementUnit `json:"measurement_unit"`
+		Prices            []Prices        `json:"prices"`
+		Files             []File          `json:"files"`
+	}
+
+	ProductCategory struct {
+		ID       int    `json:"id"`
+		ParentID int    `json:"parent_id"`
+		Name     string `json:"name"`
+		IsActive int    `json:"is_active"`
+	}
+
+	MeasurementUnit struct {
+		ID        int    `json:"id"`
+		Name      string `json:"name"`
+		Abbr      string `json:"abbr"`
+		IsDefault int    `json:"is_default"`
+	}
+
+	Prices struct {
+		Price         int    `json:"price"`
+		Currency      string `json:"currency"`
+		IsDefault     int    `json:"is_default"`
+		IsTaxIncluded int    `json:"is_tax_included"`
+		TaxID         int    `json:"tax_id"`
+		Tax           Tax    `json:"tax"`
+	}
+
+	File struct {
+		ID               int    `json:"id"`
+		EntityType       string `json:"entityType"`
+		EntityID         string `json:"entityId"`
+		UploadID         string `json:"uploadId"`
+		OriginalFilename string `json:"originalFilename"`
+		LastModified     int    `json:"lastModified"`
+		Size             int    `json:"size"`
+		URL              string `json:"url"`
+	}
+
+	Tax struct {
+		ID        int    `json:"id"`
+		Name      string `json:"name"`
+		Rate      int    `json:"rate"`
+		IsActive  int    `json:"is_active"`
+		CreatedAt int    `json:"created_at"`
+		UpdatedAt int    `json:"updated_at"`
 	}
 )
