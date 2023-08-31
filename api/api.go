@@ -61,8 +61,9 @@ func handleStatusCode(code int) bool {
 func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.Reader) ([]byte, error) {
 
 	var (
-		res *http.Response
-		err error
+		res          *http.Response
+		err          error
+		responseBody []byte
 	)
 
 	if len(us.RefreshToken) == 0 {
@@ -98,17 +99,14 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	for attempts := us.retries; attempts > 0; attempts-- {
 		res, err = us.client.Do(req)
 		if err == nil {
+			defer res.Body.Close()
+			responseBody, err = io.ReadAll(res.Body)
+			if err != nil {
+				return nil, err
+			}
 			break
 		}
-
 	}
-	if err != nil {
-		return nil, err
-	}
-
-	defer res.Body.Close()
-
-	responseBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -124,10 +122,6 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 				}
 			}
 		}
-
-		//errMsg := fmt.Sprintf("error occured while trying to (%s)\nbody - %s\ncode - %v\n", req.URL.String(), string(responseBody), res.StatusCode)
-		//log.Println(errMsg)
-
 		return responseBody, errors.New(string(responseBody))
 	}
 	us.isExpired = false
