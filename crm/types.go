@@ -254,8 +254,8 @@ type (
 	}
 
 	KanbanCRM struct {
-		KanbanStatus   string `json:"kanban_status"`
-		KanbanReasonId string `json:"kanban_reason_id"`
+		KanbanStatus   interface{} `json:"kanban_status"`
+		KanbanReasonId interface{} `json:"kanban_reason_id"`
 	}
 
 	PersonContactData struct {
