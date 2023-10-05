@@ -121,6 +121,12 @@ type (
 )
 
 type (
+	CRMEntityForExport struct {
+		Data  interface{}  `json:"data"`
+		Links common.Links `json:"links"`
+		Meta  common.Meta  `json:"meta"`
+	}
+
 	CRMEntity struct {
 		Data []struct {
 			ID    int    `json:"id"`
