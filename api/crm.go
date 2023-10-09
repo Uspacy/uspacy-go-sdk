@@ -28,7 +28,14 @@ func (us *Uspacy) GetEntities(entityType crm.Entity, params url.Values) (entitie
 
 // GetEntities this method return arrey of objects wifh all fields and error
 func (us *Uspacy) GetCRMEntitiesForExport(entityType crm.Entity, params url.Values) (entities crm.CRMEntityForExport, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())) + "?" + params.Encode())
+	var entityRoute string
+	switch entityType {
+	case crm.TasksNum:
+		entityRoute = fmt.Sprintf(crm.TaskUrl, "")
+	default:
+		entityRoute = fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())
+	}
+	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, entityRoute) + "?" + params.Encode())
 	if err != nil {
 		return entities, err
 	}
