@@ -32,6 +32,8 @@ func (us *Uspacy) GetCRMEntitiesForExport(entityType crm.Entity, params url.Valu
 	switch entityType {
 	case crm.TasksNum:
 		entityRoute = fmt.Sprintf(crm.TaskUrl, "")
+	case crm.ProductsNum:
+		entityRoute = fmt.Sprintf(crm.ProductsUrl, "")
 	default:
 		entityRoute = fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())
 	}
