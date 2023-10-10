@@ -19,8 +19,8 @@ const (
 	MoveKanbanStageUrl = "entities/%s/%d/move/stage/%s"
 	ReasonsUrl         = "reasons/%d"
 	TaskUrl            = "static/tasks/%s"
+	ProductsUrl        = "static/products/%s"
 	CallUrl            = "events/call"
-	ProductIdUrl       = "static/products/%s"
 )
 
 type Entity int64
@@ -31,6 +31,7 @@ const (
 	ContactsNum
 	CompaniesNum
 	TasksNum
+	ProductsNum
 )
 
 func (e Entity) GetUrl() string {
@@ -40,6 +41,7 @@ func (e Entity) GetUrl() string {
 		DealsNum:     "deals",
 		CompaniesNum: "companies",
 		TasksNum:     "tasks",
+		ProductsNum:  "products",
 	}
 	if entity, ok := uris[e]; !ok {
 		return "unknown"
