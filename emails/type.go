@@ -24,12 +24,12 @@ type (
 		Path         string `json:"path"`
 		Delimitter   string `json:"delimitter"`
 		MessageCount int    `json:"message_count"`
-		IsTrash      int    `json:"is_trash"`
-		IsSpam       int    `json:"is_spam"`
-		IsDraft      int    `json:"is_draft"`
-		IsJunk       int    `json:"is_junk"`
-		IsSent       int    `json:"is_sent"`
-		HasChildren  int    `json:"has_children"`
+		IsTrash      bool   `json:"is_trash"`
+		IsSpam       bool   `json:"is_spam"`
+		IsDraft      bool   `json:"is_draft"`
+		IsJunk       bool   `json:"is_junk"`
+		IsSent       bool   `json:"is_sent"`
+		HasChildren  bool   `json:"has_children"`
 		Pivot        Pivot  `json:"pivot"`
 	}
 
@@ -47,17 +47,17 @@ type (
 		ID            int       `json:"id"`
 		PortalName    string    `json:"portal_name"`
 		AddedBy       int       `json:"added_by"`
-		ImapHost      any       `json:"imap_host"`
-		ImapPort      any       `json:"imap_port"`
+		ImapHost      string    `json:"imap_host"`
+		ImapPort      string    `json:"imap_port"`
 		Email         string    `json:"email"`
 		Password      string    `json:"password"`
 		Name          string    `json:"name"`
 		SenderName    string    `json:"sender_name"`
 		AccessLevel   string    `json:"access_level"`
-		LastMessageID any       `json:"last_message_id"`
+		LastMessageID string    `json:"last_message_id"`
 		Tariff        int       `json:"tariff"`
-		HasFile       any       `json:"has_file"`
-		LastSyncedAt  any       `json:"last_synced_at"`
+		HasFile       bool      `json:"has_file"`
+		LastSyncedAt  int       `json:"last_synced_at"`
 		Status        string    `json:"status"`
 		CreatedAt     time.Time `json:"created_at"`
 		UpdatedAt     time.Time `json:"updated_at"`
