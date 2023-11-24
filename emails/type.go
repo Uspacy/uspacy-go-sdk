@@ -7,9 +7,9 @@ const (
 )
 
 const (
-	MailBoxesUrl       = "/emails"
-	MailFoldersUrl     = "/folders"
-	LettersByFolderUrl = "/letters/by-folder/%s"
+	MailBoxesUrl       = "emails"
+	MailFoldersUrl     = "folders"
+	LettersByFolderUrl = "letters/by-folder/%s"
 )
 
 type (
@@ -71,7 +71,7 @@ type (
 		Body           string             `json:"body"`
 		BodyHTML       string             `json:"body_html"`
 		HasAttachments bool               `json:"has_attachments"`
-		MassageID      string             `json:"massage_id"`
+		MessageID      string             `json:"message_id"`
 		Date           int64              `json:"date"`
 		IsRead         bool               `json:"is_read"`
 		Attachments    []LetterAttachment `json:"attachments"`
