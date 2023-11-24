@@ -35,7 +35,7 @@ func (us *Uspacy) GetMailBoxes() (boxes emails.MailBoxes, err error) {
 }
 
 // DoLettersByFolder this method crete letter in folder and return created letter object or error
-func (us *Uspacy) DoLettersByFolder(folderID string, letter emails.Letter) (createdLetter emails.Letter, err error) {
+func (us *Uspacy) DoLettersByFolder(folderID string, letter map[string]interface{}) (createdLetter emails.Letter, err error) {
 	body, err := us.doPostEmptyHeaders(us.buildURL(emails.VersionUrl, fmt.Sprintf(emails.LettersByFolderUrl, folderID)), letter)
 	if err != nil {
 		return createdLetter, err
