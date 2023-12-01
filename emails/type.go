@@ -9,7 +9,7 @@ const (
 const (
 	MailBoxesUrl       = "emails"
 	MailFoldersUrl     = "folders"
-	LettersByFolderUrl = "letters/by-folder/%s"
+	LettersByFolderUrl = "letters/by_folder/%s"
 )
 
 type (
