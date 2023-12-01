@@ -19,7 +19,7 @@ func (us *Uspacy) CreateTask(taskData url.Values) (_task task.Task, err error) {
 
 // CreateTaskThroughMap creates a new task through a map
 func (us *Uspacy) CreateTaskThroughMap(taskData map[string]interface{}) (_task task.Task, err error) {
-	resp, err := us.doPostEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl), taskData)
+	resp, _, err := us.doPostEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl), taskData)
 	if err != nil {
 		return _task, err
 	}
@@ -28,7 +28,7 @@ func (us *Uspacy) CreateTaskThroughMap(taskData map[string]interface{}) (_task t
 
 // CreateTransferTask creates a new transfer task
 func (us *Uspacy) CreateTransferTask(body interface{}) (tasks task.TransferTaskOutput, err error) {
-	resp, err := us.doPostEmptyHeaders(us.buildURL(task.VersionUrl, task.TransferUrl), body)
+	resp, _, err := us.doPostEmptyHeaders(us.buildURL(task.VersionUrl, task.TransferUrl), body)
 	if err != nil {
 		return tasks, err
 	}

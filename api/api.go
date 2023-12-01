@@ -16,12 +16,13 @@ import (
 )
 
 type Uspacy struct {
-	bearerToken  string
-	RefreshToken string
-	client       *http.Client
-	mainHost     string
-	isExpired    bool
-	retries      int `default0:"3"`
+	bearerToken    string
+	RefreshToken   string
+	client         *http.Client
+	mainHost       string
+	isExpired      bool
+	retries        int `default0:"3"`
+	lastStatusCode int
 }
 
 const (
@@ -58,7 +59,7 @@ func handleStatusCode(code int) bool {
 	return true
 }
 
-func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.Reader) ([]byte, error) {
+func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.Reader) ([]byte, int, error) {
 
 	var (
 		res          *http.Response
@@ -72,13 +73,13 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		if us.TokenRefresh() == nil {
 			return us.doRaw(url, method, headers, body)
 		} else {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if len(headers) == 0 {
@@ -102,13 +103,15 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 			defer res.Body.Close()
 			responseBody, err = io.ReadAll(res.Body)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
+			// Set last status code
+			us.lastStatusCode = res.StatusCode
 			break
 		}
 	}
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if !handleStatusCode(res.StatusCode) {
@@ -118,27 +121,29 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 				if us.TokenRefresh() == nil {
 					return us.doRaw(url, method, headers, body)
 				} else {
-					return nil, err
+					return nil, 0, err
 				}
 			}
 		}
-		return responseBody, errors.New(string(responseBody))
+		return responseBody, us.lastStatusCode, errors.New(string(responseBody))
 	}
 	us.isExpired = false
-	return responseBody, nil
+	return responseBody, us.lastStatusCode, nil
 }
 
 func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
-	return us.doRaw(url, http.MethodGet, headersMap, nil)
+	response, _, err := us.doRaw(url, http.MethodGet, headersMap, nil)
+	return response, err
 }
 
-func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, error) {
+func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, int, error) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(body)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return us.doRaw(url, http.MethodPost, headersMap, &buf)
+	response, code, err := us.doRaw(url, http.MethodPost, headersMap, &buf)
+	return response, code, err
 }
 
 func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, error) {
@@ -147,18 +152,20 @@ func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-	return us.doRaw(url, http.MethodPatch, headersMap, &buf)
+	response, _, err := us.doRaw(url, http.MethodPatch, headersMap, &buf)
+	return response, err
 }
 
 func (us *Uspacy) doPostEncodedForm(url string, values url.Values) ([]byte, error) {
 	var head = make(map[string]string)
 	head["Content-Type"] = "application/x-www-form-urlencoded"
 	head["Accept"] = "application/json"
-	return us.doRaw(url, http.MethodPost, head, strings.NewReader(values.Encode()))
+	response, _, err := us.doRaw(url, http.MethodPost, head, strings.NewReader(values.Encode()))
+	return response, err
 }
 
 func (us *Uspacy) doDeleteEmptyHeaders(url string) (err error) {
-	_, err = us.doRaw(url, http.MethodDelete, headersMap, nil)
+	_, _, err = us.doRaw(url, http.MethodDelete, headersMap, nil)
 	return err
 }
 
@@ -170,7 +177,6 @@ func (us *Uspacy) doPostFormData(url string, textParams map[string]string, files
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	headers := make(map[string]string)
-
 	for filename, file := range files {
 
 		fileField, err := writer.CreateFormFile("files[]", filename)
@@ -182,14 +188,11 @@ func (us *Uspacy) doPostFormData(url string, textParams map[string]string, files
 			return nil, err
 		}
 	}
-
 	for name, value := range textParams {
 		writer.WriteField(name, value)
 	}
-
 	headers["Content-Type"] = writer.FormDataContentType()
 	headers["Accept"] = "application/json"
-
-	return us.doRaw(url, http.MethodPost, headers, body)
-
+	response, _, err := us.doRaw(url, http.MethodPost, headers, body)
+	return response, err
 }
