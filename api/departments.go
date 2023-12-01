@@ -18,7 +18,7 @@ func (us *Uspacy) GetDepartments() (departmentsArrey departments.Departments, er
 
 // CreateDepartment returns created department
 func (us *Uspacy) CreateDepartment(departmentData departments.Department) (department departments.Department, err error) {
-	body, err := us.doPostEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), departmentData)
+	body, _, err := us.doPostEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), departmentData)
 	if err != nil {
 		return department, err
 	}
