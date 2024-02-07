@@ -164,9 +164,9 @@ func (us *Uspacy) doPostEncodedForm(url string, values url.Values) ([]byte, erro
 	return response, err
 }
 
-func (us *Uspacy) doDeleteEmptyHeaders(url string) (err error) {
-	_, _, err = us.doRaw(url, http.MethodDelete, headersMap, nil)
-	return err
+func (us *Uspacy) doDeleteEmptyHeaders(url string) (int, error) {
+	_, code, err := us.doRaw(url, http.MethodDelete, headersMap, nil)
+	return code, err
 }
 
 func (us *Uspacy) buildURL(version, route string) string {

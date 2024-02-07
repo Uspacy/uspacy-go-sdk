@@ -127,7 +127,8 @@ func (us *Uspacy) GetField(entityType crm.Entity, fieldType string) (field crm.F
 
 // DeleteField delete selected field for given type of entity
 func (us *Uspacy) DeleteField(entityType crm.Entity, codeField string) (err error) {
-	return us.doDeleteEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType.GetUrl(), codeField)))
+	_, err = us.doDeleteEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType.GetUrl(), codeField)))
+	return err
 }
 
 // GetFields returns Fields struct for a given type of entity
