@@ -42,3 +42,12 @@ func (us *Uspacy) DoLettersByFolder(folderID string, letter map[string]interface
 	}
 	return createdLetter, code, json.Unmarshal(body, &createdLetter)
 }
+
+// DeleteLetterById this method delete letter by Id and return answer code and error
+func (us *Uspacy) DeleteLetterById(letterId int) (code int, err error) {
+	code, err = us.doDeleteEmptyHeaders(us.buildURL(emails.VersionUrl, fmt.Sprintf(emails.LetterById, letterId)))
+	if err != nil {
+		return code, err
+	}
+	return code, err
+}

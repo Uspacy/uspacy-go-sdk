@@ -10,6 +10,7 @@ const (
 	MailBoxesUrl       = "emails"
 	MailFoldersUrl     = "folders"
 	LettersByFolderUrl = "letters/by_folder/%s"
+	LetterById         = "letters/%d"
 )
 
 type (
