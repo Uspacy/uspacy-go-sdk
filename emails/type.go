@@ -19,19 +19,20 @@ type (
 	}
 
 	MailFolder struct {
-		ID           int    `json:"id"`
-		EmailID      int    `json:"email_id"`
-		FolderName   string `json:"folder_name"`
-		Path         string `json:"path"`
-		Delimitter   string `json:"delimitter"`
-		MessageCount int    `json:"message_count"`
-		IsTrash      bool   `json:"is_trash"`
-		IsSpam       bool   `json:"is_spam"`
-		IsDraft      bool   `json:"is_draft"`
-		IsJunk       bool   `json:"is_junk"`
-		IsSent       bool   `json:"is_sent"`
-		HasChildren  bool   `json:"has_children"`
-		Pivot        Pivot  `json:"pivot"`
+		ID            int    `json:"id"`
+		EmailID       int    `json:"email_id"`
+		FolderName    string `json:"folder_name"`
+		Path          string `json:"path"`
+		Delimitter    string `json:"delimitter"`
+		MessageCount  int    `json:"message_count"`
+		HighestModSeq int    `json:"highest_mod_seq"`
+		IsTrash       bool   `json:"is_trash"`
+		IsSpam        bool   `json:"is_spam"`
+		IsDraft       bool   `json:"is_draft"`
+		IsJunk        bool   `json:"is_junk"`
+		IsSent        bool   `json:"is_sent"`
+		HasChildren   bool   `json:"has_children"`
+		Pivot         Pivot  `json:"pivot"`
 	}
 
 	Pivot struct {
