@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/Uspacy/uspacy-go-sdk/files"
+	"fmt"
 	"io"
+
+	"github.com/Uspacy/uspacy-go-sdk/files"
 )
 
 func (us *Uspacy) CreateFile(entityType, entityId string, filesMap map[string]io.ReadCloser) (file files.Files, err error) {
@@ -17,4 +19,13 @@ func (us *Uspacy) CreateFile(entityType, entityId string, filesMap map[string]io
 	}
 	return file, json.Unmarshal(body, &file)
 
+}
+
+// DeleteFileById this method delete file by Id and return answer code and error
+func (us *Uspacy) DeleteFileById(fileId int) (code int, err error) {
+	code, err = us.doDeleteEmptyHeaders(us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)))
+	if err != nil {
+		return code, err
+	}
+	return code, err
 }
