@@ -32,6 +32,7 @@ const (
 	CompaniesNum
 	TasksNum
 	ProductsNum
+	SmartObjects
 )
 
 func (e Entity) GetUrl() string {
@@ -42,6 +43,7 @@ func (e Entity) GetUrl() string {
 		CompaniesNum: "companies",
 		TasksNum:     "tasks",
 		ProductsNum:  "products",
+		SmartObjects: "universal",
 	}
 	if entity, ok := uris[e]; !ok {
 		return "unknown"
