@@ -29,3 +29,12 @@ func (us *Uspacy) DeleteFileById(fileId int) (code int, err error) {
 	}
 	return code, err
 }
+
+// DeleteFilesByEntityId this method delete all files by EntityId and return answer code and error
+func (us *Uspacy) DeleteFilesByEntityId(entityType string, entityId int64) (code int, err error) {
+	code, err = us.doDeleteEmptyHeaders(us.buildURL(files.VersionUrl, fmt.Sprintf("%s?%s&%d", files.FilesUrl, entityType, entityId)))
+	if err != nil {
+		return code, err
+	}
+	return code, err
+}
