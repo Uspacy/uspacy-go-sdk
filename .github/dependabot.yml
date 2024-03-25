@@ -1,0 +1,13 @@
+# Basic dependabot.yml file for a Go project
+
+version: 2
+updates:
+  # Enable version updates for Go modules
+  - package-ecosystem: "gomod" # See documentation for possible values
+    directory: "/" # Location of the Go module in the repository, "/" for the repository root
+    schedule:
+      interval: "weekly" # How often to check for updates, options include "daily", "weekly", and "monthly"
+    open-pull-requests-limit: 10 # The maximum number of open pull requests Dependabot will create. Adjust as needed.
+    labels:
+      - "dependencies"
+      - "golang"
