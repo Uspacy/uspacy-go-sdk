@@ -10,11 +10,11 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/auth"
 )
 
-func (us *Uspacy) TokenRefresh() error {
+func (us *Uspacy) TokenRefresh() (string, error) {
 	var refresh auth.RefreshOutput
 	jwt, err := us.UnmarshalTokenData()
 	if err != nil {
-		return err
+		return "", err
 	}
 	body, _, err := us.doRaw(
 		fmt.Sprintf("%s%s/%s/%s", "https://", jwt.Domain, auth.VersionUrl, auth.RefreshTokenUrl),
@@ -22,15 +22,15 @@ func (us *Uspacy) TokenRefresh() error {
 		headersMap,
 		nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = json.Unmarshal(body, &refresh)
 	if err != nil {
-		return err
+		return "", err
 	}
 	us.bearerToken = refresh.Jwt
 	us.RefreshToken = refresh.RefreshToken
-	return nil
+	return refresh.Jwt, nil
 }
 
 func (us *Uspacy) UnmarshalTokenData() (tokenData auth.JwtClaims, err error) {

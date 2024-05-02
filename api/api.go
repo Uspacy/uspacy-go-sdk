@@ -70,7 +70,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	if len(us.RefreshToken) == 0 {
 		us.isExpired = true
 		us.RefreshToken = us.bearerToken
-		if us.TokenRefresh() == nil {
+		if _, errRefresh := us.TokenRefresh(); errRefresh == nil {
 			return us.doRaw(url, method, headers, body)
 		} else {
 			return nil, 0, err
@@ -118,7 +118,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		if res.StatusCode == http.StatusUnauthorized {
 			if !us.isExpired {
 				us.isExpired = true
-				if us.TokenRefresh() == nil {
+				if _, errRefresh := us.TokenRefresh(); errRefresh == nil {
 					return us.doRaw(url, method, headers, body)
 				} else {
 					return nil, 0, err
