@@ -17,7 +17,7 @@ func (us *Uspacy) CreateEntity(entityType crm.Entity, entityData map[string]inte
 	return nil
 }
 
-// GetEntities this method return arrey of objects and error
+// GetEntities this method return arrey of entities present in crm and error
 func (us *Uspacy) GetEntities(entityType crm.Entity, params url.Values) (entities crm.CRMEntity, err error) {
 	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())) + "?" + params.Encode())
 	if err != nil {
