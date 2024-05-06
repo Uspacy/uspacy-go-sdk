@@ -9,12 +9,20 @@ import (
 )
 
 // CreateEntity this method does not return any object, just error
-func (us *Uspacy) CreateEntity(entityType crm.Entity, entityData map[string]interface{}) error {
-	_, _, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entityData)
+func (us *Uspacy) CreateEntity(entityType crm.Entity, entityData map[string]interface{}) (int64, int, error) {
+	respBytes, code, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())), entityData)
 	if err != nil {
-		return err
+		return 0, code, err
 	}
-	return nil
+
+	var respData struct {
+		ID int64 `json:"id"`
+	}
+	if err := json.Unmarshal(respBytes, &respData); err != nil {
+		return 0, code, err
+	}
+
+	return respData.ID, code, nil
 }
 
 // GetEntities this method return arrey of entities present in crm and error
