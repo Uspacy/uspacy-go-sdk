@@ -26,6 +26,17 @@ func (us *Uspacy) CreateEntity(entityType crm.Entity, entityData map[string]inte
 }
 
 // GetEntities this method return arrey of entities present in crm and error
+func (us *Uspacy) GetCrmEntitiesList() (entities []crm.CrmEntities, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, crm.EntitiesUrl))
+	if err != nil {
+		return entities, err
+	}
+	var resp = crm.CrmEntitiesList{}
+	err = json.Unmarshal(body, &resp)
+	return resp.Data, err
+}
+
+// GetEntities this method return arrey of entities present in crm and error
 func (us *Uspacy) GetEntities(entityType crm.Entity, params url.Values) (entities crm.CRMEntity, err error) {
 	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl())) + "?" + params.Encode())
 	if err != nil {
