@@ -9,6 +9,7 @@ const (
 )
 
 const (
+	EntitiesUrl        = "entity"
 	EntityUrl          = "entities/%s/"
 	FieldsUrl          = "entities/%s/fields/%s/"
 	CreateFieldUrl     = "entities/%s/fields"
@@ -416,5 +417,20 @@ type (
 		IsActive  int    `json:"is_active"`
 		CreatedAt int    `json:"created_at"`
 		UpdatedAt int    `json:"updated_at"`
+	}
+)
+
+type (
+	CrmEntitiesList struct {
+		Data []CrmEntities `json:"data"`
+	}
+	CrmEntities struct {
+		ID              int    `json:"id"`
+		Title           string `json:"title"`
+		TableName       string `json:"table_name"`
+		Type            string `json:"type"`
+		Kanban          bool   `json:"kanban"`
+		ActivitySupport bool   `json:"activity_support"`
+		TaskSupport     bool   `json:"task_support"`
 	}
 )
