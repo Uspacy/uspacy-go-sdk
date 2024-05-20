@@ -73,8 +73,8 @@ func (us *Uspacy) GetContacts(entityType crm.Entity, params url.Values) (entitie
 }
 
 // PatchEntity this method does not return any object, just error
-func (us *Uspacy) PatchEntity(entityType crm.Entity, id string, entityData map[string]interface{}) error {
-	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType.GetUrl()))+id, entityData)
+func (us *Uspacy) PatchEntity(entityType string, id string, entityData map[string]interface{}) error {
+	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))+id, entityData)
 	if err != nil {
 		return err
 	}
