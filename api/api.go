@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -65,6 +66,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		res          *http.Response
 		err          error
 		responseBody []byte
+		errorDetails strings.Builder
 	)
 
 	if len(us.RefreshToken) == 0 {
@@ -76,6 +78,10 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 			return nil, 0, err
 		}
 	}
+
+	// Create a context with a cancel function
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -97,8 +103,22 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 		req.Header.Add(key, value)
 	}
 
-	for attempts := us.retries; attempts > 0; attempts-- {
-		res, err = us.client.Do(req)
+	req = req.WithContext(ctx)
+
+	backoff := 3 * time.Second
+
+	for attempts := 3; attempts > 0; attempts-- {
+		// Start a new context with timeout for this attempt
+		attemptCtx, attemptCancel := context.WithTimeout(ctx, backoff+5*time.Second)
+		defer attemptCancel()
+
+		// Create a new request with the attempt context
+		attemptReq := req.WithContext(attemptCtx)
+
+		startTime := time.Now()
+
+		res, err = us.client.Do(attemptReq)
+
 		if err == nil {
 			defer res.Body.Close()
 			responseBody, err = io.ReadAll(res.Body)
@@ -109,9 +129,22 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 			us.lastStatusCode = res.StatusCode
 			break
 		}
+
+		// Record error details
+		errorDetails.WriteString(fmt.Sprintf("Attempt %d: %s\n", us.retries-attempts+1, err.Error()))
+
+		// Check if the attempt took too long
+		if time.Since(startTime) > backoff+5*time.Second {
+			break
+		}
+
+		// Progressive delay (exponential backoff)
+		time.Sleep(backoff)
+		backoff *= 2
 	}
+
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("request failed after %d retries: %s", us.retries, errorDetails.String())
 	}
 
 	if !handleStatusCode(res.StatusCode) {
