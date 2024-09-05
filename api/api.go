@@ -29,6 +29,7 @@ type Uspacy struct {
 const (
 	defaultClientTimeout = 20 * time.Second
 	defaultRetries       = 3
+	defaultBackoff       = 3 * time.Second
 	tokenPrefix          = "Bearer "
 )
 
@@ -105,11 +106,11 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 
 	req = req.WithContext(ctx)
 
-	backoff := 3 * time.Second
+	backoff := defaultBackoff
 
-	for attempts := 3; attempts > 0; attempts-- {
+	for attempts := defaultRetries; attempts > 0; attempts-- {
 		// Start a new context with timeout for this attempt
-		attemptCtx, attemptCancel := context.WithTimeout(ctx, backoff+5*time.Second)
+		attemptCtx, attemptCancel := context.WithTimeout(ctx, backoff+defaultBackoff*time.Second)
 		defer attemptCancel()
 
 		// Create a new request with the attempt context
@@ -140,7 +141,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 
 		// Progressive delay (exponential backoff)
 		time.Sleep(backoff)
-		backoff *= 2
+		backoff += backoff
 	}
 
 	if err != nil {
