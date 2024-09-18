@@ -9,7 +9,7 @@ const (
 const (
 	ActivitiesUrl = "activities"
 	ActivityUrl   = "entities/%s"
-	FieldsUrl     = "entities/mass_deletion"
+	MassDeletion  = "entities/mass_deletion"
 )
 
 type ActivitiesList struct {
@@ -48,4 +48,10 @@ type CrmEntity struct {
 	Title     string `json:"title"`
 	Owner     int    `json:"owner"`
 	TableName string `json:"table_name"`
+}
+
+type MassDeletionBody struct {
+	All       bool     `json:"all,omitempty"`
+	EntityIds []string `json:"entity_ids,omitempty"`
+	ExceptIds []any    `json:"except_ids,omitempty"`
 }

@@ -67,5 +67,14 @@ func (us *Uspacy) PatchActivity(entityId int64, entityData map[string]interface{
 // The HTTP status code can be used to check if the deletion was successful.
 func (us *Uspacy) DeleteActivity(entityId int64) (int, error) {
 	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
-	return us.doDeleteEmptyHeaders(url)
+	return us.doDeleteEmptyHeaders(url, nil)
+}
+
+// MassDeletionActivities sends a DELETE request to delete multiple activities based on the provided deletion data.
+// The deletionData parameter contains the necessary information for mass deletion (like IDs or criteria).
+// It constructs the request URL using the base mass deletion URL and sends the request with the provided body.
+// Returns the HTTP status code of the request and any error encountered during the process.
+func (us *Uspacy) MassDeletionActivies(deletionData activities.MassDeletionBody) (int, error) {
+	url := us.buildURL(activities.VersionUrl, activities.MassDeletion)
+	return us.doDeleteEmptyHeaders(url, deletionData)
 }
