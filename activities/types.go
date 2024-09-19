@@ -1,6 +1,10 @@
 package activities
 
-import "github.com/Uspacy/uspacy-go-sdk/common"
+import (
+	"encoding/json"
+
+	"github.com/Uspacy/uspacy-go-sdk/common"
+)
 
 const (
 	VersionUrl = "activities/v1"
@@ -19,26 +23,26 @@ type ActivitiesList struct {
 }
 
 type Activity struct {
-	Id            int         `json:"id"`
-	CreatedBy     int         `json:"created_by"`
-	Title         string      `json:"title"`
-	Type          string      `json:"type"`
-	Status        string      `json:"status"`
-	Priority      string      `json:"priority"`
-	Description   string      `json:"description"`
-	StartTime     int         `json:"start_time,omitempty"`
-	EndTime       int         `json:"end_time"`
-	ResponsibleID int         `json:"responsible_id"`
-	CompanyID     any         `json:"company_id"`
-	CreatedAt     int         `json:"created_at,omitempty"`
-	UpdatedAt     int         `json:"updated_at,omitempty"`
-	ClosedBy      int         `json:"closed_by,omitempty"`
-	FirstClosedBy any         `json:"first_closed_by,omitempty"`
-	ClosedAt      any         `json:"closed_at,omitempty"`
-	FirstClosedAt any         `json:"first_closed_at,omitempty"`
-	CrmID         any         `json:"crm_id"`
-	Participants  []int       `json:"participants,omitempty"`
-	CrmEntities   CrmEntities `json:"crm_entities,omitempty"`
+	Id            int             `json:"id"`
+	CreatedBy     int             `json:"created_by"`
+	Title         string          `json:"title"`
+	Type          string          `json:"type"`
+	Status        string          `json:"status"`
+	Priority      string          `json:"priority"`
+	Description   string          `json:"description"`
+	StartTime     int             `json:"start_time,omitempty"`
+	EndTime       int             `json:"end_time"`
+	ResponsibleID int             `json:"responsible_id"`
+	CompanyID     any             `json:"company_id"`
+	CreatedAt     int             `json:"created_at,omitempty"`
+	UpdatedAt     int             `json:"updated_at,omitempty"`
+	ClosedBy      int             `json:"closed_by,omitempty"`
+	FirstClosedBy any             `json:"first_closed_by,omitempty"`
+	ClosedAt      any             `json:"closed_at,omitempty"`
+	FirstClosedAt any             `json:"first_closed_at,omitempty"`
+	CrmID         any             `json:"crm_id"`
+	Participants  []int           `json:"participants,omitempty"`
+	CrmEntities   json.RawMessage `json:"crm_entities,omitempty"`
 }
 
 type CrmEntities map[string]CrmEntity
