@@ -174,7 +174,7 @@ func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, int,
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(body)
 	if err != nil {
-		return nil, 0, err
+		return nil, http.StatusBadRequest, err
 	}
 	response, code, err := us.doRaw(url, http.MethodPost, headersMap, &buf)
 	return response, code, err
@@ -198,7 +198,14 @@ func (us *Uspacy) doPostEncodedForm(url string, values url.Values) ([]byte, erro
 	return response, err
 }
 
-func (us *Uspacy) doDeleteEmptyHeaders(url string) (int, error) {
+func (us *Uspacy) doDeleteEmptyHeaders(url string, body interface{}) (int, error) {
+	var buf bytes.Buffer
+	if body != nil {
+		err := json.NewEncoder(&buf).Encode(body)
+		if err != nil {
+			return http.StatusBadRequest, err
+		}
+	}
 	_, code, err := us.doRaw(url, http.MethodDelete, headersMap, nil)
 	return code, err
 }
