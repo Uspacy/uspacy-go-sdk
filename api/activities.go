@@ -12,8 +12,8 @@ import (
 // CreateActivity sends a POST request to create a new activity using the provided entity data.
 // It returns the created activity's ID, the HTTP status code of the request, and any error encountered.
 // If an error occurs during the request or while unmarshalling the response, the error is returned along with a zero value for the ID.
-func (us *Uspacy) CreateActivity(entityData map[string]interface{}) (entity activities.Activity, code int, err error) {
-	respBytes, code, err := us.doPostEmptyHeaders(us.buildURL(activities.VersionUrl, activities.ActivitiesUrl), entityData)
+func (us *Uspacy) CreateActivity(entityData map[string]interface{}, headers ...map[string]string) (entity activities.Activity, code int, err error) {
+	respBytes, code, err := us.doPost(us.buildURL(activities.VersionUrl, activities.ActivitiesUrl), entityData, headers...)
 	if err != nil {
 		return entity, code, err
 	}

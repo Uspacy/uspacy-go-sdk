@@ -17,8 +17,8 @@ func (us *Uspacy) GetMailFolders() (folders emails.MailFolders, err error) {
 }
 
 // DoMailFolder this method create mail folder and return created mail folder object or error
-func (us *Uspacy) DoMailFolder(folder emails.MailFolder) (createdFolder emails.MailFolder, err error) {
-	body, _, err := us.doPostEmptyHeaders(us.buildURL(emails.VersionUrl, emails.MailFoldersUrl), folder)
+func (us *Uspacy) DoMailFolder(folder emails.MailFolder, headers ...map[string]string) (createdFolder emails.MailFolder, err error) {
+	body, _, err := us.doPost(us.buildURL(emails.VersionUrl, emails.MailFoldersUrl), folder, headers...)
 	if err != nil {
 		return createdFolder, err
 	}
@@ -35,8 +35,8 @@ func (us *Uspacy) GetMailBoxes() (boxes emails.MailBoxes, err error) {
 }
 
 // DoLettersByFolder this method crete letter in folder and return created letter object or error
-func (us *Uspacy) DoLettersByFolder(folderID string, letter map[string]interface{}) (createdLetter emails.Letter, code int, err error) {
-	body, code, err := us.doPostEmptyHeaders(us.buildURL(emails.VersionUrl, fmt.Sprintf(emails.LettersByFolderUrl, folderID)), letter)
+func (us *Uspacy) DoLettersByFolder(folderID string, letter map[string]interface{}, headers ...map[string]string) (createdLetter emails.Letter, code int, err error) {
+	body, code, err := us.doPost(us.buildURL(emails.VersionUrl, fmt.Sprintf(emails.LettersByFolderUrl, folderID)), letter, headers...)
 	if err != nil {
 		return createdLetter, code, err
 	}

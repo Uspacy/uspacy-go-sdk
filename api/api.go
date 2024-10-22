@@ -170,13 +170,20 @@ func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
 	return response, err
 }
 
-func (us *Uspacy) doPostEmptyHeaders(url string, body interface{}) ([]byte, int, error) {
+func (us *Uspacy) doPost(url string, body interface{}, headers ...map[string]string) ([]byte, int, error) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(body)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
-	response, code, err := us.doRaw(url, http.MethodPost, headersMap, &buf)
+
+	// Визначаємо які headers використовувати
+	requestHeaders := headersMap
+	if len(headers) > 0 && len(headers[0]) > 0 {
+		requestHeaders = headers[0]
+	}
+
+	response, code, err := us.doRaw(url, http.MethodPost, requestHeaders, &buf)
 	return response, code, err
 }
 

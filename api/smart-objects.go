@@ -9,8 +9,8 @@ import (
 )
 
 // CreateSmartObject create smart object, retun created object and error
-func (us *Uspacy) CreateSmartObject(fieldData smartobjects.SmartObjectCreateRequest) (createdObject smartobjects.CrmSmartObject, err error) {
-	responseBody, _, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, crm.EntitiesUrl), fieldData)
+func (us *Uspacy) CreateSmartObject(fieldData smartobjects.SmartObjectCreateRequest, headers ...map[string]string) (createdObject smartobjects.CrmSmartObject, err error) {
+	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, crm.EntitiesUrl), fieldData, headers...)
 	if err != nil {
 		return createdObject, err
 	}
@@ -18,8 +18,8 @@ func (us *Uspacy) CreateSmartObject(fieldData smartobjects.SmartObjectCreateRequ
 }
 
 // CreateSmartObjectEntity this method return any created object id, responce come and error
-func (us *Uspacy) CreateSmartObjectEntity(tableName string, entityData map[string]interface{}) (int64, int, error) {
-	respBytes, code, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, tableName)), entityData)
+func (us *Uspacy) CreateSmartObjectEntity(tableName string, entityData map[string]interface{}, headers ...map[string]string) (int64, int, error) {
+	respBytes, code, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, tableName)), entityData, headers...)
 	if err != nil {
 		return 0, code, err
 	}
@@ -35,8 +35,8 @@ func (us *Uspacy) CreateSmartObjectEntity(tableName string, entityData map[strin
 }
 
 // CreateSmartObjectField create field for selected smart object, retun created field and error
-func (us *Uspacy) CreateSmartObjectField(tableName string, fieldData smartobjects.Field) (entityField crm.Field, err error) {
-	responseBody, _, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.CreateFieldUrl, tableName)), fieldData)
+func (us *Uspacy) CreateSmartObjectField(tableName string, fieldData smartobjects.Field, headers ...map[string]string) (entityField crm.Field, err error) {
+	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.CreateFieldUrl, tableName)), fieldData, headers...)
 	if err != nil {
 		return entityField, err
 	}
@@ -45,7 +45,7 @@ func (us *Uspacy) CreateSmartObjectField(tableName string, fieldData smartobject
 
 // CreateListValues returns arrey of values for given type of CRM list
 func (us *Uspacy) CreateSmartObjectListValues(tableName string, listName string, listValue interface{}) (lists []crm.List, err error) {
-	responseBody, _, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, tableName, listName)), listValue)
+	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, tableName, listName)), listValue)
 	if err != nil {
 		return lists, err
 	}
@@ -53,8 +53,8 @@ func (us *Uspacy) CreateSmartObjectListValues(tableName string, listName string,
 }
 
 // CreateSmartObjectStage returns lwst of kanban stages
-func (us *Uspacy) CreateSmartObjectStage(tableName string, stageData interface{}) (kanbanStage crm.KanbanStage, err error) {
-	responseBody, _, err := us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")), stageData)
+func (us *Uspacy) CreateSmartObjectStage(tableName string, stageData interface{}, headers ...map[string]string) (kanbanStage crm.KanbanStage, err error) {
+	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")), stageData, headers...)
 	if err != nil {
 		return kanbanStage, err
 	}
@@ -62,8 +62,8 @@ func (us *Uspacy) CreateSmartObjectStage(tableName string, stageData interface{}
 }
 
 // Move a funnel stage
-func (us *Uspacy) MoveSmartObjectFunnelStage(tableName string, entityId int64, stageId string, reason crm.KanbanFailReasonCRM) (err error) {
-	_, _, err = us.doPostEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.MoveKanbanStageUrl, tableName, entityId, stageId)), reason)
+func (us *Uspacy) MoveSmartObjectFunnelStage(tableName string, entityId int64, stageId string, reason crm.KanbanFailReasonCRM, headers ...map[string]string) (err error) {
+	_, _, err = us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.MoveKanbanStageUrl, tableName, entityId, stageId)), reason, headers...)
 	return err
 }
 
