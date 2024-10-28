@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"mime/multipart"
 
 	//"log"
@@ -177,10 +178,14 @@ func (us *Uspacy) doPost(url string, body interface{}, headers ...map[string]str
 		return nil, http.StatusBadRequest, err
 	}
 
-	// Визначаємо які headers використовувати
-	requestHeaders := headersMap
-	if len(headers) > 0 && len(headers[0]) > 0 {
-		requestHeaders = headers[0]
+	requestHeaders := maps.Clone(headersMap)
+
+	for _, headerMap := range headers {
+		for key, value := range headerMap {
+			if value != "" {
+				requestHeaders[key] = value
+			}
+		}
 	}
 
 	response, code, err := us.doRaw(url, http.MethodPost, requestHeaders, &buf)
