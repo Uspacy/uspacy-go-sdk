@@ -178,7 +178,8 @@ func (us *Uspacy) doPost(url string, body interface{}, headers ...map[string]str
 		return nil, http.StatusBadRequest, err
 	}
 
-	requestHeaders := maps.Clone(headersMap)
+	requestHeaders := make(map[string]string)
+	maps.Copy(requestHeaders, headersMap)
 
 	for _, headerMap := range headers {
 		for key, value := range headerMap {
