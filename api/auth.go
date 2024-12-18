@@ -20,7 +20,8 @@ func (us *Uspacy) TokenRefresh() (string, error) {
 		fmt.Sprintf("%s%s/%s/%s", "https://", jwt.Domain, auth.VersionUrl, auth.RefreshTokenUrl),
 		http.MethodPost,
 		headersMap,
-		nil)
+		nil,
+		defaultTimeout)
 	if err != nil {
 		return "", err
 	}
