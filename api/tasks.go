@@ -43,3 +43,23 @@ func (us *Uspacy) PatchTask(taskId int, taskData map[string]interface{}) (_task 
 	}
 	return _task, json.Unmarshal(resp, &_task)
 }
+
+// GetFields returns Fields struct
+func (us *Uspacy) GetTaskFields() (fields []task.Field, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, "custom_fields", task.TaskUrl, "fields"))
+	if err != nil {
+		return fields, err
+	}
+	var resp task.TaskFields
+	return resp.Fields, json.Unmarshal(body, &resp)
+}
+
+// GetTasksList returns TasksList struct
+func (us *Uspacy) GetTasksList(params url.Values) (tasks task.TasksList, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl) + "?" + params.Encode())
+	if err != nil {
+		return tasks, err
+	}
+	var resp task.TasksList
+	return resp, json.Unmarshal(body, &resp)
+}

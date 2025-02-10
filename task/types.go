@@ -1,11 +1,18 @@
 package task
 
+import "github.com/Uspacy/uspacy-go-sdk/common"
+
 const (
 	VersionUrl  = "tasks/v1"
 	TaskUrl     = "tasks"
 	TaskIdUrl   = "tasks/%d"
 	TransferUrl = "transfer"
 )
+
+type TasksList struct {
+	Data []any       `json:"data"`
+	Meta common.Meta `json:"meta"`
+}
 
 type (
 	Task struct {
@@ -37,3 +44,23 @@ type (
 		CountResponsibleTasks int  `json:"countResponsibleTasks"`
 	}
 )
+type TaskFields struct {
+	Fields []Field `json:"data"`
+}
+type Field struct {
+	ID             int    `json:"id"`
+	Name           string `json:"name"`
+	Code           string `json:"code"`
+	Type           string `json:"type"`
+	Required       bool   `json:"required"`
+	Editable       bool   `json:"editable"`
+	Show           bool   `json:"show"`
+	Hidden         bool   `json:"hidden"`
+	Multiple       bool   `json:"multiple"`
+	SystemField    bool   `json:"systemField"`
+	Sort           string `json:"sort"`
+	DefaultValue   string `json:"defaultValue"`
+	ListUUID       string `json:"listUuid"`
+	FieldSectionID string `json:"fieldSectionId"`
+	Tooltip        string `json:"tooltip"`
+}
