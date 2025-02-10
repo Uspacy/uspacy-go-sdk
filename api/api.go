@@ -323,7 +323,23 @@ func (us *Uspacy) doPostFormData(url string, textParams map[string]string, files
 	return response, err
 }
 
-// buildURL constructs a full URL from version and route components
-func (us *Uspacy) buildURL(version, route string) string {
-	return fmt.Sprintf("%s/%s/%s", us.mainHost, version, route)
+// buildURL constructs a full URL by joining all parts with "/"
+func (us *Uspacy) buildURL(parts ...string) string {
+	allParts := append([]string{us.mainHost}, parts...)
+	var result strings.Builder
+
+	for i, part := range allParts {
+		// Trim slashes from both ends of the part
+		trimmed := strings.Trim(part, "/")
+		if trimmed == "" {
+			continue
+		}
+
+		if i > 0 {
+			result.WriteString("/")
+		}
+		result.WriteString(trimmed)
+	}
+
+	return result.String()
 }
