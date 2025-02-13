@@ -1,7 +1,5 @@
 package task
 
-import "github.com/Uspacy/uspacy-go-sdk/common"
-
 const (
 	VersionUrl  = "tasks/v1"
 	TaskUrl     = "tasks"
@@ -10,8 +8,17 @@ const (
 )
 
 type TasksList struct {
-	Data []any       `json:"data"`
-	Meta common.Meta `json:"meta"`
+	Data []any `json:"data"`
+	Meta Meta  `json:"meta"`
+}
+
+type Meta struct {
+	CurrentPage int `json:"currentPage"`
+	From        int `json:"from"`
+	LastPage    int `json:"lastPage"`
+	PerPage     int `json:"perPage"`
+	To          int `json:"to"`
+	Total       int `json:"total"`
 }
 
 type (
