@@ -63,3 +63,25 @@ func (us *Uspacy) GetTasksList(params url.Values) (tasks task.TasksList, err err
 	var resp task.TasksList
 	return resp, json.Unmarshal(body, &resp)
 }
+
+// GetTaskStagesByGroupId
+func (us *Uspacy) GetTaskStagesByGroupId(groupId int) (kanbanStages []task.TaskGroupStage, err error) {
+	params := url.Values{}
+	params.Set("groupId", fmt.Sprintf("%d", groupId))
+	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.KanbanStages) + "?" + params.Encode())
+	if err != nil {
+		return kanbanStages, err
+	}
+	var resp task.TaskGroupStages
+	return resp.Data, json.Unmarshal(body, &resp)
+}
+
+// GetTempleateById
+func (us *Uspacy) GetTemplateById(templateId int) (template task.Template, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TemplateUrl, fmt.Sprintf("%d", templateId)))
+	if err != nil {
+		return template, err
+	}
+	var resp task.Template
+	return resp, json.Unmarshal(body, &resp)
+}
