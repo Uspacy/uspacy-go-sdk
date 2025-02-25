@@ -14,7 +14,7 @@ type (
 	Groups struct {
 		Data  []Group      `json:"data"`
 		Links common.Links `json:"links"`
-		Meta  common.Meta  `json:"meta"`
+		Meta  Meta         `json:"meta"`
 	}
 	Group struct {
 		ID            int         `json:"id"`
@@ -35,3 +35,13 @@ type (
 		CountModerator int  `json:"countModerator"`
 	}
 )
+
+type Meta struct {
+	CurrentPage int    `json:"currentPage"`
+	From        int    `json:"from"`
+	LastPage    int    `json:"lastPage"`
+	Path        string `json:"path"`
+	PerPage     int    `json:"perPage"`
+	To          int    `json:"to"`
+	Total       int    `json:"total"`
+}
