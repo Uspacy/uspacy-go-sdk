@@ -8,8 +8,20 @@ import (
 )
 
 // GetGroups returns  list of groups
-func (us *Uspacy) GetGroups() (groups group.Groups, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(group.VersionUrl, group.GroupUrl))
+func (us *Uspacy) GetGroups(params ...url.Values) (groups group.Groups, err error) {
+	urlStr := us.buildURL(group.VersionUrl, group.GroupUrl)
+	if len(params) != 0 {
+		mergedParams := make(url.Values)
+		for _, p := range params {
+			for key, values := range p {
+				for _, value := range values {
+					mergedParams.Add(key, value)
+				}
+			}
+		}
+		urlStr = urlStr + "?" + mergedParams.Encode()
+	}
+	body, err := us.doGetEmptyHeaders(urlStr)
 	if err != nil {
 		return groups, err
 	}
