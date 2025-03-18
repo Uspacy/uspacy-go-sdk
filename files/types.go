@@ -6,14 +6,19 @@ const (
 )
 
 type Files struct {
-	Data []struct {
-		Id               int         `json:"id"`
-		EntityType       string      `json:"entityType"`
-		EntityId         interface{} `json:"entityId"`
-		UploadId         string      `json:"uploadId"`
-		OriginalFilename string      `json:"originalFilename"`
-		LastModified     int         `json:"lastModified"`
-		Size             int         `json:"size"`
-		Url              string      `json:"url"`
-	} `json:"data"`
+	Data []File `json:"data"`
+}
+
+type File struct {
+	Id               int    `json:"id"`
+	EntityType       string `json:"entityType"`
+	EntityId         any    `json:"entityId"`
+	UploadId         string `json:"uploadId"`
+	CreatorId        int    `json:"creatorId"`
+	OriginalFilename string `json:"originalFilename"`
+	LastModified     int    `json:"lastModified"`
+	Size             int    `json:"size"`
+	Url              string `json:"url"`
+	Width            any    `json:"width"`
+	Height           any    `json:"height"`
 }

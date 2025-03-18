@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/Uspacy/uspacy-go-sdk/files"
 )
@@ -37,4 +38,13 @@ func (us *Uspacy) DeleteFilesByEntityId(entityType string, entityId int64) (code
 		return code, err
 	}
 	return code, err
+}
+
+// GetFileById this method get file by Id and return file object and error
+func (us *Uspacy) GetFileById(fileId int) (file files.File, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(files.VersionUrl, files.FilesUrl, strconv.Itoa(fileId)))
+	if err != nil {
+		return file, err
+	}
+	return file, json.Unmarshal(body, &file)
 }
