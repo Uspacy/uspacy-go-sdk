@@ -44,12 +44,12 @@ type User struct {
 	Country          string               `json:"country"`
 	City             string               `json:"city"`
 	Avatar           string               `json:"avatar"`
-	EmailInvitation  interface{}          `json:"emailInvitation"`
-	DateOfInvitation interface{}          `json:"dateOfInvitation"`
+	EmailInvitation  any                  `json:"emailInvitation"`
+	DateOfInvitation any                  `json:"dateOfInvitation"`
 	Registered       bool                 `json:"registered"`
 	Email            []common.ContactData `json:"email"`
 	Phone            []common.ContactData `json:"phone"`
 	SocialMedia      []common.SocialMedia `json:"socialMedia"`
-	DepartmentsIds   []string             `json:"departmentsIds"`
-	Roles            []string             `json:"roles"`
+	DepartmentsIds   any                  `json:"departmentsIds"`
+	Roles            any                  `json:"roles"`
 }
