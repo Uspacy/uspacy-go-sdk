@@ -12,4 +12,5 @@ type Comment struct {
 	EntityID   int    `json:"entityId"`
 	Message    string `json:"message"`
 	Date       int    `json:"date"`
+	FileIds    []int  `json:"file_ids"`
 }
