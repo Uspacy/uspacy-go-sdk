@@ -26,7 +26,7 @@ type Meta struct {
 type (
 	Task struct {
 		ID              string   `json:"id"`
-		ParentID        string   `json:"parentId"`
+		ParentID        any      `json:"parentId"`
 		Title           string   `json:"title"`
 		Body            string   `json:"body"`
 		CreatedBy       string   `json:"createdBy"`
