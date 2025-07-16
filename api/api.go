@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -188,7 +187,7 @@ func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.R
 	}
 
 	if statusCode < 200 || statusCode >= 400 {
-		return responseBody, statusCode, errors.New(string(responseBody))
+		return responseBody, statusCode, fmt.Errorf("request failed: [%s] %s, status code: %d, response: %s", method, url, statusCode, string(responseBody))
 	}
 
 	us.isExpired = false
@@ -203,7 +202,7 @@ func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
 }
 
 // doPost performs a POST request with JSON body and optional additional headers
-func (us *Uspacy) doPost(url string, body interface{}, headers ...map[string]string) ([]byte, int, error) {
+func (us *Uspacy) doPost(url string, body any, headers ...map[string]string) ([]byte, int, error) {
 	// Encode the JSON body
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(body)
@@ -229,7 +228,7 @@ func (us *Uspacy) doPost(url string, body interface{}, headers ...map[string]str
 }
 
 // doPatchEmptyHeaders performs a PATCH request with default headers and JSON body
-func (us *Uspacy) doPatchEmptyHeaders(url string, body interface{}) ([]byte, error) {
+func (us *Uspacy) doPatchEmptyHeaders(url string, body any) ([]byte, error) {
 	// Encode the JSON body
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(body)
@@ -255,7 +254,7 @@ func (us *Uspacy) doPostEncodedForm(url string, values url.Values) ([]byte, erro
 }
 
 // doDeleteEmptyHeaders performs a DELETE request with default headers and optional JSON body
-func (us *Uspacy) doDeleteEmptyHeaders(url string, body interface{}) (int, error) {
+func (us *Uspacy) doDeleteEmptyHeaders(url string, body any) (int, error) {
 	// Encode the JSON body if provided
 	var buf bytes.Buffer
 	if body != nil {
