@@ -85,3 +85,9 @@ func (us *Uspacy) GetTemplateById(templateId int) (template task.Template, err e
 	var resp task.Template
 	return resp, json.Unmarshal(body, &resp)
 }
+
+// TaskStatusReady marks task as ready
+func (us *Uspacy) TaskStatusReady(taskId string) (err error) {
+	_, err = us.doPatchEmptyHeaders(us.buildURL(task.VersionUrl, fmt.Sprintf("tasks/%s", taskId), "ready"), nil)
+	return err
+}
