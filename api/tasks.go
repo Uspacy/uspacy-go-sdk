@@ -86,6 +86,22 @@ func (us *Uspacy) GetTemplateById(templateId int) (template task.Template, err e
 	return resp, json.Unmarshal(body, &resp)
 }
 
+// CreateTaskStage creates a new task stage
+func (us *Uspacy) CreateTaskStage(stageData task.TaskGroupStage) (kanbanStage task.TaskGroupStage, err error) {
+	body, _, err := us.doPost(us.buildURL(task.VersionUrl, task.KanbanStages), stageData)
+	if err != nil {
+		return kanbanStage, err
+	}
+	var resp task.TaskGroupStage
+	return resp, json.Unmarshal(body, &resp)
+}
+
+// DeleteTaskStage deletes a task stage
+func (us *Uspacy) DeleteTaskStage(stageId int) (err error) {
+	_, err = us.doDeleteEmptyHeaders(us.buildURL(task.VersionUrl, task.KanbanStages, fmt.Sprintf("%d", stageId)), nil)
+	return err
+}
+
 // TaskStatusReady marks task as ready
 func (us *Uspacy) TaskStatusReady(taskId string) (err error) {
 	_, err = us.doPatchEmptyHeaders(us.buildURL(task.VersionUrl, fmt.Sprintf("tasks/%s", taskId), "ready"), nil)
