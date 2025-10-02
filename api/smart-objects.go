@@ -18,7 +18,7 @@ func (us *Uspacy) CreateSmartObject(fieldData smartobjects.SmartObjectCreateRequ
 }
 
 // CreateSmartObjectEntity this method return any created object id, responce come and error
-func (us *Uspacy) CreateSmartObjectEntity(tableName string, entityData map[string]interface{}, headers ...map[string]string) (int64, int, error) {
+func (us *Uspacy) CreateSmartObjectEntity(tableName string, entityData map[string]any, headers ...map[string]string) (int64, int, error) {
 	respBytes, code, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, tableName)), entityData, headers...)
 	if err != nil {
 		return 0, code, err
@@ -44,7 +44,7 @@ func (us *Uspacy) CreateSmartObjectField(tableName string, fieldData smartobject
 }
 
 // CreateListValues returns arrey of values for given type of CRM list
-func (us *Uspacy) CreateSmartObjectListValues(tableName string, listName string, listValue interface{}) (lists []crm.List, err error) {
+func (us *Uspacy) CreateSmartObjectListValues(tableName string, listName string, listValue any) (lists []crm.List, err error) {
 	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, tableName, listName)), listValue)
 	if err != nil {
 		return lists, err
@@ -53,7 +53,7 @@ func (us *Uspacy) CreateSmartObjectListValues(tableName string, listName string,
 }
 
 // CreateSmartObjectStage returns lwst of kanban stages
-func (us *Uspacy) CreateSmartObjectStage(tableName string, stageData interface{}, headers ...map[string]string) (kanbanStage crm.KanbanStage, err error) {
+func (us *Uspacy) CreateSmartObjectStage(tableName string, stageData any, headers ...map[string]string) (kanbanStage crm.KanbanStage, err error) {
 	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")), stageData, headers...)
 	if err != nil {
 		return kanbanStage, err

@@ -26,7 +26,7 @@ func (us *Uspacy) CreateDepartment(departmentData departments.Department, header
 }
 
 // PatchDepartment patch department by Id and return it
-func (us *Uspacy) PatchDepartment(departmentID int, departmentData map[string]interface{}) (department departments.Department, err error) {
+func (us *Uspacy) PatchDepartment(departmentID int, departmentData map[string]any) (department departments.Department, err error) {
 	body, err := us.doPatchEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmentID)), departmentData)
 	if err != nil {
 		return department, err

@@ -17,16 +17,16 @@ type (
 		Meta  Meta         `json:"meta"`
 	}
 	Group struct {
-		ID            int         `json:"id"`
-		Name          string      `json:"name"`
-		GroupType     string      `json:"groupType"`
-		OwnerID       string      `json:"ownerId"`
-		Archived      bool        `json:"archived,omitempty"`
-		Description   string      `json:"description"`
-		GroupTheme    string      `json:"groupTheme,omitempty"`
-		ModeratorsIds []string    `json:"moderatorsIds"`
-		UsersIds      []string    `json:"usersIds"`
-		Logo          interface{} `json:"logo,omitempty"`
+		ID            int      `json:"id"`
+		Name          string   `json:"name"`
+		GroupType     string   `json:"groupType"`
+		OwnerID       string   `json:"ownerId"`
+		Archived      bool     `json:"archived,omitempty"`
+		Description   string   `json:"description"`
+		GroupTheme    string   `json:"groupTheme,omitempty"`
+		ModeratorsIds []string `json:"moderatorsIds"`
+		UsersIds      []string `json:"usersIds"`
+		Logo          any      `json:"logo,omitempty"`
 	}
 
 	TransferGroupOutput struct {

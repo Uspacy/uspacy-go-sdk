@@ -1,5 +1,7 @@
 package task
 
+import "github.com/Uspacy/uspacy-go-sdk/common"
+
 const (
 	VersionUrl   = "tasks/v1"
 	TaskUrl      = "tasks"
@@ -57,29 +59,29 @@ type TaskFields struct {
 	Fields []Field `json:"data"`
 }
 type Field struct {
-	ID             int    `json:"id"`
-	Name           string `json:"name"`
-	Code           string `json:"code"`
-	Type           string `json:"type"`
-	Required       bool   `json:"required"`
-	Editable       bool   `json:"editable"`
-	Show           bool   `json:"show"`
-	Hidden         bool   `json:"hidden"`
-	Multiple       bool   `json:"multiple"`
-	SystemField    bool   `json:"systemField"`
-	Sort           string `json:"sort"`
-	DefaultValue   string `json:"defaultValue"`
-	ListUUID       string `json:"listUuid"`
-	FieldSectionID string `json:"fieldSectionId"`
-	Tooltip        string `json:"tooltip"`
+	ID             int            `json:"id"`
+	Name           string         `json:"name"`
+	Code           string         `json:"code"`
+	Type           string         `json:"type"`
+	Required       bool           `json:"required"`
+	Editable       bool           `json:"editable"`
+	Show           bool           `json:"show"`
+	Hidden         bool           `json:"hidden"`
+	Multiple       bool           `json:"multiple"`
+	SystemField    bool           `json:"systemField"`
+	Sort           common.FlexInt `json:"sort"`
+	DefaultValue   string         `json:"defaultValue"`
+	ListUUID       string         `json:"listUuid"`
+	FieldSectionID string         `json:"fieldSectionId"`
+	Tooltip        string         `json:"tooltip"`
 }
 
 type TaskGroupStage struct {
-	Id      int    `json:"id,string"`
-	Title   string `json:"title"`
-	Color   string `json:"color"`
-	Sort    int    `json:"sort"`
-	GroupId int    `json:"groupId"`
+	Id      int            `json:"id,string"`
+	Title   string         `json:"title"`
+	Color   string         `json:"color"`
+	Sort    common.FlexInt `json:"sort"`
+	GroupId int            `json:"groupId"`
 }
 
 type TaskGroupStages struct {

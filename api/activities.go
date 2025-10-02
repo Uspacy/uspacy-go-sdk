@@ -12,7 +12,7 @@ import (
 // CreateActivity sends a POST request to create a new activity using the provided entity data.
 // It returns the created activity's ID, the HTTP status code of the request, and any error encountered.
 // If an error occurs during the request or while unmarshalling the response, the error is returned along with a zero value for the ID.
-func (us *Uspacy) CreateActivity(entityData map[string]interface{}, headers ...map[string]string) (entity activities.Activity, code int, err error) {
+func (us *Uspacy) CreateActivity(entityData map[string]any, headers ...map[string]string) (entity activities.Activity, code int, err error) {
 	respBytes, code, err := us.doPost(us.buildURL(activities.VersionUrl, activities.ActivitiesUrl), entityData, headers...)
 	if err != nil {
 		return entity, code, err
@@ -53,7 +53,7 @@ func (us *Uspacy) GetActivity(entityId int64, params url.Values) (entity activit
 // PatchActivity updates an existing activity identified by the entity ID with the provided entity data.
 // It sends a PATCH request to the constructed URL.
 // The function does not return any object, only an error if the request fails or if an issue occurs during the operation.
-func (us *Uspacy) PatchActivity(entityId int64, entityData map[string]interface{}) error {
+func (us *Uspacy) PatchActivity(entityId int64, entityData map[string]any) error {
 	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
 	_, err := us.doPatchEmptyHeaders(url, entityData)
 	if err != nil {
