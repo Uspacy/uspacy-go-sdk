@@ -1,5 +1,7 @@
 package smartobjects
 
+import "github.com/Uspacy/uspacy-go-sdk/common"
+
 const (
 	FieldsUrl = "entities/%s/fields"
 )
@@ -15,21 +17,21 @@ type SmartObjectCreateRequest struct {
 }
 
 type CrmSmartObject struct {
-	Id              int    `json:"id"`
-	Title           string `json:"title"`
-	TitleSingular   string `json:"title_singular"`
-	TableName       string `json:"table_name"`
-	Type            string `json:"type"`
-	Sort            string `json:"sort"`
-	Kanban          bool   `json:"kanban"`
-	ForAllUsers     bool   `json:"for_all_users"`
-	DisplayInMenu   bool   `json:"display_in_menu"`
-	ActivitySupport bool   `json:"activity_support"`
-	TaskSupport     bool   `json:"task_support"`
-	Avatar          any    `json:"avatar"`
-	CreatedBy       int    `json:"created_by"`
-	UpdatedAt       int    `json:"updated_at"`
-	CreatedAt       int    `json:"created_at"`
+	Id              int            `json:"id"`
+	Title           string         `json:"title"`
+	TitleSingular   string         `json:"title_singular"`
+	TableName       string         `json:"table_name"`
+	Type            string         `json:"type"`
+	Sort            common.FlexInt `json:"sort"`
+	Kanban          bool           `json:"kanban"`
+	ForAllUsers     bool           `json:"for_all_users"`
+	DisplayInMenu   bool           `json:"display_in_menu"`
+	ActivitySupport bool           `json:"activity_support"`
+	TaskSupport     bool           `json:"task_support"`
+	Avatar          any            `json:"avatar"`
+	CreatedBy       int            `json:"created_by"`
+	UpdatedAt       int            `json:"updated_at"`
+	CreatedAt       int            `json:"created_at"`
 }
 
 type Field struct {
@@ -47,9 +49,9 @@ type Field struct {
 	EntityReferenceID int     `json:"entity_reference_id"`
 }
 type Value struct {
-	Title    string `json:"title"`
-	Value    string `json:"value"`
-	Color    string `json:"color"`
-	Sort     int    `json:"sort"`
-	Selected bool   `json:"selected"`
+	Title    string         `json:"title"`
+	Value    string         `json:"value"`
+	Color    string         `json:"color"`
+	Sort     common.FlexInt `json:"sort"`
+	Selected bool           `json:"selected"`
 }

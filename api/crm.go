@@ -9,7 +9,7 @@ import (
 )
 
 // CreateEntity this method does not return any object, just error
-func (us *Uspacy) CreateEntity(entityType string, entityData map[string]interface{}, headers ...map[string]string) (int64, int, error) {
+func (us *Uspacy) CreateEntity(entityType string, entityData map[string]any, headers ...map[string]string) (int64, int, error) {
 	respBytes, code, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType)), entityData, headers...)
 	if err != nil {
 		return 0, code, err
@@ -73,7 +73,7 @@ func (us *Uspacy) GetContacts(params url.Values) (entities crm.Contacts, err err
 }
 
 // PatchEntity this method does not return any object, just error
-func (us *Uspacy) PatchEntity(entityType string, id string, entityData map[string]interface{}) error {
+func (us *Uspacy) PatchEntity(entityType string, id string, entityData map[string]any) error {
 	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))+id, entityData)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func (us *Uspacy) PatchEntity(entityType string, id string, entityData map[strin
 }
 
 // PatchEntity this method does not return any object, just error
-func (us *Uspacy) EntityMassEdit(entityType string, entityData map[string]interface{}) error {
+func (us *Uspacy) EntityMassEdit(entityType string, entityData map[string]any) error {
 	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))+"mass_edit", entityData)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func (us *Uspacy) EntityMassEdit(entityType string, entityData map[string]interf
 }
 
 // CreateContact returns created contact object
-func (us *Uspacy) CreateContact(contactData map[string]interface{}, headers ...map[string]string) (contact crm.Contact, err error) {
+func (us *Uspacy) CreateContact(contactData map[string]any, headers ...map[string]string) (contact crm.Contact, err error) {
 	body, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.ContactsNum.GetUrl())), contactData, headers...)
 	if err != nil {
 		return contact, err
@@ -100,7 +100,7 @@ func (us *Uspacy) CreateContact(contactData map[string]interface{}, headers ...m
 }
 
 // CreateCompany returns created company object
-func (us *Uspacy) CreateCompany(companyData map[string]interface{}, headers ...map[string]string) (company crm.Company, err error) {
+func (us *Uspacy) CreateCompany(companyData map[string]any, headers ...map[string]string) (company crm.Company, err error) {
 	body, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.CompaniesNum.GetUrl())), companyData, headers...)
 	if err != nil {
 		return company, err
@@ -109,7 +109,7 @@ func (us *Uspacy) CreateCompany(companyData map[string]interface{}, headers ...m
 }
 
 // CreateLeads returns created lead object
-func (us *Uspacy) CreateLead(leadData map[string]interface{}, headers ...map[string]string) (lead crm.Lead, err error) {
+func (us *Uspacy) CreateLead(leadData map[string]any, headers ...map[string]string) (lead crm.Lead, err error) {
 	body, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.LeadsNum.GetUrl())), leadData, headers...)
 	if err != nil {
 		return lead, err
@@ -118,7 +118,7 @@ func (us *Uspacy) CreateLead(leadData map[string]interface{}, headers ...map[str
 }
 
 // CreateDeals returns created deal object
-func (us *Uspacy) CreateDeal(dealData map[string]interface{}, headers ...map[string]string) (deal crm.Deal, err error) {
+func (us *Uspacy) CreateDeal(dealData map[string]any, headers ...map[string]string) (deal crm.Deal, err error) {
 	body, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.DealsNum.GetUrl())), dealData, headers...)
 	if err != nil {
 		return deal, err
@@ -127,7 +127,7 @@ func (us *Uspacy) CreateDeal(dealData map[string]interface{}, headers ...map[str
 }
 
 // CreateTask returns created task object
-func (us *Uspacy) CreateTaskCRM(taskData map[string]interface{}, headers ...map[string]string) (task crm.Task, err error) {
+func (us *Uspacy) CreateTaskCRM(taskData map[string]any, headers ...map[string]string) (task crm.Task, err error) {
 	body, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.TaskUrl, "")), taskData, headers...)
 	if err != nil {
 		return task, err
@@ -136,7 +136,7 @@ func (us *Uspacy) CreateTaskCRM(taskData map[string]interface{}, headers ...map[
 }
 
 // PatchTaskCrm returns created task object
-func (us *Uspacy) PatchTaskCrm(id string, taskData map[string]interface{}) (task crm.Task, err error) {
+func (us *Uspacy) PatchTaskCrm(id string, taskData map[string]any) (task crm.Task, err error) {
 	body, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.TaskUrl, id)), taskData)
 	if err != nil {
 		return task, err
@@ -170,7 +170,7 @@ func (us *Uspacy) GetFields(entityType string) (fields []crm.Field, err error) {
 }
 
 // CreateFunnel returns created funnel
-func (us *Uspacy) CreateFunnel(entityType string, funnelData interface{}, headers ...map[string]string) (entityFunnel crm.Funnel, err error) {
+func (us *Uspacy) CreateFunnel(entityType string, funnelData any, headers ...map[string]string) (entityFunnel crm.Funnel, err error) {
 	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FunnelUrl, entityType)), funnelData, headers...)
 	if err != nil {
 		return entityFunnel, err
@@ -188,7 +188,7 @@ func (us *Uspacy) GetFunnels(entityType string) (funnels crm.FunnelsById, err er
 }
 
 // CreateFunnelStage returns created kanban stage
-func (us *Uspacy) CreateFunnelStage(entityType string, stageData interface{}, headers ...map[string]string) (kanbanStage crm.KanbanStage, err error) {
+func (us *Uspacy) CreateFunnelStage(entityType string, stageData any, headers ...map[string]string) (kanbanStage crm.KanbanStage, err error) {
 	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, "")), stageData, headers...)
 	if err != nil {
 		return kanbanStage, err
@@ -231,7 +231,7 @@ func (us *Uspacy) MoveFunnelStage(entityType string, entityId int64, stageId str
 }
 
 // CreateCRMField in CRM entity returns created field
-func (us *Uspacy) CreateCRMField(entityType string, fieldData interface{}, headers ...map[string]string) (entityField crm.Field, err error) {
+func (us *Uspacy) CreateCRMField(entityType string, fieldData any, headers ...map[string]string) (entityField crm.Field, err error) {
 	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.CreateFieldUrl, entityType)), fieldData, headers...)
 	if err != nil {
 		return entityField, err
@@ -249,7 +249,7 @@ func (us *Uspacy) GetListValues(entityType, listName string) (lists []crm.List, 
 }
 
 // CreateListValues returns arrey of values for given type of CRM list
-func (us *Uspacy) CreateListValues(entityType, listName string, listValue interface{}, headers ...map[string]string) (lists []crm.List, err error) {
+func (us *Uspacy) CreateListValues(entityType, listName string, listValue any, headers ...map[string]string) (lists []crm.List, err error) {
 	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, entityType, listName)), listValue, headers...)
 	if err != nil {
 		return lists, err

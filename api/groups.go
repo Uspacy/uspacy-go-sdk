@@ -38,7 +38,7 @@ func (us *Uspacy) CreateGroup(groupData url.Values) (_group group.Group, err err
 }
 
 // CreateTransferGroup creates a new transfer group
-func (us *Uspacy) CreateTransferGroup(body interface{}, headers ...map[string]string) (groups group.TransferGroupOutput, err error) {
+func (us *Uspacy) CreateTransferGroup(body any, headers ...map[string]string) (groups group.TransferGroupOutput, err error) {
 	resp, _, err := us.doPost(us.buildURL(group.VersionUrl, group.TransferUrl), body, headers...)
 	if err != nil {
 		return groups, err

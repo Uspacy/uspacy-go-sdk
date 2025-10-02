@@ -71,22 +71,22 @@ type (
 
 	// CRM entity Field
 	Field struct {
-		Name              string      `json:"name"`
-		Code              string      `json:"code"`
-		EntityReferenceId interface{} `json:"entity_reference_id"`
+		Name              string `json:"name"`
+		Code              string `json:"code"`
+		EntityReferenceId any    `json:"entity_reference_id"`
 
-		Type         string      `json:"type"`
-		Required     bool        `json:"required"`
-		Editable     bool        `json:"editable"`
-		Show         bool        `json:"show"`
-		Hidden       bool        `json:"hidden"`
-		Multiple     bool        `json:"multiple"`
-		SystemField  bool        `json:"system_field"`
-		BaseField    bool        `json:"base_field"`
-		Sort         interface{} `json:"sort"` // int
-		DefaultValue interface{} `json:"default_value"`
-		Tooltip      interface{} `json:"tooltip"`
-		Values       []Value     `json:"values,omitempty"`
+		Type         string         `json:"type"`
+		Required     bool           `json:"required"`
+		Editable     bool           `json:"editable"`
+		Show         bool           `json:"show"`
+		Hidden       bool           `json:"hidden"`
+		Multiple     bool           `json:"multiple"`
+		SystemField  bool           `json:"system_field"`
+		BaseField    bool           `json:"base_field"`
+		Sort         common.FlexInt `json:"sort"`
+		DefaultValue any            `json:"default_value"`
+		Tooltip      any            `json:"tooltip"`
+		Values       []Value        `json:"values,omitempty"`
 	}
 
 	// CRM Funnel
@@ -119,15 +119,15 @@ type (
 	}
 
 	FunnelStageBase struct {
-		Title string `json:"title"`
-		Color string `json:"color"`
-		Sort  string `json:"sort"`
+		Title string         `json:"title"`
+		Color string         `json:"color"`
+		Sort  common.FlexInt `json:"sort"`
 	}
 )
 
 type (
 	CRMEntityForExport struct {
-		Data  interface{}  `json:"data"`
+		Data  any          `json:"data"`
 		Links common.Links `json:"links"`
 		Meta  common.Meta  `json:"meta"`
 	}
@@ -166,11 +166,11 @@ type (
 	}
 
 	List struct {
-		Title    string      `json:"title"`
-		Value    string      `json:"value"`
-		Color    string      `json:"color"`
-		Sort     interface{} `json:"sort"`
-		Selected bool        `json:"selected"`
+		Title    string         `json:"title"`
+		Value    string         `json:"value"`
+		Color    string         `json:"color"`
+		Sort     common.FlexInt `json:"sort"`
+		Selected bool           `json:"selected"`
 	}
 )
 
@@ -199,7 +199,7 @@ type (
 		EntityCRM
 		KanbanCRM
 
-		AmountOfTheDeal interface{} `json:"amount_of_the_deal"`
+		AmountOfTheDeal any `json:"amount_of_the_deal"`
 
 		//Contacts  []Contact `json:"contacts"`
 		//Companies []Company `json:"companies"`
@@ -222,36 +222,36 @@ type (
 	}
 
 	Task struct {
-		ID            int         `json:"id"`
-		Title         string      `json:"title"`
-		Description   string      `json:"description"`
-		Type          string      `json:"type"`
-		Status        string      `json:"status"`
-		CreatedAt     interface{} `json:"created_at"`     // int
-		UpdatedAt     interface{} `json:"updated_at"`     // int
-		CreatedBy     interface{} `json:"created_by"`     // int
-		ResponsibleID interface{} `json:"responsible_id"` // int
-		StartTime     interface{} `json:"start_time"`     // int
-		EndTime       interface{} `json:"end_time"`       // int
+		ID            int            `json:"id"`
+		Title         string         `json:"title"`
+		Description   string         `json:"description"`
+		Type          string         `json:"type"`
+		Status        string         `json:"status"`
+		CreatedAt     common.FlexInt `json:"created_at"`     // int
+		UpdatedAt     common.FlexInt `json:"updated_at"`     // int
+		CreatedBy     common.FlexInt `json:"created_by"`     // int
+		ResponsibleID common.FlexInt `json:"responsible_id"` // int
+		StartTime     common.FlexInt `json:"start_time"`     // int
+		EndTime       common.FlexInt `json:"end_time"`       // int
 		//Deals         []Deal      `json:"deals"`
 	}
 )
 
 type (
 	EntityCRM struct {
-		Id            int         `json:"id"`
-		CreatedAt     interface{} `json:"created_at"` // int
-		UpdatedAt     interface{} `json:"updated_at"` // int
-		Owner         interface{} `json:"owner"`      // int
-		CreatedBy     interface{} `json:"created_by"` // int
-		ChangedBy     interface{} `json:"changed_by"` //`json:"changed_by,string"` // int
-		Converted     interface{} `json:"converted"`  // bool
-		RelatedEntity bool        `json:"related_entity,omitempty"`
-		Title         string      `json:"title"`
-		Comments      string      `json:"comments"`
-		EntityType    string      `json:"entity_type,omitempty"`
-		KanbanStageId interface{} `json:"kanban_stage_id"` // int
-		Source        interface{} `json:"source"`          // []Value
+		Id            int            `json:"id"`
+		CreatedAt     common.FlexInt `json:"created_at"` // int
+		UpdatedAt     common.FlexInt `json:"updated_at"` // int
+		Owner         common.FlexInt `json:"owner"`      // int
+		CreatedBy     common.FlexInt `json:"created_by"` // int
+		ChangedBy     common.FlexInt `json:"changed_by"` //`json:"changed_by,string"` // int
+		Converted     any            `json:"converted"`  // bool
+		RelatedEntity bool           `json:"related_entity,omitempty"`
+		Title         string         `json:"title"`
+		Comments      string         `json:"comments"`
+		EntityType    string         `json:"entity_type,omitempty"`
+		KanbanStageId common.FlexInt `json:"kanban_stage_id"` // int
+		Source        any            `json:"source"`          // []Value
 
 		UtmSource   string `json:"utm_source"`
 		UtmMedium   string `json:"utm_medium"`
@@ -265,8 +265,8 @@ type (
 	}
 
 	KanbanCRM struct {
-		KanbanStatus   interface{} `json:"kanban_status"`
-		KanbanReasonId interface{} `json:"kanban_reason_id"`
+		KanbanStatus   any `json:"kanban_status"`
+		KanbanReasonId any `json:"kanban_reason_id"`
 	}
 
 	PersonContactData struct {
@@ -275,9 +275,9 @@ type (
 			Phone      []common.ContactData `json:"phone"`
 			Email      []common.ContactData `json:"email"`
 		*/
-		Messengers interface{} `json:"messengers"`
-		Phone      interface{} `json:"phone"`
-		Email      interface{} `json:"email"`
+		Messengers any `json:"messengers"`
+		Phone      any `json:"phone"`
+		Email      any `json:"email"`
 	}
 
 	PersonData struct {
@@ -288,36 +288,36 @@ type (
 	}
 
 	Messenger struct {
-		Id   string      `json:"id"`
-		Name string      `json:"name"`
-		Link string      `json:"link"`
-		Sort interface{} `json:"sort"`
+		Id   string         `json:"id"`
+		Name string         `json:"name"`
+		Link string         `json:"link"`
+		Sort common.FlexInt `json:"sort"`
 	}
 
 	Value struct {
-		Title    string      `json:"title"`
-		Value    string      `json:"value"`
-		Color    string      `json:"color"`
-		Sort     interface{} `json:"sort"`
-		Selected bool        `json:"selected"`
+		Title    string         `json:"title"`
+		Value    string         `json:"value"`
+		Color    string         `json:"color"`
+		Sort     common.FlexInt `json:"sort"`
+		Selected bool           `json:"selected"`
 	}
 )
 
 type (
 	Reasons struct {
-		Success []interface{} `json:"SUCCESS"`
-		Fail    []Reason      `json:"FAIL"`
+		Success []any    `json:"SUCCESS"`
+		Fail    []Reason `json:"FAIL"`
 	}
 	Reason struct {
-		ID    int    `json:"id"`
-		Title string `json:"title"`
-		Sort  int    `json:"sort"`
+		ID    int            `json:"id"`
+		Title string         `json:"title"`
+		Sort  common.FlexInt `json:"sort"`
 	}
 
 	FailWrite struct {
-		Title string `json:"title"`
-		Type  string `json:"type"`
-		Sort  int    `json:"sort"`
+		Title string         `json:"title"`
+		Type  string         `json:"type"`
+		Sort  common.FlexInt `json:"sort"`
 	}
 )
 

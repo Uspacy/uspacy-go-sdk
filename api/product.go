@@ -17,7 +17,7 @@ func (us *Uspacy) GetProduct(id string) (call crm.Products, err error) {
 }
 
 // CreateProduct returns list of products
-func (us *Uspacy) CreateProduct(productData map[string]interface{}, headers ...map[string]string) (product crm.Products, err error) {
+func (us *Uspacy) CreateProduct(productData map[string]any, headers ...map[string]string) (product crm.Products, err error) {
 	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ProductsUrl, "")), productData, headers...)
 	if err != nil {
 		return product, err
