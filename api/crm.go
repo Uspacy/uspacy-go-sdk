@@ -63,7 +63,7 @@ func (us *Uspacy) GetCRMEntitiesForExport(entityType string, params url.Values) 
 	return entities, json.Unmarshal(body, &entities)
 }
 
-// GetContacts this method return arrey of objects and error
+// GetContacts returns an array of contact objects and an error.
 func (us *Uspacy) GetContacts(params url.Values) (entities crm.Contacts, err error) {
 	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.ContactsNum.GetUrl())) + "?" + params.Encode())
 	if err != nil {
@@ -72,7 +72,7 @@ func (us *Uspacy) GetContacts(params url.Values) (entities crm.Contacts, err err
 	return entities, json.Unmarshal(body, &entities)
 }
 
-// GetDeals this method return arrey of objects and error
+// GetDeals returns an array of deal objects and an error.
 func (us *Uspacy) GetDeals(params url.Values) (entities crm.Deals, err error) {
 	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.DealsNum.GetUrl())) + "?" + params.Encode())
 	if err != nil {
@@ -81,7 +81,7 @@ func (us *Uspacy) GetDeals(params url.Values) (entities crm.Deals, err error) {
 	return entities, json.Unmarshal(body, &entities)
 }
 
-// GetLeads this method return arrey of objects and error
+// GetLeads returns an array of lead objects and an error.
 func (us *Uspacy) GetLeads(params url.Values) (entities crm.Leads, err error) {
 	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.LeadsNum.GetUrl())) + "?" + params.Encode())
 	if err != nil {
