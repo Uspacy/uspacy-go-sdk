@@ -118,3 +118,29 @@ func (us *Uspacy) CreateTaskField(fieldData task.Field) (field task.Field, statu
 	err = json.Unmarshal(resp, &respField)
 	return respField, code, err
 }
+
+// GetTasksWithFilters returns tasks with filters as a map
+func (us *Uspacy) GetTasksWithFilters(params url.Values) (tasks map[string]any, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl) + "?" + params.Encode())
+	if err != nil {
+		return tasks, err
+	}
+	var result map[string]any
+	return result, json.Unmarshal(body, &result)
+}
+
+// GetTaskById returns task by ID as a map
+func (us *Uspacy) GetTaskById(taskId int, params ...url.Values) (taskData map[string]any, err error) {
+	var urlStr string
+	if len(params) > 0 && params[0] != nil {
+		urlStr = us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)) + "?" + params[0].Encode()
+	} else {
+		urlStr = us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId))
+	}
+	body, err := us.doGetEmptyHeaders(urlStr)
+	if err != nil {
+		return taskData, err
+	}
+	var result map[string]any
+	return result, json.Unmarshal(body, &result)
+}
