@@ -3,12 +3,14 @@ package task
 import "github.com/Uspacy/uspacy-go-sdk/common"
 
 const (
-	VersionUrl   = "tasks/v1"
-	TaskUrl      = "tasks"
-	KanbanStages = "stages"
-	TaskIdUrl    = "tasks/%d"
-	TransferUrl  = "transfer"
-	TemplateUrl  = "templates/recurring"
+	VersionUrl      = "tasks/v1"
+	TaskUrl         = "tasks"
+	KanbanStages    = "stages"
+	TaskIdUrl       = "tasks/%d"
+	TransferUrl     = "transfer"
+	TemplateUrl     = "templates/recurring"
+	FieldUrl        = "fields"
+	TaskStatusReady = "ready"
 )
 
 type TasksList struct {

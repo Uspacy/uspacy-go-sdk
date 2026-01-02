@@ -9,44 +9,44 @@ import (
 )
 
 // CreateTask creates a new task
-func (us *Uspacy) CreateTask(taskData url.Values) (_task task.Task, err error) {
+func (us *Uspacy) CreateTask(taskData url.Values) (newTask task.Task, err error) {
 	resp, err := us.doPostEncodedForm(us.buildURL(task.VersionUrl, task.TaskUrl), taskData)
 	if err != nil {
-		return _task, err
+		return newTask, err
 	}
-	return _task, json.Unmarshal(resp, &_task)
+	return newTask, json.Unmarshal(resp, &newTask)
 }
 
 // CreateTaskThroughMap creates a new task through a map
-func (us *Uspacy) CreateTaskThroughMap(taskData map[string]any, headers ...map[string]string) (_task task.Task, err error) {
-	resp, _, err := us.doPost(us.buildURL(task.VersionUrl, task.TaskUrl), taskData, headers...)
+func (us *Uspacy) CreateTaskThroughMap(taskData map[string]any, headers ...map[string]string) (newTask task.Task, statusCode int, err error) {
+	resp, code, err := us.doPost(us.buildURL(task.VersionUrl, task.TaskUrl), taskData, headers...)
 	if err != nil {
-		return _task, err
+		return newTask, code, err
 	}
-	return _task, json.Unmarshal(resp, &_task)
+	return newTask, code, json.Unmarshal(resp, &newTask)
 }
 
 // CreateTransferTask creates a new transfer task
-func (us *Uspacy) CreateTransferTask(body any, headers ...map[string]string) (tasks task.TransferTaskOutput, err error) {
-	resp, _, err := us.doPost(us.buildURL(task.VersionUrl, task.TransferUrl), body, headers...)
+func (us *Uspacy) CreateTransferTask(body any, headers ...map[string]string) (tasks task.TransferTaskOutput, statusCode int, err error) {
+	resp, code, err := us.doPost(us.buildURL(task.VersionUrl, task.TransferUrl), body, headers...)
 	if err != nil {
-		return tasks, err
+		return tasks, code, err
 	}
-	return tasks, json.Unmarshal(resp, &tasks)
+	return tasks, code, json.Unmarshal(resp, &tasks)
 }
 
 // PatchTask patch task by Id
-func (us *Uspacy) PatchTask(taskId int, taskData map[string]any) (_task task.Task, err error) {
+func (us *Uspacy) PatchTask(taskId int, taskData map[string]any) (updatedTask task.Task, err error) {
 	resp, err := us.doPatchEmptyHeaders(us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)), taskData)
 	if err != nil {
-		return _task, err
+		return updatedTask, err
 	}
-	return _task, json.Unmarshal(resp, &_task)
+	return updatedTask, json.Unmarshal(resp, &updatedTask)
 }
 
 // GetFields returns Fields struct
 func (us *Uspacy) GetTaskFields() (fields []task.Field, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, "custom_fields", task.TaskUrl, "fields"))
+	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl))
 	if err != nil {
 		return fields, err
 	}
@@ -87,13 +87,13 @@ func (us *Uspacy) GetTemplateById(templateId int) (template task.Template, err e
 }
 
 // CreateTaskStage creates a new task stage
-func (us *Uspacy) CreateTaskStage(stageData task.TaskGroupStage) (kanbanStage task.TaskGroupStage, err error) {
-	body, _, err := us.doPost(us.buildURL(task.VersionUrl, task.KanbanStages), stageData)
+func (us *Uspacy) CreateTaskStage(stageData task.TaskGroupStage) (kanbanStage task.TaskGroupStage, statusCode int, err error) {
+	body, code, err := us.doPost(us.buildURL(task.VersionUrl, task.KanbanStages), stageData)
 	if err != nil {
-		return kanbanStage, err
+		return kanbanStage, code, err
 	}
 	var resp task.TaskGroupStage
-	return resp, json.Unmarshal(body, &resp)
+	return resp, code, json.Unmarshal(body, &resp)
 }
 
 // DeleteTaskStage deletes a task stage
@@ -103,7 +103,18 @@ func (us *Uspacy) DeleteTaskStage(stageId int) (err error) {
 }
 
 // TaskStatusReady marks task as ready
-func (us *Uspacy) TaskStatusReady(taskId string) (err error) {
-	_, err = us.doPatchEmptyHeaders(us.buildURL(task.VersionUrl, fmt.Sprintf("tasks/%s", taskId), "ready"), nil)
+func (us *Uspacy) TaskStatusReady(taskId int) (err error) {
+	_, err = us.doPatchEmptyHeaders(us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId), task.TaskStatusReady), nil)
 	return err
+}
+
+// CreateTaskField creates a new task field
+func (us *Uspacy) CreateTaskField(fieldData task.Field) (field task.Field, statusCode int, err error) {
+	resp, code, err := us.doPost(us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl), fieldData)
+	if err != nil {
+		return field, code, err
+	}
+	var respField task.Field
+	err = json.Unmarshal(resp, &respField)
+	return respField, code, err
 }
