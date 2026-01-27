@@ -120,13 +120,26 @@ func (us *Uspacy) CreateTaskField(fieldData task.Field) (field task.Field, statu
 }
 
 // GetTasksWithFilters returns tasks with filters as a map
-func (us *Uspacy) GetTasksWithFilters(params url.Values) (tasks map[string]any, err error) {
+func (us *Uspacy) GetTasksWithFilters(params url.Values) (tasks []map[string]any, err error) {
 	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl) + "?" + params.Encode())
 	if err != nil {
 		return tasks, err
 	}
 	var result map[string]any
-	return result, json.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return tasks, err
+	}
+	// Extract data array from response
+	if data, ok := result["data"].([]any); ok {
+		tasks = make([]map[string]any, len(data))
+		for i, item := range data {
+			if taskMap, ok := item.(map[string]any); ok {
+				tasks[i] = taskMap
+			}
+		}
+	}
+	return tasks, nil
 }
 
 // GetTaskById returns task by ID as a map
