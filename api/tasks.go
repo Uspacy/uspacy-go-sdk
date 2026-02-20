@@ -64,6 +64,45 @@ func (us *Uspacy) GetTasksList(params url.Values) (tasks task.TasksList, err err
 	return resp, json.Unmarshal(body, &resp)
 }
 
+// GetTasksWithFilters returns tasks with filters as a map
+func (us *Uspacy) GetTasksWithFilters(params url.Values) (tasks []map[string]any, err error) {
+	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl) + "?" + params.Encode())
+	if err != nil {
+		return tasks, err
+	}
+	var result map[string]any
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return tasks, err
+	}
+	// Extract data array from response
+	if data, ok := result["data"].([]any); ok {
+		tasks = make([]map[string]any, len(data))
+		for i, item := range data {
+			if taskMap, ok := item.(map[string]any); ok {
+				tasks[i] = taskMap
+			}
+		}
+	}
+	return tasks, nil
+}
+
+// GetTaskById returns task by ID as a map
+func (us *Uspacy) GetTaskById(taskId int, params ...url.Values) (taskData map[string]any, err error) {
+	var urlStr string
+	if len(params) > 0 && params[0] != nil {
+		urlStr = us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)) + "?" + params[0].Encode()
+	} else {
+		urlStr = us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId))
+	}
+	body, err := us.doGetEmptyHeaders(urlStr)
+	if err != nil {
+		return taskData, err
+	}
+	var result map[string]any
+	return result, json.Unmarshal(body, &result)
+}
+
 // GetTaskStagesByGroupId
 func (us *Uspacy) GetTaskStagesByGroupId(groupId int) (kanbanStages []task.TaskGroupStage, err error) {
 	params := url.Values{}
