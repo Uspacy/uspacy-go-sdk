@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,8 +20,8 @@ type Uspacy struct {
 	RefreshToken   string
 	client         *http.Client
 	mainHost       string
-	isExpired      bool
 	lastStatusCode int
+	mu             sync.RWMutex
 }
 
 // errorLog stores unique error message and its attempts
@@ -31,33 +31,44 @@ type errorLog struct {
 }
 
 const (
-	defaultClientTimeout = 20 * time.Second
+	defaultClientTimeout = 30 * time.Second
 	defaultRetries       = 3
 	tokenPrefix          = "Bearer "
-	defaultTimeout       = 5 * time.Second
-	uploadTimeout        = 30 * time.Second
+	maxRetryAfter        = 5 * time.Minute
 
 	// Backoff intervals for each retry attempt
-	firstRetryDelay  = 5 * time.Second
-	secondRetryDelay = 60 * time.Second
+	firstRetryDelay  = 3 * time.Second
+	secondRetryDelay = 5 * time.Second
 )
 
 // New creates an Uspacy object
 func New(token, refresh, host string) *Uspacy {
+	bearerToken := strings.TrimPrefix(token, tokenPrefix)
+	refreshToken := strings.TrimPrefix(refresh, tokenPrefix)
+
+	// Fallback: if refresh token is empty, use bearer token
+	if len(refreshToken) == 0 {
+		refreshToken = bearerToken
+	}
+
 	return &Uspacy{
-		bearerToken:  strings.TrimPrefix(token, tokenPrefix),
-		RefreshToken: strings.TrimPrefix(refresh, tokenPrefix),
+		bearerToken:  bearerToken,
+		RefreshToken: refreshToken,
 		client: &http.Client{
 			Timeout: defaultClientTimeout,
 		},
-		mainHost:  host,
-		isExpired: false,
+		mainHost: host,
 	}
 }
 
 // prepareRequest creates and configures an HTTP request with appropriate headers and authorization
-func (us *Uspacy) prepareRequest(ctx context.Context, url, method string, headers map[string]string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, body)
+func (us *Uspacy) prepareRequest(url, method string, headers map[string]string, body []byte) (*http.Request, error) {
+	var bodyReader io.Reader
+	if body != nil {
+		bodyReader = bytes.NewReader(body)
+	}
+
+	req, err := http.NewRequest(method, url, bodyReader)
 	if err != nil {
 		return nil, err
 	}
@@ -67,10 +78,9 @@ func (us *Uspacy) prepareRequest(ctx context.Context, url, method string, header
 	}
 
 	// Set authorization token
+	us.mu.RLock()
 	token := us.bearerToken
-	if us.isExpired {
-		token = us.RefreshToken
-	}
+	us.mu.RUnlock()
 	req.Header.Add("Authorization", tokenPrefix+token)
 
 	// Add custom headers
@@ -78,7 +88,7 @@ func (us *Uspacy) prepareRequest(ctx context.Context, url, method string, header
 		req.Header.Add(key, value)
 	}
 
-	return req.WithContext(ctx), nil
+	return req, nil
 }
 
 // calculateBackoff returns a fixed delay with jitter based on the attempt number
@@ -99,15 +109,30 @@ func (us *Uspacy) calculateBackoff(attempt int) time.Duration {
 	return baseDelay - jitterRange + jitter
 }
 
-// executeRequest performs an HTTP request with retry mechanism
-func (us *Uspacy) executeRequest(req *http.Request) ([]byte, int, error) {
+// doRaw performs an HTTP request with token handling and retry mechanism
+func (us *Uspacy) doRaw(url, method string, headers map[string]string, body []byte) ([]byte, int, error) {
+	return us.doRawInternal(url, method, headers, body, false)
+}
+
+// doRawSkipRefresh performs an HTTP request without token refresh on 401
+func (us *Uspacy) doRawSkipRefresh(url, method string, headers map[string]string, body []byte) ([]byte, int, error) {
+	return us.doRawInternal(url, method, headers, body, true)
+}
+
+// doRawInternal performs an HTTP request with optional token refresh
+func (us *Uspacy) doRawInternal(url, method string, headers map[string]string, body []byte, skipTokenRefresh bool) ([]byte, int, error) {
 	var (
-		responseBody []byte
-		errorLogs    = make(map[string]*errorLog)
+		responseBody   []byte
+		statusCode     int
+		errorLogs      = make(map[string]*errorLog)
+		tokenRefreshed = false
 	)
 
 	for attempt := 0; attempt < defaultRetries; attempt++ {
-		startTime := time.Now()
+		req, err := us.prepareRequest(url, method, headers, body)
+		if err != nil {
+			return nil, 0, err
+		}
 
 		res, err := us.client.Do(req)
 		if err != nil {
@@ -121,91 +146,107 @@ func (us *Uspacy) executeRequest(req *http.Request) ([]byte, int, error) {
 				}
 			}
 
-			backoff := us.calculateBackoff(attempt)
-			if time.Since(startTime) > backoff+5*time.Second {
-				break
+			if attempt < defaultRetries-1 {
+				time.Sleep(us.calculateBackoff(attempt))
 			}
-
-			time.Sleep(backoff)
 			continue
 		}
 
-		defer res.Body.Close()
 		responseBody, err = io.ReadAll(res.Body)
+		res.Body.Close()
 		if err != nil {
 			return nil, 0, err
 		}
 
-		us.lastStatusCode = res.StatusCode
-		return responseBody, res.StatusCode, nil
-	}
+		statusCode = res.StatusCode
+		us.lastStatusCode = statusCode
 
-	// Format unique errors with their attempts
-	var errorDetails strings.Builder
-	for _, log := range errorLogs {
-		errorDetails.WriteString(fmt.Sprintf("Error '%s' on attempts: %v\n",
-			log.message, log.attempts))
-	}
-
-	return nil, 0, fmt.Errorf("request failed after %d retries:\n%s",
-		defaultRetries, errorDetails.String())
-}
-
-// doRaw performs an HTTP request with token handling and retry mechanism
-func (us *Uspacy) doRaw(url, method string, headers map[string]string, body io.Reader, timeout time.Duration) ([]byte, int, error) {
-	if len(us.RefreshToken) == 0 {
-		us.isExpired = true
-		us.RefreshToken = us.bearerToken
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	req, err := us.prepareRequest(ctx, url, method, headers, body)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	responseBody, statusCode, err := us.executeRequest(req)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	if statusCode == http.StatusUnauthorized && !us.isExpired {
-		if _, err := us.TokenRefresh(); err != nil {
-			return nil, statusCode, err
+		// Handle 401 Unauthorized - refresh token and retry (only once)
+		if statusCode == http.StatusUnauthorized && !skipTokenRefresh && !tokenRefreshed {
+			if _, err := us.TokenRefresh(); err != nil {
+				return nil, statusCode, err
+			}
+			tokenRefreshed = true
+			attempt-- // Don't consume retry attempt for token refresh
+			continue
 		}
-		// Retry request with new token
-		req, err = us.prepareRequest(ctx, url, method, headers, body)
-		if err != nil {
-			return nil, 0, err
+
+		// Handle 429 Too Many Requests - retry with backoff
+		if statusCode == http.StatusTooManyRequests {
+			retryAfter := us.parseRetryAfter(res.Header.Get("Retry-After"))
+			if attempt < defaultRetries-1 {
+				time.Sleep(retryAfter)
+			}
+			continue
 		}
-		responseBody, statusCode, err = us.executeRequest(req)
-		if err != nil {
-			return nil, statusCode, err
+
+		// Success or non-retryable error
+		if statusCode >= 200 && statusCode < 500 {
+			break
 		}
+
+		// Server error (5xx) - retry
+		if attempt < defaultRetries-1 {
+			time.Sleep(us.calculateBackoff(attempt))
+		}
+	}
+
+	// Check if all retries failed with errors
+	if len(errorLogs) > 0 && statusCode == 0 {
+		var errorDetails strings.Builder
+		for _, log := range errorLogs {
+			fmt.Fprintf(&errorDetails, "Error '%s' on attempts: %v\n",
+				log.message, log.attempts)
+		}
+		return nil, 0, fmt.Errorf("request failed after %d retries:\n%s",
+			defaultRetries, errorDetails.String())
 	}
 
 	if statusCode < 200 || statusCode >= 400 {
 		return responseBody, statusCode, fmt.Errorf("request failed: [%s] %s, status code: %d, response: %s", method, url, statusCode, string(responseBody))
 	}
 
-	us.isExpired = false
 	return responseBody, statusCode, nil
+}
+
+// parseRetryAfter parses Retry-After header value and returns duration
+func (us *Uspacy) parseRetryAfter(header string) time.Duration {
+	if header == "" {
+		return us.calculateBackoff(0)
+	}
+
+	var duration time.Duration
+
+	// Try parsing as seconds
+	if seconds, err := time.ParseDuration(header + "s"); err == nil {
+		duration = seconds
+	} else if t, err := http.ParseTime(header); err == nil {
+		// Try parsing as HTTP-date
+		duration = time.Until(t)
+		if duration <= 0 {
+			return us.calculateBackoff(0)
+		}
+	} else {
+		return us.calculateBackoff(0)
+	}
+
+	// Cap the duration at maxRetryAfter
+	if duration > maxRetryAfter {
+		return maxRetryAfter
+	}
+
+	return duration
 }
 
 // doGetEmptyHeaders performs a GET request with default headers
 func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
-	// Perform a GET request with default headers
-	response, _, err := us.doRaw(url, http.MethodGet, headersMap, nil, defaultTimeout)
+	response, _, err := us.doRaw(url, http.MethodGet, headersMap, nil)
 	return response, err
 }
 
 // doPost performs a POST request with JSON body and optional additional headers
 func (us *Uspacy) doPost(url string, body any, headers ...map[string]string) ([]byte, int, error) {
-	// Encode the JSON body
-	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(body)
+	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -222,68 +263,65 @@ func (us *Uspacy) doPost(url string, body any, headers ...map[string]string) ([]
 		}
 	}
 
-	// Perform the POST request
-	response, code, err := us.doRaw(url, http.MethodPost, requestHeaders, &buf, defaultTimeout)
+	response, code, err := us.doRaw(url, http.MethodPost, requestHeaders, jsonBody)
 	return response, code, err
 }
 
 // doPatchEmptyHeaders performs a PATCH request with default headers and JSON body
 func (us *Uspacy) doPatchEmptyHeaders(url string, body any) ([]byte, error) {
-	// Encode the JSON body
-	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(body)
+	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 
-	// Perform the PATCH request
-	response, _, err := us.doRaw(url, http.MethodPatch, headersMap, &buf, defaultTimeout)
+	response, _, err := us.doRaw(url, http.MethodPatch, headersMap, jsonBody)
 	return response, err
 }
 
 // doPostEncodedForm performs a POST request with form-encoded data
 func (us *Uspacy) doPostEncodedForm(url string, values url.Values) ([]byte, error) {
-	// Set the Content-Type header to application/x-www-form-urlencoded
-	var head = make(map[string]string)
-	head["Content-Type"] = "application/x-www-form-urlencoded"
-	head["Accept"] = "application/json"
+	head := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
+		"Accept":       "application/json",
+	}
 
-	// Perform the POST request
-	response, _, err := us.doRaw(url, http.MethodPost, head, strings.NewReader(values.Encode()), defaultTimeout)
+	response, _, err := us.doRaw(url, http.MethodPost, head, []byte(values.Encode()))
 	return response, err
 }
 
 // doDeleteEmptyHeaders performs a DELETE request with default headers and optional JSON body
 func (us *Uspacy) doDeleteEmptyHeaders(url string, body any) (int, error) {
-	// Encode the JSON body if provided
-	var buf bytes.Buffer
+	var jsonBody []byte
+	var err error
 	if body != nil {
-		err := json.NewEncoder(&buf).Encode(body)
+		jsonBody, err = json.Marshal(body)
 		if err != nil {
 			return http.StatusBadRequest, err
 		}
 	}
 
-	// Perform the DELETE request
-	_, code, err := us.doRaw(url, http.MethodDelete, headersMap, nil, defaultTimeout)
+	_, code, err := us.doRaw(url, http.MethodDelete, headersMap, jsonBody)
 	return code, err
 }
 
 // doPostFormData performs a multipart form POST request with files and text parameters.
 // Returns error if no files are provided or if all provided files are invalid.
-// Uses extended timeout for handling large file uploads.
 func (us *Uspacy) doPostFormData(url string, textParams map[string]string, files map[string]io.ReadCloser) ([]byte, error) {
-	// Check if files are provided
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no files provided for upload")
 	}
 
-	// Create a multipart form writer
+	// Ensure all files are closed when done
+	defer func() {
+		for _, file := range files {
+			if file != nil {
+				file.Close()
+			}
+		}
+	}()
+
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	defer writer.Close()
-
-	headers := make(map[string]string)
 
 	// Add files to the form
 	validFilesCount := 0
@@ -301,7 +339,6 @@ func (us *Uspacy) doPostFormData(url string, textParams map[string]string, files
 		validFilesCount++
 	}
 
-	// Check if any valid files were added
 	if validFilesCount == 0 {
 		return nil, fmt.Errorf("no valid files found for upload")
 	}
@@ -313,12 +350,14 @@ func (us *Uspacy) doPostFormData(url string, textParams map[string]string, files
 		}
 	}
 
-	// Set the Content-Type header to the form's content type
-	headers["Content-Type"] = writer.FormDataContentType()
-	headers["Accept"] = "application/json"
+	writer.Close()
 
-	// Perform the POST request with extended timeout
-	response, _, err := us.doRaw(url, http.MethodPost, headers, body, uploadTimeout)
+	headers := map[string]string{
+		"Content-Type": writer.FormDataContentType(),
+		"Accept":       "application/json",
+	}
+
+	response, _, err := us.doRaw(url, http.MethodPost, headers, body.Bytes())
 	return response, err
 }
 
