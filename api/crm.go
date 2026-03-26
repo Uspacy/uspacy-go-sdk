@@ -99,10 +99,7 @@ func (us *Uspacy) GetList(entityType string, params url.Values, headers ...map[s
 		url += "?" + params.Encode()
 	}
 
-	if len(headers) > 0 {
-		return us.doGet(url, headers[0])
-	}
-	return us.doGetEmptyHeaders(url)
+	return us.doGetEmptyHeaders(url, headers...)
 }
 
 // PatchEntity this method does not return any object, just error

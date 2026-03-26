@@ -238,9 +238,21 @@ func (us *Uspacy) parseRetryAfter(header string) time.Duration {
 	return duration
 }
 
-// doGetEmptyHeaders performs a GET request with default headers
-func (us *Uspacy) doGetEmptyHeaders(url string) ([]byte, error) {
-	response, _, err := us.doRaw(url, http.MethodGet, headersMap, nil)
+// doGetEmptyHeaders performs a GET request with default headers and optional additional headers
+func (us *Uspacy) doGetEmptyHeaders(url string, headers ...map[string]string) ([]byte, error) {
+	// Merge default headers with additional headers
+	requestHeaders := make(map[string]string)
+	maps.Copy(requestHeaders, headersMap)
+
+	for _, headerMap := range headers {
+		for key, value := range headerMap {
+			if value != "" {
+				requestHeaders[key] = value
+			}
+		}
+	}
+
+	response, _, err := us.doRaw(url, http.MethodGet, requestHeaders, nil)
 	return response, err
 }
 
