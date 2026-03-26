@@ -90,6 +90,21 @@ func (us *Uspacy) GetLeads(params url.Values) (entities crm.Leads, err error) {
 	return entities, json.Unmarshal(body, &entities)
 }
 
+// GetList returns raw response for CRM entities with filters
+// This method is useful for searching entities with custom filters
+// entityType should be one of: crm.LeadsNum.GetUrl(), crm.DealsNum.GetUrl(), crm.ContactsNum.GetUrl(), crm.CompaniesNum.GetUrl()
+func (us *Uspacy) GetList(entityType string, params url.Values, headers ...map[string]string) ([]byte, error) {
+	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))
+	if len(params) > 0 {
+		url += "?" + params.Encode()
+	}
+
+	if len(headers) > 0 {
+		return us.doGet(url, headers[0])
+	}
+	return us.doGetEmptyHeaders(url)
+}
+
 // PatchEntity this method does not return any object, just error
 func (us *Uspacy) PatchEntity(entityType string, id string, entityData map[string]any) error {
 	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))+id, entityData)
