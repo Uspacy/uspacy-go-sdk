@@ -48,3 +48,15 @@ func (us *Uspacy) GetFileById(fileId int) (file files.File, err error) {
 	}
 	return file, json.Unmarshal(body, &file)
 }
+
+// UpdateFile this method updates file entityId by fileId and returns updated file object and error
+func (us *Uspacy) UpdateFile(fileId int, entityId int64) (file files.File, err error) {
+	body := map[string]int64{
+		"entityId": entityId,
+	}
+	response, err := us.doPatchEmptyHeaders(us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), body)
+	if err != nil {
+		return file, err
+	}
+	return file, json.Unmarshal(response, &file)
+}
