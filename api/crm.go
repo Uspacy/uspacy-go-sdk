@@ -104,16 +104,16 @@ func (us *Uspacy) GetList(entityType string, params url.Values, headers ...map[s
 
 // PatchEntity this method does not return any object, just error
 func (us *Uspacy) PatchEntity(entityType string, id string, entityData map[string]any) error {
-	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))+id, entityData)
+	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), id), entityData)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// PatchEntity this method does not return any object, just error
+// EntityMassEdit this method does not return any object, just error
 func (us *Uspacy) EntityMassEdit(entityType string, entityData map[string]any) error {
-	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))+"mass_edit", entityData)
+	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), "mass_edit"), entityData)
 	if err != nil {
 		return err
 	}
