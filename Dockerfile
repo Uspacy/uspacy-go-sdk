@@ -17,7 +17,7 @@ RUN go get -u golang.org/x/lint/golint
 RUN go mod tidy
 RUN CGO_ENABLED=0 go build -i -v -o release/app
 
-FROM alpine
+FROM alpine:3.23.3
 
 COPY --from=builder /go/src/app/release/app /
 
