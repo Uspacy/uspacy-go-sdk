@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strconv"
 
 	"github.com/Uspacy/uspacy-go-sdk/crm"
 )
@@ -14,6 +16,18 @@ func (us *Uspacy) GetProduct(id string) (call crm.Products, err error) {
 		return call, err
 	}
 	return call, json.Unmarshal(responseBody, &call)
+}
+
+func (us *Uspacy) GetEntityProductList(entityType string, entityID int64) (productList crm.EntityProductList, err error) {
+	params := url.Values{
+		"entity_type": []string{entityType},
+		"entity_id":   []string{strconv.FormatInt(entityID, 10)},
+	}
+	responseBody, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, crm.EntityProductListsUrl) + "?" + params.Encode())
+	if err != nil {
+		return productList, err
+	}
+	return productList, json.Unmarshal(responseBody, &productList)
 }
 
 // CreateProduct returns list of products
