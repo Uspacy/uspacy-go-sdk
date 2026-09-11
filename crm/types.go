@@ -22,6 +22,7 @@ const (
 	TaskUrl               = "static/tasks/%s"
 	ProductsUrl           = "static/products/%s"
 	EntityProductListsUrl = "static/entity-product-lists"
+	ListProductsUrl       = "static/list-products"
 	CallUrl               = "events/call"
 )
 
@@ -369,22 +370,42 @@ type (
 	}
 
 	EntityListProduct struct {
-		ID                  int     `json:"id"`
-		Title               string  `json:"title"`
-		Price               int64   `json:"price"`
-		Currency            string  `json:"currency"`
-		Quantity            float64 `json:"quantity"`
-		PriceTypeID         *int    `json:"price_type_id"`
-		MeasurementUnitAbbr string  `json:"measurement_unit_abbr"`
-		DiscountValue       float64 `json:"discount_value"`
-		DiscountType        string  `json:"discount_type"`
-		DiscountPrice       int64   `json:"discount_price"`
-		TaxRate             float64 `json:"tax_rate"`
-		IsTaxIncluded       int     `json:"is_tax_included"`
-		Amount              int64   `json:"amount"`
-		CreatedAt           int64   `json:"created_at"`
-		UpdatedAt           int64   `json:"updated_at"`
-		Product             any     `json:"product"`
+		ID                  int      `json:"id"`
+		Title               string   `json:"title"`
+		Price               int64    `json:"price"`
+		Currency            string   `json:"currency"`
+		Quantity            float64  `json:"quantity"`
+		PriceTypeID         *int     `json:"price_type_id"`
+		MeasurementUnitAbbr string   `json:"measurement_unit_abbr"`
+		DiscountValue       float64  `json:"discount_value"`
+		DiscountType        string   `json:"discount_type"`
+		DiscountPrice       int64    `json:"discount_price"`
+		TaxRate             *float64 `json:"tax_rate"`
+		IsTaxIncluded       int      `json:"is_tax_included"`
+		Amount              int64    `json:"amount"`
+		CreatedAt           int64    `json:"created_at"`
+		UpdatedAt           int64    `json:"updated_at"`
+		Product             any      `json:"product"`
+	}
+
+	CreateEntityListProductRequest struct {
+		CreateType          string   `json:"createType"`
+		Price               int64    `json:"price"`
+		Product             any      `json:"product"`
+		Amount              int64    `json:"amount"`
+		Currency            string   `json:"currency"`
+		DiscountType        string   `json:"discount_type"`
+		MeasurementUnitAbbr string   `json:"measurement_unit_abbr"`
+		DiscountPrice       int64    `json:"discount_price"`
+		DiscountValue       float64  `json:"discount_value"`
+		Quantity            float64  `json:"quantity"`
+		TaxRate             *float64 `json:"tax_rate"`
+		Title               string   `json:"title"`
+		ID                  int      `json:"id"`
+		IsTaxIncluded       int      `json:"is_tax_included"`
+		UpdatedAt           *int64   `json:"updated_at"`
+		CreatedAt           *int64   `json:"created_at"`
+		EntityProductListID int      `json:"entity_product_list_id"`
 	}
 
 	Product struct {

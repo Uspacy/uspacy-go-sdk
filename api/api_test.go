@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -91,5 +92,64 @@ func TestGetEntityProductList(t *testing.T) {
 	}
 	if len(productList.ListProducts) != 1 || productList.ListProducts[0].Title != "Вентилятор 12" {
 		t.Errorf("ListProducts = %+v", productList.ListProducts)
+	}
+}
+
+func TestCreateEntityListProduct(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("request method = %q, want %q", r.Method, http.MethodPost)
+		}
+		if r.URL.Path != "/crm/v1/static/list-products" {
+			t.Errorf("request path = %q, want %q", r.URL.Path, "/crm/v1/static/list-products")
+		}
+		var request crm.CreateEntityListProductRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if request.Title != "кк" || request.EntityProductListID != 5 || request.TaxRate != nil {
+			t.Errorf("request body = %+v", request)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"id":9,"title":"кк","price":0,"currency":"UAH","quantity":1,"price_type_id":null,"measurement_unit_abbr":"pcs","discount_value":0,"discount_type":"relative","discount_price":0,"tax_rate":null,"is_tax_included":0,"amount":0,"created_at":1789142588,"updated_at":1789142588,"product":null}`)
+	}))
+	defer server.Close()
+
+	us := New("token", "", server.URL)
+	product, err := us.CreateEntityListProduct(crm.CreateEntityListProductRequest{
+		Currency:            "UAH",
+		DiscountType:        "relative",
+		MeasurementUnitAbbr: "pcs",
+		Quantity:            1,
+		Title:               "кк",
+		EntityProductListID: 5,
+	})
+	if err != nil {
+		t.Fatalf("CreateEntityListProduct() error = %v", err)
+	}
+	if product.ID != 9 || product.Title != "кк" || product.TaxRate != nil {
+		t.Errorf("CreateEntityListProduct() = %+v", product)
+	}
+}
+
+func TestDeleteEntityListProduct(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("request method = %q, want %q", r.Method, http.MethodDelete)
+		}
+		if r.URL.Path != "/crm/v1/static/list-products/9" {
+			t.Errorf("request path = %q, want %q", r.URL.Path, "/crm/v1/static/list-products/9")
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	us := New("token", "", server.URL)
+	statusCode, err := us.DeleteEntityListProduct(9)
+	if err != nil {
+		t.Fatalf("DeleteEntityListProduct() error = %v", err)
+	}
+	if statusCode != http.StatusNoContent {
+		t.Errorf("DeleteEntityListProduct() status = %d, want %d", statusCode, http.StatusNoContent)
 	}
 }
