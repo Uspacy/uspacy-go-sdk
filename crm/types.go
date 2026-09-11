@@ -9,19 +9,21 @@ const (
 )
 
 const (
-	EntitiesUrl        = "entity"
-	EntityUrl          = "entities/%s/"
-	FieldsUrl          = "entities/%s/fields/%s/"
-	CreateFieldUrl     = "entities/%s/fields"
-	ListsUrl           = "entities/%s/lists/%s"
-	FunnelUrl          = "entities/%s/funnel"
-	KanbanStageUrl     = "entities/%s/kanban/stage/%v"
-	StageByFunnelIdUrl = "?funnel_id=%d"
-	MoveKanbanStageUrl = "entities/%s/%d/move/stage/%s"
-	ReasonsUrl         = "reasons/%d"
-	TaskUrl            = "static/tasks/%s"
-	ProductsUrl        = "static/products/%s"
-	CallUrl            = "events/call"
+	EntitiesUrl           = "entity"
+	EntityUrl             = "entities/%s/"
+	FieldsUrl             = "entities/%s/fields/%s/"
+	CreateFieldUrl        = "entities/%s/fields"
+	ListsUrl              = "entities/%s/lists/%s"
+	FunnelUrl             = "entities/%s/funnel"
+	KanbanStageUrl        = "entities/%s/kanban/stage/%v"
+	StageByFunnelIdUrl    = "?funnel_id=%d"
+	MoveKanbanStageUrl    = "entities/%s/%d/move/stage/%s"
+	ReasonsUrl            = "reasons/%d"
+	TaskUrl               = "static/tasks/%s"
+	ProductsUrl           = "static/products/%s"
+	EntityProductListsUrl = "static/entity-product-lists"
+	ListProductsUrl       = "static/list-products"
+	CallUrl               = "events/call"
 )
 
 type Entity int64
@@ -352,6 +354,58 @@ type (
 	Products struct {
 		Data  []Product    `json:"data"`
 		Links common.Links `json:"links"`
+	}
+
+	EntityProductList struct {
+		ID                         int                 `json:"id"`
+		EntityType                 string              `json:"entity_type"`
+		EntityID                   int64               `json:"entity_id"`
+		IsAutomaticCalculation     int                 `json:"is_automatic_calculation"`
+		AmountBeforeDiscountAndTax int64               `json:"amount_before_discount_and_tax"`
+		AmountDiscount             int64               `json:"amount_discount"`
+		AmountTax                  int64               `json:"amount_tax"`
+		AmountBeforeTax            int64               `json:"amount_before_tax"`
+		AmountTotal                int64               `json:"amount_total"`
+		ListProducts               []EntityListProduct `json:"list_products"`
+	}
+
+	EntityListProduct struct {
+		ID                  int      `json:"id"`
+		Title               string   `json:"title"`
+		Price               int64    `json:"price"`
+		Currency            string   `json:"currency"`
+		Quantity            float64  `json:"quantity"`
+		PriceTypeID         *int     `json:"price_type_id"`
+		MeasurementUnitAbbr string   `json:"measurement_unit_abbr"`
+		DiscountValue       float64  `json:"discount_value"`
+		DiscountType        string   `json:"discount_type"`
+		DiscountPrice       int64    `json:"discount_price"`
+		TaxRate             *float64 `json:"tax_rate"`
+		IsTaxIncluded       int      `json:"is_tax_included"`
+		Amount              int64    `json:"amount"`
+		CreatedAt           int64    `json:"created_at"`
+		UpdatedAt           int64    `json:"updated_at"`
+		Product             any      `json:"product"`
+	}
+
+	CreateEntityListProductRequest struct {
+		CreateType          string   `json:"createType"`
+		Price               int64    `json:"price"`
+		Product             any      `json:"product"`
+		Amount              int64    `json:"amount"`
+		Currency            string   `json:"currency"`
+		DiscountType        string   `json:"discount_type"`
+		MeasurementUnitAbbr string   `json:"measurement_unit_abbr"`
+		DiscountPrice       int64    `json:"discount_price"`
+		DiscountValue       float64  `json:"discount_value"`
+		Quantity            float64  `json:"quantity"`
+		TaxRate             *float64 `json:"tax_rate"`
+		Title               string   `json:"title"`
+		ID                  int      `json:"id"`
+		IsTaxIncluded       int      `json:"is_tax_included"`
+		UpdatedAt           *int64   `json:"updated_at"`
+		CreatedAt           *int64   `json:"created_at"`
+		EntityProductListID int      `json:"entity_product_list_id"`
 	}
 
 	Product struct {
