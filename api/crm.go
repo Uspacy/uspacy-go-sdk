@@ -49,8 +49,6 @@ func (us *Uspacy) GetEntities(entityType string, params url.Values) (entities cr
 func (us *Uspacy) GetCRMEntitiesForExport(entityType string, params url.Values) (entities crm.CRMEntityForExport, err error) {
 	var entityRoute string
 	switch entityType {
-	case crm.TasksNum.GetUrl():
-		entityRoute = fmt.Sprintf(crm.TaskUrl, "")
 	case crm.ProductsNum.GetUrl():
 		entityRoute = fmt.Sprintf(crm.ProductsUrl, "")
 	default:
@@ -154,24 +152,6 @@ func (us *Uspacy) CreateDeal(dealData map[string]any, headers ...map[string]stri
 		return deal, err
 	}
 	return deal, json.Unmarshal(body, &deal)
-}
-
-// CreateTask returns created task object
-func (us *Uspacy) CreateTaskCRM(taskData map[string]any, headers ...map[string]string) (task crm.Task, err error) {
-	body, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.TaskUrl, "")), taskData, headers...)
-	if err != nil {
-		return task, err
-	}
-	return task, json.Unmarshal(body, &task)
-}
-
-// PatchTaskCrm returns created task object
-func (us *Uspacy) PatchTaskCrm(id string, taskData map[string]any) (task crm.Task, err error) {
-	body, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.TaskUrl, id)), taskData)
-	if err != nil {
-		return task, err
-	}
-	return task, json.Unmarshal(body, &task)
 }
 
 // GetField returns Field struct for a given type of entity & field
