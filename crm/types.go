@@ -19,7 +19,6 @@ const (
 	StageByFunnelIdUrl    = "?funnel_id=%d"
 	MoveKanbanStageUrl    = "entities/%s/%d/move/stage/%s"
 	ReasonsUrl            = "reasons/%d"
-	TaskUrl               = "static/tasks/%s"
 	ProductsUrl           = "static/products/%s"
 	EntityProductListsUrl = "static/entity-product-lists"
 	ListProductsUrl       = "static/list-products"
@@ -33,7 +32,7 @@ const (
 	DealsNum
 	ContactsNum
 	CompaniesNum
-	TasksNum
+	_
 	ProductsNum
 	SmartObjects
 )
@@ -44,7 +43,6 @@ func (e Entity) GetUrl() string {
 		LeadsNum:     "leads",
 		DealsNum:     "deals",
 		CompaniesNum: "companies",
-		TasksNum:     "tasks",
 		ProductsNum:  "products",
 		SmartObjects: "universal",
 	}
@@ -221,21 +219,6 @@ type (
 
 		CompanyName string `json:"company_name"`
 		//LeadLabel   []Value `json:"lead_label"`
-	}
-
-	Task struct {
-		ID            int            `json:"id"`
-		Title         string         `json:"title"`
-		Description   string         `json:"description"`
-		Type          string         `json:"type"`
-		Status        string         `json:"status"`
-		CreatedAt     common.FlexInt `json:"created_at"`     // int
-		UpdatedAt     common.FlexInt `json:"updated_at"`     // int
-		CreatedBy     common.FlexInt `json:"created_by"`     // int
-		ResponsibleID common.FlexInt `json:"responsible_id"` // int
-		StartTime     common.FlexInt `json:"start_time"`     // int
-		EndTime       common.FlexInt `json:"end_time"`       // int
-		//Deals         []Deal      `json:"deals"`
 	}
 )
 
