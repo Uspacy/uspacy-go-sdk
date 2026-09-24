@@ -220,13 +220,7 @@ func (us *Uspacy) doRawInternalCtx(ctx context.Context, url, method string, head
 
 	// Check if all retries failed with errors
 	if len(errorLogs) > 0 && statusCode == 0 {
-		var errorDetails strings.Builder
-		for _, log := range errorLogs {
-			fmt.Fprintf(&errorDetails, "Error '%s' on attempts: %v\n",
-				log.message, log.attempts)
-		}
-		return nil, 0, fmt.Errorf("request failed after %d retries:\n%s",
-			defaultRetries, errorDetails.String())
+		return nil, 0, requestFailedAfterRetries(ctx, defaultRetries, errorLogs)
 	}
 
 	if statusCode < 200 || statusCode >= 400 {
@@ -265,6 +259,28 @@ func abortedWhileWaiting(lastErr error, ctxErr error) error {
 	return ctxErr
 }
 
+// requestFailedAfterRetries builds the error doRawInternalCtx returns when every attempt
+// failed at the transport level, so no HTTP response was ever received (statusCode stays
+// 0). The last attempt runs no backoff sleep, so a context that ends during it is never
+// caught by sleepCtx/abortedWhileWaiting; if ctx has already ended by the time this runs,
+// ctx.Err() is folded into the text with %w, keeping errors.Is(err, ctx.Err()) working.
+// Every existing caller runs this under context.Background(), which never ends, so for
+// them the text and type are exactly what doRawInternalCtx returned before ctx support
+// was added.
+func requestFailedAfterRetries(ctx context.Context, retries int, errorLogs map[string]*errorLog) error {
+	var errorDetails strings.Builder
+	for _, log := range errorLogs {
+		fmt.Fprintf(&errorDetails, "Error '%s' on attempts: %v\n",
+			log.message, log.attempts)
+	}
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return fmt.Errorf("request failed after %d retries:\n%scontext error: %w",
+			retries, errorDetails.String(), ctxErr)
+	}
+	return fmt.Errorf("request failed after %d retries:\n%s",
+		retries, errorDetails.String())
+}
+
 // HTTPError is returned for a final non-2xx response from doRawInternalCtx. Error() keeps
 // the exact historical text so existing string parsing keeps working, even though the error
 // is now a concrete type: "request failed: [GET] <url>, status code: 403, response: <body>".
@@ -287,13 +303,14 @@ func (e *HTTPError) Unwrap() error {
 	return e.Err
 }
 
-// asHTTPError normalizes a (statusCode, err) result so every non-2xx failure is an
-// *HTTPError. If err is nil, or already an *HTTPError (or wraps one), it is returned
-// unchanged. Otherwise, for statusCode >= 400, it is wrapped as
-// &HTTPError{StatusCode: statusCode, Err: err} — for example the raw error
-// doRawInternalCtx returns when a 401's token refresh fails. Unexported helper for the
-// context-aware CRM methods (GetFieldsCtx, GetEntityCtx) that need a single error type.
-func asHTTPError(statusCode int, err error) error {
+// asHTTPError normalizes a (method, url, statusCode, err) result so every non-2xx failure
+// is an *HTTPError carrying Method and URL. If err is nil, or already an *HTTPError (or
+// wraps one), it is returned unchanged. Otherwise, for statusCode >= 400, it is wrapped as
+// &HTTPError{Method: method, URL: url, StatusCode: statusCode, Err: err} — for example the
+// raw error doRawInternalCtx returns when a 401's token refresh fails. Unexported helper
+// for the context-aware CRM methods (GetFieldsCtx, GetEntityCtx) that need a single error
+// type.
+func asHTTPError(method, url string, statusCode int, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -302,7 +319,7 @@ func asHTTPError(statusCode int, err error) error {
 		return err
 	}
 	if statusCode >= 400 {
-		return &HTTPError{StatusCode: statusCode, Err: err}
+		return &HTTPError{Method: method, URL: url, StatusCode: statusCode, Err: err}
 	}
 	return err
 }
