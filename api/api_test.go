@@ -463,8 +463,11 @@ func TestDoRawInternalCtxTokenRefreshCarriesContext(t *testing.T) {
 	_, statusCode, err := us.doRawInternalCtx(ctx, us.buildURL("resource"), http.MethodGet, nil, nil, false)
 	elapsed := time.Since(start)
 
-	if statusCode != http.StatusUnauthorized {
-		t.Errorf("statusCode = %d, want %d", statusCode, http.StatusUnauthorized)
+	// ctx ends during the refresh itself, before it can fail or succeed, and no 429/5xx was
+	// ever seen on the original request, so this is the done-context case (status 0), not a
+	// refresh failure (which would carry the original request's 401).
+	if statusCode != 0 {
+		t.Errorf("statusCode = %d, want 0", statusCode)
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("err = %v, want context.DeadlineExceeded in its chain (the refresh request should abort with ctx)", err)
@@ -656,6 +659,205 @@ func TestGetFieldsCtx401RefreshFailureSurfacesAsHTTPError(t *testing.T) {
 	}
 }
 
+// A refresh request that never answers must still honour ctx: both methods report the
+// context error, not a 401 *HTTPError, once ctx's deadline passes.
+func TestGetFieldsCtxAndGetEntityCtxRefreshStallIsContextError(t *testing.T) {
+	newClient := func() (*Uspacy, *httptest.Server, *httptest.Server) {
+		// The refresh endpoint never answers; it must block on its own request's context
+		// (not just never call w.Write) so refreshServer.Close() doesn't hang.
+		refreshServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			<-r.Context().Done()
+		}))
+		mainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+		}))
+		domain := strings.TrimPrefix(refreshServer.URL, "https://")
+		us := New(testJWT(t, domain), "", mainServer.URL)
+		us.client = refreshServer.Client() // trust the TLS test server's certificate
+		us.client.Timeout = 2 * time.Second
+		return us, refreshServer, mainServer
+	}
+
+	t.Run("GetFieldsCtx", func(t *testing.T) {
+		us, refreshServer, mainServer := newClient()
+		defer refreshServer.Close()
+		defer mainServer.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetFieldsCtx(ctx, "leads")
+		elapsed := time.Since(start)
+
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain", err)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+
+	t.Run("GetEntityCtx", func(t *testing.T) {
+		us, refreshServer, mainServer := newClient()
+		defer refreshServer.Close()
+		defer mainServer.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetEntityCtx(ctx, "contacts", 5)
+		elapsed := time.Since(start)
+
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain", err)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+}
+
+// Same shape as TestGetFieldsCtxAndGetEntityCtxRefreshStallIsContextError, but the caller
+// cancels ctx instead of letting a deadline pass.
+func TestGetFieldsCtxAndGetEntityCtxRefreshCancelIsContextError(t *testing.T) {
+	newClient := func() (*Uspacy, *httptest.Server, *httptest.Server) {
+		refreshServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			<-r.Context().Done()
+		}))
+		mainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+		}))
+		domain := strings.TrimPrefix(refreshServer.URL, "https://")
+		us := New(testJWT(t, domain), "", mainServer.URL)
+		us.client = refreshServer.Client()
+		us.client.Timeout = 2 * time.Second
+		return us, refreshServer, mainServer
+	}
+
+	t.Run("GetFieldsCtx", func(t *testing.T) {
+		us, refreshServer, mainServer := newClient()
+		defer refreshServer.Close()
+		defer mainServer.Close()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		time.AfterFunc(100*time.Millisecond, cancel)
+
+		start := time.Now()
+		_, err := us.GetFieldsCtx(ctx, "leads")
+		elapsed := time.Since(start)
+
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("err = %v, want context.Canceled in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain", err)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+
+	t.Run("GetEntityCtx", func(t *testing.T) {
+		us, refreshServer, mainServer := newClient()
+		defer refreshServer.Close()
+		defer mainServer.Close()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		time.AfterFunc(100*time.Millisecond, cancel)
+
+		start := time.Now()
+		_, err := us.GetEntityCtx(ctx, "contacts", 5)
+		elapsed := time.Since(start)
+
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("err = %v, want context.Canceled in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain", err)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+}
+
+// A 429 seen before the 401 must still win when the retry that follows a successful-looking
+// 401 handoff never completes because the refresh itself stalls past ctx: the done-context
+// rule prefers a real HTTP error already on hand over the bare context error.
+func TestGetFieldsCtxAndGetEntityCtxRefreshStallKeepsEarlier429(t *testing.T) {
+	const respBody = "slow down"
+	newClient := func() (*Uspacy, *httptest.Server, *httptest.Server) {
+		refreshServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			<-r.Context().Done()
+		}))
+		var calls int32
+		mainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if atomic.AddInt32(&calls, 1) == 1 {
+				w.Header().Set("Retry-After", "0")
+				w.WriteHeader(http.StatusTooManyRequests)
+				fmt.Fprint(w, respBody)
+				return
+			}
+			w.WriteHeader(http.StatusUnauthorized)
+		}))
+		domain := strings.TrimPrefix(refreshServer.URL, "https://")
+		us := New(testJWT(t, domain), "", mainServer.URL)
+		us.client = refreshServer.Client()
+		us.client.Timeout = 2 * time.Second
+		return us, refreshServer, mainServer
+	}
+
+	t.Run("GetFieldsCtx", func(t *testing.T) {
+		us, refreshServer, mainServer := newClient()
+		defer refreshServer.Close()
+		defer mainServer.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetFieldsCtx(ctx, "leads")
+		elapsed := time.Since(start)
+
+		var he *HTTPError
+		if !errors.As(err, &he) || he.StatusCode != http.StatusTooManyRequests || string(he.Body) != respBody {
+			t.Fatalf("err = %v, want the 429 *HTTPError with body %q", err, respBody)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+
+	t.Run("GetEntityCtx", func(t *testing.T) {
+		us, refreshServer, mainServer := newClient()
+		defer refreshServer.Close()
+		defer mainServer.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetEntityCtx(ctx, "contacts", 5)
+		elapsed := time.Since(start)
+
+		var he *HTTPError
+		if !errors.As(err, &he) || he.StatusCode != http.StatusTooManyRequests || string(he.Body) != respBody {
+			t.Fatalf("err = %v, want the 429 *HTTPError with body %q", err, respBody)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+}
+
 // --- W1/W3 fixes: last-HTTP-error tracking, 3xx, connection failures ---
 
 func TestGetFieldsCtx_CancelStopsRetrySleep(t *testing.T) {
@@ -833,11 +1035,12 @@ func TestGetFieldsCtxAndGetEntityCtxConnRefusedIsContextError(t *testing.T) {
 // the refresh's own error as its cause — never the refresh's own status or URL directly. The
 // old (non-context) path must keep returning that raw refresh error unwrapped and unchanged.
 //
-// The ctx methods run with a short ctx, not context.Background(): a 500 from the refresh
-// endpoint is itself retried (it is just another 5xx response to doRawInternalCtx), and a
-// short ctx cuts that backoff short the same way it does for the original request, via the
-// same lastHTTPErr abort path (TestDoRawInternalCtxRetryWaitCutShortBy502) — so this stays
-// fast while still observing the refresh's real StatusCode as the 401's cause.
+// The ctx methods run with a short ctx, not context.Background(): a 4xx from the refresh
+// endpoint fails it immediately, well within that budget, so its own *HTTPError becomes the
+// 401's cause as above. A 500 is different: doRawInternalCtx retries it like any other 5xx,
+// and the short ctx ends during that retry's backoff before the refresh can produce a
+// conclusive answer — so ctx ending wins instead, the same done-context rule as everywhere
+// else ctx ends mid-retry, with no *HTTPError from the refresh in the chain.
 func TestGetFieldsCtxAndGetEntityCtxRefreshHTTPFailureIs401HTTPError(t *testing.T) {
 	for _, refreshStatus := range []int{http.StatusForbidden, http.StatusNotFound, http.StatusInternalServerError} {
 		t.Run(http.StatusText(refreshStatus), func(t *testing.T) {
@@ -864,6 +1067,16 @@ func TestGetFieldsCtxAndGetEntityCtxRefreshHTTPFailureIs401HTTPError(t *testing.
 				defer cancel()
 
 				_, err := us.GetFieldsCtx(ctx, "leads")
+				if refreshStatus == http.StatusInternalServerError {
+					if !errors.Is(err, context.DeadlineExceeded) {
+						t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+					}
+					var he *HTTPError
+					if errors.As(err, &he) {
+						t.Errorf("err = %v, want no *HTTPError in the chain", err)
+					}
+					return
+				}
 				var he *HTTPError
 				if !errors.As(err, &he) {
 					t.Fatalf("err = %v, want *HTTPError", err)
@@ -885,6 +1098,16 @@ func TestGetFieldsCtxAndGetEntityCtxRefreshHTTPFailureIs401HTTPError(t *testing.
 				defer cancel()
 
 				_, err := us.GetEntityCtx(ctx, "contacts", 5)
+				if refreshStatus == http.StatusInternalServerError {
+					if !errors.Is(err, context.DeadlineExceeded) {
+						t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+					}
+					var he *HTTPError
+					if errors.As(err, &he) {
+						t.Errorf("err = %v, want no *HTTPError in the chain", err)
+					}
+					return
+				}
 				var he *HTTPError
 				if !errors.As(err, &he) {
 					t.Fatalf("err = %v, want *HTTPError", err)

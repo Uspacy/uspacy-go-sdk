@@ -134,10 +134,12 @@ func (us *Uspacy) doRawInternal(url, method string, headers map[string]string, b
 // last attempt's own request, which runs no wait afterward (see abortedWhileWaiting). A 401
 // whose token refresh fails is reported as a *refreshFailedError wrapping the refresh error,
 // not the refresh error directly: doRawInternal strips that marker, and GetFieldsCtx /
-// GetEntityCtx turn it into a 401 *HTTPError (see finalizeCtxError). A final non-2xx answer is
-// reported as *HTTPError; ctx ending is reported as the last *HTTPError from a 429 or 5xx
-// response if one occurred since the last successful token refresh, otherwise ctx's own error,
-// wrapped so errors.Is(err, ctx.Err()) works.
+// GetEntityCtx turn it into a 401 *HTTPError (see finalizeCtxError) — unless ctx has already
+// ended by the time the refresh fails, in which case no *refreshFailedError is produced and
+// the same done-context rule below applies instead. A final non-2xx answer is reported as
+// *HTTPError; ctx ending is reported as the last *HTTPError from a 429 or 5xx response if one
+// occurred since the last successful token refresh, otherwise ctx's own error, wrapped so
+// errors.Is(err, ctx.Err()) works.
 func (us *Uspacy) doRawInternalCtx(ctx context.Context, url, method string, headers map[string]string, body []byte, skipTokenRefresh bool) ([]byte, int, error) {
 	var (
 		responseBody   []byte
@@ -197,6 +199,12 @@ func (us *Uspacy) doRawInternalCtx(ctx context.Context, url, method string, head
 		// Handle 401 Unauthorized - refresh token and retry (only once)
 		if statusCode == http.StatusUnauthorized && !skipTokenRefresh && !tokenRefreshed {
 			if _, err := us.tokenRefreshCtx(ctx); err != nil {
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					// ctx ended during the refresh itself (or during the request it
+					// failed on), so the done-context rule takes over instead of
+					// reporting a refresh failure: see abort/abortedWhileWaiting.
+					return abort(ctxErr)
+				}
 				return nil, statusCode, &refreshFailedError{err}
 			}
 			tokenRefreshed = true
