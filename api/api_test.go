@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -262,62 +263,47 @@ func TestHTTPErrorUnwrap(t *testing.T) {
 	}
 }
 
-func TestAsHTTPError(t *testing.T) {
+func TestFinalizeCtxError(t *testing.T) {
 	const method, url = http.MethodGet, "https://example.uspacy.ua/x"
 
-	if got := asHTTPError(method, url, http.StatusOK, nil); got != nil {
-		t.Errorf("asHTTPError(200, nil) = %v, want nil", got)
+	if got := finalizeCtxError(method, url, http.StatusOK, nil, nil); got != nil {
+		t.Errorf("finalizeCtxError(200, nil, nil) = %v, want nil", got)
 	}
 
-	raw := errors.New("boom")
-	got := asHTTPError(method, url, http.StatusUnauthorized, raw)
+	already := &HTTPError{Method: method, URL: url, StatusCode: http.StatusInternalServerError}
+	if got := finalizeCtxError(method, url, http.StatusInternalServerError, nil, already); got != already {
+		t.Error("finalizeCtxError should return an existing *HTTPError unchanged, not re-wrap it")
+	}
+
+	// A context error (or any other non-HTTPError, non-refreshFailedError error) must pass
+	// through unchanged, whatever statusCode says: dropping asHTTPError's statusCode >= 400
+	// wrapping rule means finalizeCtxError never wraps an arbitrary error as *HTTPError.
+	ctxErr := fmt.Errorf("request aborted: %w", context.DeadlineExceeded)
+	if got := finalizeCtxError(method, url, 0, nil, ctxErr); got != ctxErr {
+		t.Errorf("finalizeCtxError(0, ctxErr) = %v, want ctxErr unchanged", got)
+	}
+
+	// A refresh failure marker becomes a 401 *HTTPError whose Err is the refresh error,
+	// regardless of what statusCode doRawInternalCtx returned alongside it.
+	refreshErr := errors.New("refresh boom")
+	got := finalizeCtxError(method, url, http.StatusUnauthorized, nil, &refreshFailedError{refreshErr})
 	var httpErr *HTTPError
 	if !errors.As(got, &httpErr) {
-		t.Fatalf("asHTTPError(401, raw) = %v, want *HTTPError", got)
+		t.Fatalf("finalizeCtxError(401, refreshFailedError) = %v, want *HTTPError", got)
 	}
-	if httpErr.Method != method || httpErr.URL != url || httpErr.StatusCode != http.StatusUnauthorized || httpErr.Err != raw {
-		t.Errorf("asHTTPError(401, raw) = %+v, want Method=%q URL=%q StatusCode=401 Err=raw", httpErr, method, url)
-	}
-
-	already := &HTTPError{StatusCode: http.StatusInternalServerError}
-	if got := asHTTPError(method, url, http.StatusInternalServerError, already); got != already {
-		t.Error("asHTTPError should return an existing *HTTPError unchanged, not re-wrap it")
+	if httpErr.Method != method || httpErr.URL != url || httpErr.StatusCode != http.StatusUnauthorized || httpErr.Err != refreshErr {
+		t.Errorf("finalizeCtxError(401, refreshFailedError) = %+v, want Method=%q URL=%q StatusCode=401 Err=refreshErr", httpErr, method, url)
 	}
 
-	if got := asHTTPError(method, url, http.StatusOK, raw); got != raw {
-		t.Errorf("asHTTPError(200, raw) = %v, want raw unchanged (status < 400)", got)
-	}
-}
-
-// F1: doRawInternalCtx now marks a failed token refresh with *refreshFailedError instead of
-// returning the refresh error directly (see TestDoRaw401RefreshFailureReturnsRawError, which
-// pins that doRawInternal still strips it back off). asHTTPError must turn that marker into a
-// 401 *HTTPError carrying the *original* request's method/URL and the refresh error as Err —
-// even when the refresh error is itself an *HTTPError (e.g. the refresh endpoint's own 404),
-// which must not leak its own method/URL/status in place of the 401's.
-func TestAsHTTPErrorRefreshFailedError(t *testing.T) {
-	const method, url = http.MethodGet, "https://example.uspacy.ua/x"
-
-	plainCause := errors.New("boom")
-	got := asHTTPError(method, url, http.StatusUnauthorized, &refreshFailedError{plainCause})
-	var httpErr *HTTPError
+	// A final 3xx is success everywhere else (doRawInternalCtx, every non-context method),
+	// but finalizeCtxError reports it as an *HTTPError with its body for GetFieldsCtx and
+	// GetEntityCtx.
+	got = finalizeCtxError(method, url, http.StatusFound, []byte("moved"), nil)
 	if !errors.As(got, &httpErr) {
-		t.Fatalf("asHTTPError(401, refreshFailedError) = %v, want *HTTPError", got)
+		t.Fatalf("finalizeCtxError(302, nil) = %v, want *HTTPError", got)
 	}
-	if httpErr.Method != method || httpErr.URL != url || httpErr.StatusCode != http.StatusUnauthorized || httpErr.Err != plainCause {
-		t.Errorf("asHTTPError(401, refreshFailedError{plain}) = %+v, want Method=%q URL=%q StatusCode=401 Err=plainCause", httpErr, method, url)
-	}
-
-	refreshHTTPCause := &HTTPError{Method: http.MethodPost, URL: "https://example.uspacy.ua/auth/refresh_token", StatusCode: http.StatusNotFound}
-	got = asHTTPError(method, url, http.StatusUnauthorized, &refreshFailedError{refreshHTTPCause})
-	if !errors.As(got, &httpErr) {
-		t.Fatalf("asHTTPError(401, refreshFailedError{httpErr}) = %v, want *HTTPError", got)
-	}
-	if httpErr.Method != method || httpErr.URL != url || httpErr.StatusCode != http.StatusUnauthorized {
-		t.Errorf("asHTTPError(401, refreshFailedError{httpErr}) = %+v, want the ORIGINAL request's Method=%q URL=%q StatusCode=401, not the refresh's own", httpErr, method, url)
-	}
-	if httpErr.Err != error(refreshHTTPCause) {
-		t.Errorf("httpErr.Err = %v, want the refresh's own *HTTPError as the cause", httpErr.Err)
+	if httpErr.StatusCode != http.StatusFound || string(httpErr.Body) != "moved" {
+		t.Errorf("finalizeCtxError(302, nil) = %+v, want StatusCode=302 Body=%q", httpErr, "moved")
 	}
 }
 
@@ -670,10 +656,188 @@ func TestGetFieldsCtx401RefreshFailureSurfacesAsHTTPError(t *testing.T) {
 	}
 }
 
+// --- W1/W3 fixes: last-HTTP-error tracking, 3xx, connection failures ---
+
+func TestGetFieldsCtx_CancelStopsRetrySleep(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusBadGateway) }))
+	defer srv.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	_, err := New("t", "", srv.URL).GetFieldsCtx(ctx, "leads")
+	var he *HTTPError
+	if !errors.As(err, &he) || he.StatusCode != http.StatusBadGateway || time.Since(start) > time.Second {
+		t.Fatalf("want *HTTPError 502 within 1s (no 3 s backoff), got %v after %v", err, time.Since(start))
+	}
+	if !strings.HasPrefix(he.Error(), "request failed: [GET] ") || !strings.Contains(he.Error(), "status code: 502, response: ") {
+		t.Fatalf("error text changed: %q", he.Error())
+	}
+}
+
+// Same shape as TestGetFieldsCtx_CancelStopsRetrySleep, for GetEntityCtx. The response body
+// is non-empty so this also pins W1(b): the *HTTPError returned when ctx ends must carry the
+// last 5xx response's real body, not an empty, synthesized one.
+func TestGetEntityCtx_CancelStopsRetrySleep(t *testing.T) {
+	const respBody = "bad gateway"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprint(w, respBody)
+	}))
+	defer srv.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	_, err := New("t", "", srv.URL).GetEntityCtx(ctx, "contacts", 5)
+	var he *HTTPError
+	if !errors.As(err, &he) || he.StatusCode != http.StatusBadGateway || time.Since(start) > time.Second {
+		t.Fatalf("want *HTTPError 502 within 1s (no 3 s backoff), got %v after %v", err, time.Since(start))
+	}
+	if string(he.Body) != respBody {
+		t.Fatalf("HTTPError.Body = %q, want %q (the real 502 body, not a synthesized empty one)", he.Body, respBody)
+	}
+	if !strings.HasPrefix(he.Error(), "request failed: [GET] ") || !strings.Contains(he.Error(), "status code: 502, response: "+respBody) {
+		t.Fatalf("error text changed: %q", he.Error())
+	}
+}
+
+// A final 500 must also surface as *HTTPError from both context-aware methods, without
+// waiting out the real ~3s backoff.
+func TestGetFieldsCtxAndGetEntityCtx500IsHTTPError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	us := New("token", "", srv.URL)
+
+	t.Run("GetFieldsCtx", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+		start := time.Now()
+		_, err := us.GetFieldsCtx(ctx, "leads")
+		var he *HTTPError
+		if !errors.As(err, &he) || he.StatusCode != http.StatusInternalServerError {
+			t.Fatalf("err = %v, want *HTTPError 500", err)
+		}
+		if time.Since(start) > time.Second {
+			t.Errorf("took %v, want well under 1s", time.Since(start))
+		}
+	})
+
+	t.Run("GetEntityCtx", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+		start := time.Now()
+		_, err := us.GetEntityCtx(ctx, "contacts", 5)
+		var he *HTTPError
+		if !errors.As(err, &he) || he.StatusCode != http.StatusInternalServerError {
+			t.Fatalf("err = %v, want *HTTPError 500", err)
+		}
+		if time.Since(start) > time.Second {
+			t.Errorf("took %v, want well under 1s", time.Since(start))
+		}
+	})
+}
+
+// A 429 with a long Retry-After must not make the caller actually wait it out: ctx ending
+// during that wait still returns the 429 *HTTPError with its body, in well under 1s.
+func TestGetFieldsCtxAndGetEntityCtx429WithRetryAfterIsHTTPError(t *testing.T) {
+	const respBody = "slow down"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Retry-After", "300")
+		w.WriteHeader(http.StatusTooManyRequests)
+		fmt.Fprint(w, respBody)
+	}))
+	defer srv.Close()
+	us := New("token", "", srv.URL)
+
+	t.Run("GetFieldsCtx", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+		start := time.Now()
+		_, err := us.GetFieldsCtx(ctx, "leads")
+		var he *HTTPError
+		if !errors.As(err, &he) || he.StatusCode != http.StatusTooManyRequests {
+			t.Fatalf("err = %v, want *HTTPError 429", err)
+		}
+		if string(he.Body) != respBody {
+			t.Errorf("HTTPError.Body = %q, want %q", he.Body, respBody)
+		}
+		if time.Since(start) > time.Second {
+			t.Errorf("took %v, want well under 1s (no 300s Retry-After wait)", time.Since(start))
+		}
+	})
+
+	t.Run("GetEntityCtx", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+		start := time.Now()
+		_, err := us.GetEntityCtx(ctx, "contacts", 5)
+		var he *HTTPError
+		if !errors.As(err, &he) || he.StatusCode != http.StatusTooManyRequests {
+			t.Fatalf("err = %v, want *HTTPError 429", err)
+		}
+		if string(he.Body) != respBody {
+			t.Errorf("HTTPError.Body = %q, want %q", he.Body, respBody)
+		}
+		if time.Since(start) > time.Second {
+			t.Errorf("took %v, want well under 1s (no 300s Retry-After wait)", time.Since(start))
+		}
+	})
+}
+
+// A closed server (connection refused on every attempt) with a short ctx must stop with the
+// context error, not run out the client's 30s timeout or the real ~3s/~5s backoffs.
+func TestGetFieldsCtxAndGetEntityCtxConnRefusedIsContextError(t *testing.T) {
+	dead := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	deadURL := dead.URL
+	dead.Close() // closed: every dial now fails with "connection refused"
+	us := New("token", "", deadURL)
+
+	t.Run("GetFieldsCtx", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+		start := time.Now()
+		_, err := us.GetFieldsCtx(ctx, "leads")
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain", err)
+		}
+		if time.Since(start) > time.Second {
+			t.Errorf("took %v, want well under 1s", time.Since(start))
+		}
+	})
+
+	t.Run("GetEntityCtx", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+		start := time.Now()
+		_, err := us.GetEntityCtx(ctx, "contacts", 5)
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain", err)
+		}
+		if time.Since(start) > time.Second {
+			t.Errorf("took %v, want well under 1s", time.Since(start))
+		}
+	})
+}
+
 // F1: whatever the refresh endpoint answers with (a plain HTTP failure, here), GetFieldsCtx
 // and GetEntityCtx must report a 401 *HTTPError for the original request and method/URL, with
 // the refresh's own error as its cause — never the refresh's own status or URL directly. The
 // old (non-context) path must keep returning that raw refresh error unwrapped and unchanged.
+//
+// The ctx methods run with a short ctx, not context.Background(): a 500 from the refresh
+// endpoint is itself retried (it is just another 5xx response to doRawInternalCtx), and a
+// short ctx cuts that backoff short the same way it does for the original request, via the
+// same lastHTTPErr abort path (TestDoRawInternalCtxRetryWaitCutShortBy502) — so this stays
+// fast while still observing the refresh's real StatusCode as the 401's cause.
 func TestGetFieldsCtxAndGetEntityCtxRefreshHTTPFailureIs401HTTPError(t *testing.T) {
 	for _, refreshStatus := range []int{http.StatusForbidden, http.StatusNotFound, http.StatusInternalServerError} {
 		t.Run(http.StatusText(refreshStatus), func(t *testing.T) {
@@ -760,4 +924,191 @@ func TestGetFieldsCtxAndGetEntityCtxRefreshHTTPFailureIs401HTTPError(t *testing.
 			})
 		})
 	}
+}
+
+// W1(a): a stale pre-refresh 401 must not resurface as the final answer when the retried
+// request (after a successful refresh) then fails in flight because ctx ends. The result must
+// be a context error, with no *HTTPError in its chain.
+func TestGetFieldsCtxAndGetEntityCtxRefreshedRetryAbortedInFlight(t *testing.T) {
+	newServer := func() (*httptest.Server, string) {
+		var mainCalls int32
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/auth/refresh_token") {
+				fmt.Fprint(w, `{"jwt":"a.b.c","refreshToken":"r"}`)
+				return
+			}
+			if atomic.AddInt32(&mainCalls, 1) == 1 {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			<-r.Context().Done() // the retried request: hang until ctx ends
+		}))
+		return srv, strings.TrimPrefix(srv.URL, "https://")
+	}
+
+	t.Run("GetFieldsCtx", func(t *testing.T) {
+		srv, domain := newServer()
+		defer srv.Close()
+		us := New(testJWT(t, domain), "", srv.URL)
+		us.client = srv.Client()
+		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetFieldsCtx(ctx, "leads")
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain (the stale pre-refresh 401 must not resurface)", err)
+		}
+		if time.Since(start) > time.Second {
+			t.Errorf("took %v, want well under 1s", time.Since(start))
+		}
+	})
+
+	t.Run("GetEntityCtx", func(t *testing.T) {
+		srv, domain := newServer()
+		defer srv.Close()
+		us := New(testJWT(t, domain), "", srv.URL)
+		us.client = srv.Client()
+		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetEntityCtx(ctx, "contacts", 5)
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain (the stale pre-refresh 401 must not resurface)", err)
+		}
+		if time.Since(start) > time.Second {
+			t.Errorf("took %v, want well under 1s", time.Since(start))
+		}
+	})
+}
+
+// W1(c): ctx ending during the LAST attempt's request — which runs no backoff sleep
+// afterward — must still report the last 429/5xx seen, not fall through to a stale status
+// left by a still-earlier attempt. Retry-After: 0 advances the first two (of defaultRetries=3)
+// attempts in about 0s so the test stays fast; the third and last attempt hangs until ctx
+// ends.
+func TestGetEntityCtxLastAttemptInFlightAbortAfterEarlier429(t *testing.T) {
+	var calls int32
+	const respBody = "slow down"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if atomic.AddInt32(&calls, 1) <= 2 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			fmt.Fprint(w, respBody)
+			return
+		}
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+
+	us := New("token", "", srv.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	_, err := us.GetEntityCtx(ctx, "contacts", 5)
+	elapsed := time.Since(start)
+
+	var he *HTTPError
+	if !errors.As(err, &he) {
+		t.Fatalf("err = %v, want *HTTPError", err)
+	}
+	if he.StatusCode != http.StatusTooManyRequests {
+		t.Errorf("StatusCode = %d, want %d", he.StatusCode, http.StatusTooManyRequests)
+	}
+	if string(he.Body) != respBody {
+		t.Errorf("Body = %q, want %q", he.Body, respBody)
+	}
+	if got := atomic.LoadInt32(&calls); got != 3 {
+		t.Errorf("server received %d requests, want 3 (all three attempts used)", got)
+	}
+	if elapsed > time.Second {
+		t.Errorf("took %v, want well under 1s", elapsed)
+	}
+}
+
+// A final 3xx (e.g. a 302 with no Location) is success for every non-context method, but
+// GetFieldsCtx and GetEntityCtx must report it as an *HTTPError.
+func TestGetFieldsCtxAndGetEntityCtx302IsHTTPError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusFound) // no Location header
+	}))
+	defer srv.Close()
+	us := New("token", "", srv.URL)
+
+	_, err := us.GetFieldsCtx(context.Background(), "leads")
+	var he *HTTPError
+	if !errors.As(err, &he) || he.StatusCode != http.StatusFound {
+		t.Errorf("GetFieldsCtx() err = %v, want *HTTPError 302", err)
+	}
+
+	_, err = us.GetEntityCtx(context.Background(), "contacts", 5)
+	if !errors.As(err, &he) || he.StatusCode != http.StatusFound {
+		t.Errorf("GetEntityCtx() err = %v, want *HTTPError 302", err)
+	}
+}
+
+// Characterization: a 429 with Retry-After: 0 lets all defaultRetries attempts run almost
+// immediately; pins the exact final error text and request count for the non-context path,
+// which the context-aware retry/backoff changes must not touch.
+func TestDoRaw429RetryAfterZeroFinalErrorText(t *testing.T) {
+	var requests int32
+	const respBody = "slow down"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requests, 1)
+		w.Header().Set("Retry-After", "0")
+		w.WriteHeader(http.StatusTooManyRequests)
+		fmt.Fprint(w, respBody)
+	}))
+	defer server.Close()
+
+	us := New("token", "", server.URL)
+	url := us.buildURL("resource")
+	body, statusCode, err := us.doRaw(url, http.MethodGet, nil, nil)
+
+	if statusCode != http.StatusTooManyRequests {
+		t.Errorf("statusCode = %d, want %d", statusCode, http.StatusTooManyRequests)
+	}
+	if string(body) != respBody {
+		t.Errorf("body = %q, want %q", body, respBody)
+	}
+	wantErr := fmt.Sprintf("request failed: [%s] %s, status code: %d, response: %s", http.MethodGet, url, http.StatusTooManyRequests, respBody)
+	if err == nil || err.Error() != wantErr {
+		t.Errorf("err = %v, want %q", err, wantErr)
+	}
+	if got := atomic.LoadInt32(&requests); got != defaultRetries {
+		t.Errorf("server received %d requests, want %d", got, defaultRetries)
+	}
+}
+
+// Regression for the lastStatusCode field removed from Uspacy: GetFieldsCtx and GetEntityCtx
+// running in parallel on one *Uspacy — the documented usage (a portal client adapter shared
+// by both reads) — must not race on shared state. Meaningful under go test -race.
+func TestGetFieldsCtxAndGetEntityCtxParallelNoRace(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"data":[]}`)
+	}))
+	defer srv.Close()
+	us := New("token", "", srv.URL)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		_, _ = us.GetFieldsCtx(context.Background(), "leads")
+	}()
+	go func() {
+		defer wg.Done()
+		_, _ = us.GetEntityCtx(context.Background(), "contacts", 5)
+	}()
+	wg.Wait()
 }
