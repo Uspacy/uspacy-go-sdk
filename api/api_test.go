@@ -226,6 +226,41 @@ func TestDoRaw401RefreshFailureReturnsRawError(t *testing.T) {
 	}
 }
 
+// The old path must return the refresh failure's exact value and type, not a wrapper around
+// it: doRawInternal strips the *refreshFailedError marker doRawInternalCtx produces, so
+// errors.Unwrap must find nothing further, and a type assertion (not just errors.As) must
+// reach the refresh's own error directly.
+func TestDoRawOldPathReturnsRefreshErrorUnwrapped(t *testing.T) {
+	t.Run("malformed token", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+		}))
+		defer server.Close()
+		us := New("token", "", server.URL)
+		_, _, err := us.doRaw(us.buildURL("resource"), http.MethodGet, nil, nil)
+		if err == nil || errors.Unwrap(err) != nil {
+			t.Errorf("err = %v (Unwrap = %v), want the raw refresh error with no wrapper", err, errors.Unwrap(err))
+		}
+	})
+	t.Run("refresh answers 403", func(t *testing.T) {
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/auth/refresh_token") {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			w.WriteHeader(http.StatusUnauthorized)
+		}))
+		defer srv.Close()
+		us := New(testJWT(t, strings.TrimPrefix(srv.URL, "https://")), "", srv.URL)
+		us.client = srv.Client()
+		_, err := us.GetFields("leads")
+		he, ok := err.(*HTTPError) // a type assertion, not errors.As: the value itself
+		if !ok || he.StatusCode != http.StatusForbidden || he.Method != http.MethodPost {
+			t.Errorf("GetFields() err = %T %v, want the refresh's own *HTTPError (POST 403) unwrapped", err, err)
+		}
+	})
+}
+
 func TestDoRawFinalNon2xxErrorText(t *testing.T) {
 	const respBody = `{"message":"not found"}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -455,6 +490,10 @@ func TestDoRawInternalCtxTokenRefreshCarriesContext(t *testing.T) {
 	domain := strings.TrimPrefix(refreshServer.URL, "https://")
 	us := New(testJWT(t, domain), "", mainServer.URL)
 	us.client = refreshServer.Client() // trust the TLS test server's certificate
+	// A safety net, not the mechanism under test: ctx (200ms below) should always win this
+	// race. Without it, a regression that stops carrying ctx into the refresh request would
+	// hang this test until the whole run's -timeout, instead of failing it in a few seconds.
+	us.client.Timeout = 2 * time.Second
 
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
@@ -1392,6 +1431,69 @@ func TestGetEntityCtxLastAttemptInFlightAbortAfterEarlier429(t *testing.T) {
 	}
 }
 
+// Two 429s, then a refreshed 401 right before the last attempt, which is cut off in flight.
+// The last real 429 must win over both the stale 401 and the bare ctx error: lastHTTPErr must
+// track the outer loop's own attempts (not the 401 a successful refresh resolves), and the
+// last attempt's own ctx check must still fire after a refresh mid-loop.
+func TestGetEntityCtxLastAttemptInFlightAfterRefreshed401(t *testing.T) {
+	var calls int32
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/auth/refresh_token") {
+			fmt.Fprint(w, `{"jwt":"a.b.c","refreshToken":"r"}`)
+			return
+		}
+		switch n := atomic.AddInt32(&calls, 1); {
+		case n <= 2:
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			fmt.Fprint(w, "slow down")
+		case n == 3:
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprint(w, "stale")
+		default:
+			<-r.Context().Done()
+		}
+	}))
+	defer srv.Close()
+	us := New(testJWT(t, strings.TrimPrefix(srv.URL, "https://")), "", srv.URL)
+	us.client = srv.Client()
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	_, err := us.GetEntityCtx(ctx, "contacts", 5)
+	var he *HTTPError
+	if !errors.As(err, &he) || he.StatusCode != http.StatusTooManyRequests || string(he.Body) != "slow down" {
+		t.Fatalf("err = %v, want the last 429 *HTTPError with its body", err)
+	}
+}
+
+// A 502, then a later, non-last attempt is cut off in flight (ctx outlasts the first backoff).
+// The real 502 must come back, body included, rather than the bare ctx error the sleep itself
+// returned.
+func TestGetEntityCtx502ThenLaterAttemptInFlight(t *testing.T) {
+	var calls int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "bad gateway")
+			return
+		}
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 3500*time.Millisecond)
+	defer cancel()
+
+	_, err := New("token", "", srv.URL).GetEntityCtx(ctx, "contacts", 5)
+	var he *HTTPError
+	if !errors.As(err, &he) || he.StatusCode != http.StatusBadGateway || string(he.Body) != "bad gateway" {
+		t.Fatalf("err = %v, want the 502 *HTTPError with its body", err)
+	}
+	if got := atomic.LoadInt32(&calls); got != 2 {
+		t.Errorf("server received %d requests, want 2", got)
+	}
+}
+
 // A final 3xx (e.g. a 302 with no Location) is success for every non-context method, but
 // GetFieldsCtx and GetEntityCtx must report it as an *HTTPError.
 func TestGetFieldsCtxAndGetEntityCtx302IsHTTPError(t *testing.T) {
@@ -1410,6 +1512,24 @@ func TestGetFieldsCtxAndGetEntityCtx302IsHTTPError(t *testing.T) {
 	_, err = us.GetEntityCtx(context.Background(), "contacts", 5)
 	if !errors.As(err, &he) || he.StatusCode != http.StatusFound {
 		t.Errorf("GetEntityCtx() err = %v, want *HTTPError 302", err)
+	}
+}
+
+// The mirror of TestGetFieldsCtxAndGetEntityCtx302IsHTTPError: a final 3xx stays a success on
+// the non-context methods, both through doRaw directly and through a method built on it.
+func TestDoRawOldPath302IsSuccess(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusFound) // no Location header
+		fmt.Fprint(w, "moved")
+	}))
+	defer srv.Close()
+	us := New("token", "", srv.URL)
+	body, statusCode, err := us.doRaw(us.buildURL("resource"), http.MethodGet, nil, nil)
+	if err != nil || statusCode != http.StatusFound || string(body) != "moved" {
+		t.Errorf("doRaw() = %q, %d, %v; want \"moved\", 302, nil", body, statusCode, err)
+	}
+	if b, err := us.GetList("contacts", nil); err != nil || string(b) != "moved" {
+		t.Errorf("GetList() = %q, %v; want \"moved\", nil", b, err)
 	}
 }
 
