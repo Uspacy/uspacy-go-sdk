@@ -104,14 +104,14 @@ func (us *Uspacy) GetList(entityType string, params url.Values, headers ...map[s
 }
 
 // GetEntityCtx returns one record as raw JSON: GET crm/v1/entities/{entityType}/{id}. The id
-// is passed to buildURL as its own part, so the slash before it survives (see the #131
-// PatchEntity/EntityMassEdit regression: buildURL trims the trailing slash crm.EntityUrl
-// carries, so string concatenation instead of a separate part drops it). The request and its
-// retry waits stop as soon as ctx is done, and a final non-2xx answer — including a final 3xx,
-// and a 401 whose token refresh failed, whatever the refresh error was — is returned as an
-// *HTTPError (see finalizeCtxError). If ctx ends, this returns the last *HTTPError from a 429
-// or 5xx response if one occurred (a 401 a token refresh resolved does not count); otherwise
-// the context error, wrapped so errors.Is(err, ctx.Err()) works.
+// is joined onto the URL as its own path segment, so the slash before it survives (see the
+// #131 PatchEntity/EntityMassEdit regression, where joining it by plain string concatenation
+// instead silently dropped that slash). The request and its retry waits stop as soon as ctx is
+// done, and a final non-2xx answer — including a final 3xx, and a 401 whose token refresh
+// failed, whatever the refresh error was — is returned as an *HTTPError. If ctx ends, this
+// returns the last *HTTPError from a 429 or 5xx response if one occurred (a 401 a token
+// refresh resolved does not count); otherwise the context error, wrapped so
+// errors.Is(err, ctx.Err()) works.
 func (us *Uspacy) GetEntityCtx(ctx context.Context, entityType string, id int64) ([]byte, error) {
 	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), strconv.FormatInt(id, 10))
 	body, statusCode, err := us.doRawInternalCtx(ctx, url, http.MethodGet, headersMap, nil, false)
@@ -201,12 +201,12 @@ func (us *Uspacy) GetFields(entityType string) (fields []crm.Field, err error) {
 }
 
 // GetFieldsCtx returns the fields of an entity type: GET crm/v1/entities/{entityType}/fields
-// (buildURL trims the trailing slash crm.FieldsUrl carries, same as GetFields). The request
-// and its retry waits stop as soon as ctx is done, and a final non-2xx answer — including a
-// final 3xx, and a 401 whose token refresh failed, whatever the refresh error was — is
-// returned as an *HTTPError (see finalizeCtxError). If ctx ends, this returns the last
-// *HTTPError from a 429 or 5xx response if one occurred (a 401 a token refresh resolved does
-// not count); otherwise the context error, wrapped so errors.Is(err, ctx.Err()) works.
+// (the trailing slash crm.FieldsUrl carries is trimmed, same as GetFields). The request and
+// its retry waits stop as soon as ctx is done, and a final non-2xx answer — including a final
+// 3xx, and a 401 whose token refresh failed, whatever the refresh error was — is returned as
+// an *HTTPError. If ctx ends, this returns the last *HTTPError from a 429 or 5xx response if
+// one occurred (a 401 a token refresh resolved does not count); otherwise the context error,
+// wrapped so errors.Is(err, ctx.Err()) works.
 func (us *Uspacy) GetFieldsCtx(ctx context.Context, entityType string) ([]crm.Field, error) {
 	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType, ""))
 	body, statusCode, err := us.doRawInternalCtx(ctx, url, http.MethodGet, headersMap, nil, false)

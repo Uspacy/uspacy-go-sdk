@@ -136,10 +136,9 @@ func (us *Uspacy) doRawInternal(url, method string, headers map[string]string, b
 // not the refresh error directly: doRawInternal strips that marker, and GetFieldsCtx /
 // GetEntityCtx turn it into a 401 *HTTPError (see finalizeCtxError) — unless ctx has already
 // ended by the time the refresh fails, in which case no *refreshFailedError is produced and
-// the same done-context rule below applies instead. A final non-2xx answer is reported as
+// the same done-context rule below applies instead. A final status ≥ 400 is reported as
 // *HTTPError; ctx ending is reported as the last *HTTPError from a 429 or 5xx response if one
-// occurred since the last successful token refresh, otherwise ctx's own error, wrapped so
-// errors.Is(err, ctx.Err()) works.
+// occurred, otherwise ctx's own error, wrapped so errors.Is(err, ctx.Err()) works.
 func (us *Uspacy) doRawInternalCtx(ctx context.Context, url, method string, headers map[string]string, body []byte, skipTokenRefresh bool) ([]byte, int, error) {
 	var (
 		responseBody   []byte
@@ -306,12 +305,13 @@ func requestFailedAfterRetries(ctx context.Context, retries int, errorLogs map[s
 		retries, errorDetails.String())
 }
 
-// HTTPError represents a failed HTTP call: a non-2xx response, reported by doRawInternalCtx
-// (and so by every method built on it, and by the last HTTP error abortedWhileWaiting returns
-// when ctx ends) for a final answer outside 2xx, and reported by GetFieldsCtx/GetEntityCtx
-// (see finalizeCtxError) for a final 3xx and for a 401 whose token refresh failed. Error()
-// keeps the exact historical text so existing string parsing keeps working, even though the
-// error is now a concrete type: "request failed: [GET] <url>, status code: 403, response: <body>".
+// HTTPError represents a failed HTTP call. The non-context methods report a final status ≥ 400
+// as *HTTPError. GetFieldsCtx and GetEntityCtx report any final non-2xx answer this way, 3xx
+// included, and likewise turn a 401 whose token refresh failed into one, with the refresh
+// error as its cause (see their own docs for what "final" means once ctx can end early).
+// Error() keeps the exact historical text so existing string parsing keeps working, even though
+// the error is now a concrete type:
+// "request failed: [GET] <url>, status code: 403, response: <body>".
 type HTTPError struct {
 	Method     string
 	URL        string
