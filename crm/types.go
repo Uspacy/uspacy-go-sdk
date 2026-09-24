@@ -75,18 +75,31 @@ type (
 		Code              string `json:"code"`
 		EntityReferenceId any    `json:"entity_reference_id"`
 
-		Type         string         `json:"type"`
-		Required     bool           `json:"required"`
-		Editable     bool           `json:"editable"`
-		Show         bool           `json:"show"`
-		Hidden       bool           `json:"hidden"`
-		Multiple     bool           `json:"multiple"`
-		SystemField  bool           `json:"system_field"`
-		BaseField    bool           `json:"base_field"`
-		Sort         common.FlexInt `json:"sort"`
-		DefaultValue any            `json:"default_value"`
-		Tooltip      any            `json:"tooltip"`
-		Values       []Value        `json:"values,omitempty"`
+		Type         string           `json:"type"`
+		Required     bool             `json:"required"`
+		Editable     bool             `json:"editable"`
+		Show         bool             `json:"show"`
+		Hidden       bool             `json:"hidden"`
+		Multiple     bool             `json:"multiple"`
+		SystemField  bool             `json:"system_field"`
+		BaseField    bool             `json:"base_field"`
+		Sort         common.FlexInt   `json:"sort"`
+		DefaultValue any              `json:"default_value"`
+		Tooltip      any              `json:"tooltip"`
+		Values       []Value          `json:"values,omitempty"`
+		Dependency   *FieldDependency `json:"dependency,omitempty"` // non-nil only on dependent (child) list fields; absent (not null) otherwise
+	}
+
+	// FieldDependency describes a dependent (child) list field: which field it
+	// depends on and how its options are shown. It is only present on a Field
+	// when that field is dependent.
+	FieldDependency struct {
+		ID                     int    `json:"id"`
+		InverseDependence      bool   `json:"inverse_dependence"`
+		ShowAllOptions         bool   `json:"show_all_options"`
+		ExcludeSelectedOptions bool   `json:"exclude_selected_options"`
+		ShowInFilters          bool   `json:"show_in_filters"`
+		ParentFieldCode        string `json:"parent_field_code,omitempty"`
 	}
 
 	// CRM Funnel
@@ -285,6 +298,7 @@ type (
 		Color    string         `json:"color"`
 		Sort     common.FlexInt `json:"sort"`
 		Selected bool           `json:"selected"`
+		Active   *bool          `json:"active,omitempty"` // nil = key absent; callers treat nil as active
 	}
 )
 
