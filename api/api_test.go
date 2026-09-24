@@ -1,11 +1,17 @@
 package api
 
 import (
+	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/Uspacy/uspacy-go-sdk/crm"
 )
@@ -151,5 +157,236 @@ func TestDeleteEntityListProduct(t *testing.T) {
 	}
 	if statusCode != http.StatusNoContent {
 		t.Errorf("DeleteEntityListProduct() status = %d, want %d", statusCode, http.StatusNoContent)
+	}
+}
+
+// --- Characterization tests for doRawInternal/doRawInternalCtx ---
+//
+// These pin today's non-context retry and error behaviour before the context-aware
+// refactor, so a regression in doRawInternalCtx (which every existing method now
+// runs through via context.Background()) shows up here. The 5xx case sleeps through
+// two real backoffs (about 8s); that cost is accepted for a characterization test.
+
+func TestDoRawRetries5xxButNot4xx(t *testing.T) {
+	cases := []struct {
+		name         string
+		status       int
+		wantRequests int32
+	}{
+		{"5xx is retried up to defaultRetries", http.StatusInternalServerError, defaultRetries},
+		{"4xx is not retried", http.StatusBadRequest, 1},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var requests int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				atomic.AddInt32(&requests, 1)
+				w.WriteHeader(tc.status)
+			}))
+			defer server.Close()
+
+			us := New("token", "", server.URL)
+			_, statusCode, err := us.doRaw(us.buildURL("resource"), http.MethodGet, nil, nil)
+
+			if err == nil {
+				t.Error("doRaw() error = nil, want a non-2xx error")
+			}
+			if statusCode != tc.status {
+				t.Errorf("statusCode = %d, want %d", statusCode, tc.status)
+			}
+			if got := atomic.LoadInt32(&requests); got != tc.wantRequests {
+				t.Errorf("server received %d requests, want %d", got, tc.wantRequests)
+			}
+		})
+	}
+}
+
+func TestDoRaw401RefreshFailureReturnsRawError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
+
+	// "token" has no dots, so UnmarshalTokenData rejects it before TokenRefresh ever
+	// makes a network call. That failure must reach the caller unwrapped.
+	us := New("token", "", server.URL)
+	_, statusCode, err := us.doRaw(us.buildURL("resource"), http.MethodGet, nil, nil)
+
+	if statusCode != http.StatusUnauthorized {
+		t.Errorf("statusCode = %d, want %d", statusCode, http.StatusUnauthorized)
+	}
+	wantErr := "invalid JWT token format: expected 3 parts, got 1"
+	if err == nil || err.Error() != wantErr {
+		t.Errorf("err = %v, want %q", err, wantErr)
+	}
+	if httpErr, ok := err.(*HTTPError); ok {
+		t.Errorf("err = %#v, want the raw refresh error, not *HTTPError", httpErr)
+	}
+}
+
+func TestDoRawFinalNon2xxErrorText(t *testing.T) {
+	const respBody = `{"message":"not found"}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, respBody)
+	}))
+	defer server.Close()
+
+	us := New("token", "", server.URL)
+	url := us.buildURL("resource")
+	body, statusCode, err := us.doRaw(url, http.MethodGet, nil, nil)
+
+	if statusCode != http.StatusNotFound {
+		t.Errorf("statusCode = %d, want %d", statusCode, http.StatusNotFound)
+	}
+	if string(body) != respBody {
+		t.Errorf("body = %q, want %q", body, respBody)
+	}
+	wantErr := fmt.Sprintf("request failed: [%s] %s, status code: %d, response: %s", http.MethodGet, url, http.StatusNotFound, respBody)
+	if err == nil || err.Error() != wantErr {
+		t.Errorf("err = %v, want %q", err, wantErr)
+	}
+}
+
+func TestHTTPErrorUnwrap(t *testing.T) {
+	cause := errors.New("refresh failed")
+	err := &HTTPError{Method: http.MethodGet, URL: "https://example.uspacy.ua/x", StatusCode: http.StatusUnauthorized, Err: cause}
+
+	if !errors.Is(err, cause) {
+		t.Error("errors.Is(err, cause) = false, want true")
+	}
+	wantText := "request failed: [GET] https://example.uspacy.ua/x, status code: 401, response: "
+	if err.Error() != wantText {
+		t.Errorf("Error() = %q, want %q", err.Error(), wantText)
+	}
+}
+
+func TestAsHTTPError(t *testing.T) {
+	if got := asHTTPError(http.StatusOK, nil); got != nil {
+		t.Errorf("asHTTPError(200, nil) = %v, want nil", got)
+	}
+
+	raw := errors.New("boom")
+	got := asHTTPError(http.StatusUnauthorized, raw)
+	var httpErr *HTTPError
+	if !errors.As(got, &httpErr) {
+		t.Fatalf("asHTTPError(401, raw) = %v, want *HTTPError", got)
+	}
+	if httpErr.StatusCode != http.StatusUnauthorized || httpErr.Err != raw {
+		t.Errorf("asHTTPError(401, raw) = %+v, want StatusCode=401 Err=raw", httpErr)
+	}
+
+	already := &HTTPError{StatusCode: http.StatusInternalServerError}
+	if got := asHTTPError(http.StatusInternalServerError, already); got != already {
+		t.Error("asHTTPError should return an existing *HTTPError unchanged, not re-wrap it")
+	}
+
+	if got := asHTTPError(http.StatusOK, raw); got != raw {
+		t.Errorf("asHTTPError(200, raw) = %v, want raw unchanged (status < 400)", got)
+	}
+}
+
+// --- Context-path tests for doRawInternalCtx ---
+
+// testJWT builds a syntactically valid but unsigned JWT whose payload sets the
+// "domain" claim, which is all UnmarshalTokenData/tokenRefreshCtx need from it.
+func testJWT(t *testing.T, domain string) string {
+	t.Helper()
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
+	payload := base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"domain":%q}`, domain)))
+	return header + "." + payload + ".sig"
+}
+
+func TestDoRawInternalCtxRetryWaitCutShortBy502(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprint(w, "bad gateway")
+	}))
+	defer server.Close()
+
+	us := New("token", "", server.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	_, statusCode, err := us.doRawInternalCtx(ctx, us.buildURL("resource"), http.MethodGet, nil, nil, true)
+	elapsed := time.Since(start)
+
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("err = %v, want *HTTPError", err)
+	}
+	if httpErr.StatusCode != http.StatusBadGateway {
+		t.Errorf("HTTPError.StatusCode = %d, want %d", httpErr.StatusCode, http.StatusBadGateway)
+	}
+	if statusCode != http.StatusBadGateway {
+		t.Errorf("statusCode = %d, want %d", statusCode, http.StatusBadGateway)
+	}
+	if elapsed >= time.Second {
+		t.Errorf("took %v, want well under 1s (the backoff wait should be cut short by ctx)", elapsed)
+	}
+}
+
+func TestDoRawInternalCtxNeverAnsweringServerHonoursDeadline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Block on the request's own context instead of never returning, so
+		// srv.Close() below does not hang waiting for this handler to finish.
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	us := New("token", "", server.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	_, _, err := us.doRawInternalCtx(ctx, us.buildURL("resource"), http.MethodGet, nil, nil, true)
+	elapsed := time.Since(start)
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+	}
+	if elapsed >= time.Second {
+		t.Errorf("took %v, want well under 1s", elapsed)
+	}
+}
+
+func TestDoRawInternalCtxTokenRefreshCarriesContext(t *testing.T) {
+	// The refresh endpoint never answers; it must block on its own request's
+	// context (not just never call w.Write) so refreshServer.Close() doesn't hang.
+	refreshServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	defer refreshServer.Close()
+
+	// The main server always answers 401, so doRawInternalCtx always reaches the
+	// refresh path.
+	mainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer mainServer.Close()
+
+	// TokenRefresh always dials "https://"+jwt.Domain, so the refresh URL must
+	// point at the TLS server, independently of mainHost.
+	domain := strings.TrimPrefix(refreshServer.URL, "https://")
+	us := New(testJWT(t, domain), "", mainServer.URL)
+	us.client = refreshServer.Client() // trust the TLS test server's certificate
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	_, statusCode, err := us.doRawInternalCtx(ctx, us.buildURL("resource"), http.MethodGet, nil, nil, false)
+	elapsed := time.Since(start)
+
+	if statusCode != http.StatusUnauthorized {
+		t.Errorf("statusCode = %d, want %d", statusCode, http.StatusUnauthorized)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("err = %v, want context.DeadlineExceeded in its chain (the refresh request should abort with ctx)", err)
+	}
+	if elapsed >= time.Second {
+		t.Errorf("took %v, want well under 1s: the refresh request must carry ctx instead of hanging for the client timeout", elapsed)
 	}
 }
