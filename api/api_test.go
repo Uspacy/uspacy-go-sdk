@@ -311,8 +311,8 @@ func TestFinalizeCtxError(t *testing.T) {
 	}
 
 	// A context error (or any other non-HTTPError, non-refreshFailedError error) must pass
-	// through unchanged, whatever statusCode says: dropping asHTTPError's statusCode >= 400
-	// wrapping rule means finalizeCtxError never wraps an arbitrary error as *HTTPError.
+	// through unchanged, whatever statusCode says: finalizeCtxError never wraps an arbitrary
+	// error as *HTTPError just because statusCode looks like a failure.
 	ctxErr := fmt.Errorf("request aborted: %w", context.DeadlineExceeded)
 	if got := finalizeCtxError(method, url, 0, nil, ctxErr); got != ctxErr {
 		t.Errorf("finalizeCtxError(0, ctxErr) = %v, want ctxErr unchanged", got)
@@ -1030,7 +1030,7 @@ func TestGetFieldsCtxAndGetEntityCtxBodyStallIsContextError(t *testing.T) {
 	})
 }
 
-// --- W1/W3 fixes: last-HTTP-error tracking, 3xx, connection failures ---
+// --- Last-HTTP-error tracking on ctx ending, 3xx, and connection failures ---
 
 func TestGetFieldsCtx_CancelStopsRetrySleep(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusBadGateway) }))
@@ -1049,7 +1049,7 @@ func TestGetFieldsCtx_CancelStopsRetrySleep(t *testing.T) {
 }
 
 // Same shape as TestGetFieldsCtx_CancelStopsRetrySleep, for GetEntityCtx. The response body
-// is non-empty so this also pins W1(b): the *HTTPError returned when ctx ends must carry the
+// is non-empty so this also pins that the *HTTPError returned when ctx ends must carry the
 // last 5xx response's real body, not an empty, synthesized one.
 func TestGetEntityCtx_CancelStopsRetrySleep(t *testing.T) {
 	const respBody = "bad gateway"
@@ -1202,7 +1202,7 @@ func TestGetFieldsCtxAndGetEntityCtxConnRefusedIsContextError(t *testing.T) {
 	})
 }
 
-// F1: whatever the refresh endpoint answers with (a plain HTTP failure, here), GetFieldsCtx
+// Whatever the refresh endpoint answers with (a plain HTTP failure, here), GetFieldsCtx
 // and GetEntityCtx must report a 401 *HTTPError for the original request and method/URL, with
 // the refresh's own error as its cause — never the refresh's own status or URL directly. The
 // old (non-context) path must keep returning that raw refresh error unwrapped and unchanged.
@@ -1321,9 +1321,9 @@ func TestGetFieldsCtxAndGetEntityCtxRefreshHTTPFailureIs401HTTPError(t *testing.
 	}
 }
 
-// W1(a): a stale pre-refresh 401 must not resurface as the final answer when the retried
-// request (after a successful refresh) then fails in flight because ctx ends. The result must
-// be a context error, with no *HTTPError in its chain.
+// A stale pre-refresh 401 must not resurface as the final answer when the retried request
+// (after a successful refresh) then fails in flight because ctx ends. The result must be a
+// context error, with no *HTTPError in its chain.
 func TestGetFieldsCtxAndGetEntityCtxRefreshedRetryAbortedInFlight(t *testing.T) {
 	newServer := func() (*httptest.Server, string) {
 		var mainCalls int32
@@ -1386,11 +1386,10 @@ func TestGetFieldsCtxAndGetEntityCtxRefreshedRetryAbortedInFlight(t *testing.T) 
 	})
 }
 
-// W1(c): ctx ending during the LAST attempt's request — which runs no backoff sleep
-// afterward — must still report the last 429/5xx seen, not fall through to a stale status
-// left by a still-earlier attempt. Retry-After: 0 advances the first two (of defaultRetries=3)
-// attempts in about 0s so the test stays fast; the third and last attempt hangs until ctx
-// ends.
+// ctx ending during the LAST attempt's request — which runs no backoff sleep afterward — must
+// still report the last 429/5xx seen, not fall through to a stale status left by a
+// still-earlier attempt. Retry-After: 0 advances the first two (of defaultRetries=3) attempts
+// in about 0s so the test stays fast; the third and last attempt hangs until ctx ends.
 func TestGetEntityCtxLastAttemptInFlightAbortAfterEarlier429(t *testing.T) {
 	var calls int32
 	const respBody = "slow down"
@@ -1567,8 +1566,8 @@ func TestDoRaw429RetryAfterZeroFinalErrorText(t *testing.T) {
 }
 
 // Regression for the lastStatusCode field removed from Uspacy: GetFieldsCtx and GetEntityCtx
-// running in parallel on one *Uspacy — the documented usage (a portal client adapter shared
-// by both reads) — must not race on shared state. Meaningful under go test -race.
+// running in parallel on one shared *Uspacy must not race on shared state. Meaningful under
+// go test -race.
 func TestGetFieldsCtxAndGetEntityCtxParallelNoRace(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"data":[]}`)
