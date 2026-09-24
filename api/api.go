@@ -128,15 +128,25 @@ func (us *Uspacy) doRawSkipRefresh(url, method string, headers map[string]string
 	return us.doRawInternal(url, method, headers, body, true)
 }
 
-// doRawInternal performs an HTTP request with optional token refresh.
-// It delegates to doRawInternalCtx with context.Background(), so its behaviour is unchanged.
+// doRawInternal performs an HTTP request with optional token refresh. It delegates to
+// doRawInternalCtx with context.Background(), so its retry and backoff behaviour is
+// unchanged; it also strips doRawInternalCtx's *refreshFailedError marker (see asHTTPError
+// for the other side of that split), so a failed token refresh after a 401 still surfaces as
+// the raw refresh error, exactly as before that marker was introduced.
 func (us *Uspacy) doRawInternal(url, method string, headers map[string]string, body []byte, skipTokenRefresh bool) ([]byte, int, error) {
-	return us.doRawInternalCtx(context.Background(), url, method, headers, body, skipTokenRefresh)
+	respBody, statusCode, err := us.doRawInternalCtx(context.Background(), url, method, headers, body, skipTokenRefresh)
+	if rf, ok := err.(*refreshFailedError); ok {
+		return respBody, statusCode, rf.err
+	}
+	return respBody, statusCode, err
 }
 
 // doRawInternalCtx performs an HTTP request with optional token refresh. It carries ctx on
 // every request it sends (including the token refresh), and every backoff or Retry-After
-// wait between attempts stops as soon as ctx is done, instead of sleeping in full.
+// wait between attempts stops as soon as ctx is done, instead of sleeping in full. A 401
+// whose token refresh fails is reported as a *refreshFailedError wrapping the refresh error,
+// not the refresh error directly: doRawInternal strips that marker, and GetFieldsCtx /
+// GetEntityCtx (via asHTTPError) turn it into a 401 *HTTPError instead.
 func (us *Uspacy) doRawInternalCtx(ctx context.Context, url, method string, headers map[string]string, body []byte, skipTokenRefresh bool) ([]byte, int, error) {
 	var (
 		responseBody   []byte
@@ -185,7 +195,7 @@ func (us *Uspacy) doRawInternalCtx(ctx context.Context, url, method string, head
 		// Handle 401 Unauthorized - refresh token and retry (only once)
 		if statusCode == http.StatusUnauthorized && !skipTokenRefresh && !tokenRefreshed {
 			if _, err := us.tokenRefreshCtx(ctx); err != nil {
-				return nil, statusCode, err
+				return nil, statusCode, &refreshFailedError{err}
 			}
 			tokenRefreshed = true
 			attempt-- // Don't consume retry attempt for token refresh
@@ -265,7 +275,7 @@ func abortedWhileWaiting(lastErr error, ctxErr error) error {
 // caught by sleepCtx/abortedWhileWaiting; if ctx has already ended by the time this runs,
 // ctx.Err() is folded into the text with %w, keeping errors.Is(err, ctx.Err()) working.
 // Every existing caller runs this under context.Background(), which never ends, so for
-// them the text and type are exactly what doRawInternalCtx returned before ctx support
+// them the text and type are exactly what doRawInternal returned before ctx support
 // was added.
 func requestFailedAfterRetries(ctx context.Context, retries int, errorLogs map[string]*errorLog) error {
 	var errorDetails strings.Builder
@@ -303,14 +313,33 @@ func (e *HTTPError) Unwrap() error {
 	return e.Err
 }
 
+// refreshFailedError marks a failed token refresh after a 401, so callers downstream of
+// doRawInternalCtx can each report it their own way: doRawInternal strips this marker (see
+// its own doc) so the non-context methods keep returning the raw refresh error unchanged,
+// while GetFieldsCtx and GetEntityCtx (via asHTTPError) turn it into a 401 *HTTPError
+// instead. Error() and Unwrap() both defer to the wrapped error, so anything that doesn't
+// know about this type still sees the raw refresh error's text and cause.
+type refreshFailedError struct {
+	err error
+}
+
+func (e *refreshFailedError) Error() string { return e.err.Error() }
+func (e *refreshFailedError) Unwrap() error { return e.err }
+
 // asHTTPError normalizes a (method, url, statusCode, err) result so every non-2xx failure
-// is an *HTTPError carrying Method and URL. If err is nil, or already an *HTTPError (or
-// wraps one), it is returned unchanged. Otherwise, for statusCode >= 400, it is wrapped as
-// &HTTPError{Method: method, URL: url, StatusCode: statusCode, Err: err} — for example the
-// raw error doRawInternalCtx returns when a 401's token refresh fails. Unexported helper
-// for the context-aware CRM methods (GetFieldsCtx, GetEntityCtx) that need a single error
-// type.
+// is an *HTTPError carrying Method and URL. A *refreshFailedError (doRawInternalCtx's marker
+// for a 401 whose token refresh failed) always becomes &HTTPError{Method, URL, StatusCode:
+// 401, Err: <the refresh error>}, whatever the refresh error was — an HTTP error from the
+// refresh endpoint itself included, which would otherwise pass through with the refresh
+// call's own method/URL/status instead of the original request's. Otherwise: if err is nil,
+// or already an *HTTPError (or wraps one), it is returned unchanged; for statusCode >= 400 it
+// is wrapped as &HTTPError{Method: method, URL: url, StatusCode: statusCode, Err: err}.
+// Unexported helper for the context-aware CRM methods (GetFieldsCtx, GetEntityCtx) that need
+// a single error type.
 func asHTTPError(method, url string, statusCode int, err error) error {
+	if rf, ok := err.(*refreshFailedError); ok {
+		return &HTTPError{Method: method, URL: url, StatusCode: http.StatusUnauthorized, Err: rf.err}
+	}
 	if err == nil {
 		return nil
 	}

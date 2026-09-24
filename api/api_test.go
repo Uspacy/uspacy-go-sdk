@@ -289,6 +289,50 @@ func TestAsHTTPError(t *testing.T) {
 	}
 }
 
+// F1: doRawInternalCtx now marks a failed token refresh with *refreshFailedError instead of
+// returning the refresh error directly (see TestDoRaw401RefreshFailureReturnsRawError, which
+// pins that doRawInternal still strips it back off). asHTTPError must turn that marker into a
+// 401 *HTTPError carrying the *original* request's method/URL and the refresh error as Err —
+// even when the refresh error is itself an *HTTPError (e.g. the refresh endpoint's own 404),
+// which must not leak its own method/URL/status in place of the 401's.
+func TestAsHTTPErrorRefreshFailedError(t *testing.T) {
+	const method, url = http.MethodGet, "https://example.uspacy.ua/x"
+
+	plainCause := errors.New("boom")
+	got := asHTTPError(method, url, http.StatusUnauthorized, &refreshFailedError{plainCause})
+	var httpErr *HTTPError
+	if !errors.As(got, &httpErr) {
+		t.Fatalf("asHTTPError(401, refreshFailedError) = %v, want *HTTPError", got)
+	}
+	if httpErr.Method != method || httpErr.URL != url || httpErr.StatusCode != http.StatusUnauthorized || httpErr.Err != plainCause {
+		t.Errorf("asHTTPError(401, refreshFailedError{plain}) = %+v, want Method=%q URL=%q StatusCode=401 Err=plainCause", httpErr, method, url)
+	}
+
+	refreshHTTPCause := &HTTPError{Method: http.MethodPost, URL: "https://example.uspacy.ua/auth/refresh_token", StatusCode: http.StatusNotFound}
+	got = asHTTPError(method, url, http.StatusUnauthorized, &refreshFailedError{refreshHTTPCause})
+	if !errors.As(got, &httpErr) {
+		t.Fatalf("asHTTPError(401, refreshFailedError{httpErr}) = %v, want *HTTPError", got)
+	}
+	if httpErr.Method != method || httpErr.URL != url || httpErr.StatusCode != http.StatusUnauthorized {
+		t.Errorf("asHTTPError(401, refreshFailedError{httpErr}) = %+v, want the ORIGINAL request's Method=%q URL=%q StatusCode=401, not the refresh's own", httpErr, method, url)
+	}
+	if httpErr.Err != error(refreshHTTPCause) {
+		t.Errorf("httpErr.Err = %v, want the refresh's own *HTTPError as the cause", httpErr.Err)
+	}
+}
+
+func TestRefreshFailedError(t *testing.T) {
+	cause := errors.New("refresh boom")
+	err := &refreshFailedError{cause}
+
+	if err.Error() != cause.Error() {
+		t.Errorf("Error() = %q, want %q", err.Error(), cause.Error())
+	}
+	if !errors.Is(err, cause) {
+		t.Error("errors.Is(err, cause) = false, want true")
+	}
+}
+
 // requestFailedAfterRetries builds the error for doRawInternalCtx's post-loop path, taken
 // when every attempt fails at the transport level (statusCode stays 0). Exercising that
 // exact path through doRawInternalCtx itself would need two real backoff sleeps
@@ -623,5 +667,97 @@ func TestGetFieldsCtx401RefreshFailureSurfacesAsHTTPError(t *testing.T) {
 	}
 	if !errors.Is(err, httpErr.Err) {
 		t.Error("errors.Is(err, httpErr.Err) = false, want true: Unwrap should expose the raw refresh error")
+	}
+}
+
+// F1: whatever the refresh endpoint answers with (a plain HTTP failure, here), GetFieldsCtx
+// and GetEntityCtx must report a 401 *HTTPError for the original request and method/URL, with
+// the refresh's own error as its cause — never the refresh's own status or URL directly. The
+// old (non-context) path must keep returning that raw refresh error unwrapped and unchanged.
+func TestGetFieldsCtxAndGetEntityCtxRefreshHTTPFailureIs401HTTPError(t *testing.T) {
+	for _, refreshStatus := range []int{http.StatusForbidden, http.StatusNotFound, http.StatusInternalServerError} {
+		t.Run(http.StatusText(refreshStatus), func(t *testing.T) {
+			newClient := func() (*Uspacy, *httptest.Server) {
+				srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if strings.HasSuffix(r.URL.Path, "/auth/refresh_token") {
+						w.WriteHeader(refreshStatus)
+						fmt.Fprint(w, "refresh rejected")
+						return
+					}
+					w.WriteHeader(http.StatusUnauthorized)
+				}))
+				domain := strings.TrimPrefix(srv.URL, "https://")
+				us := New(testJWT(t, domain), "", srv.URL)
+				us.client = srv.Client()
+				return us, srv
+			}
+
+			t.Run("GetFieldsCtx", func(t *testing.T) {
+				us, srv := newClient()
+				defer srv.Close()
+				wantURL := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, "leads", ""))
+				ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+				defer cancel()
+
+				_, err := us.GetFieldsCtx(ctx, "leads")
+				var he *HTTPError
+				if !errors.As(err, &he) {
+					t.Fatalf("err = %v, want *HTTPError", err)
+				}
+				if he.Method != http.MethodGet || he.URL != wantURL || he.StatusCode != http.StatusUnauthorized {
+					t.Errorf("HTTPError = %+v, want Method=GET URL=%q StatusCode=401", he, wantURL)
+				}
+				var cause *HTTPError
+				if !errors.As(he.Err, &cause) || cause.StatusCode != refreshStatus || cause.Method != http.MethodPost {
+					t.Errorf("HTTPError.Err = %v, want the refresh's own *HTTPError with Method=POST StatusCode=%d", he.Err, refreshStatus)
+				}
+			})
+
+			t.Run("GetEntityCtx", func(t *testing.T) {
+				us, srv := newClient()
+				defer srv.Close()
+				wantURL := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, "contacts"), "5")
+				ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+				defer cancel()
+
+				_, err := us.GetEntityCtx(ctx, "contacts", 5)
+				var he *HTTPError
+				if !errors.As(err, &he) {
+					t.Fatalf("err = %v, want *HTTPError", err)
+				}
+				if he.Method != http.MethodGet || he.URL != wantURL || he.StatusCode != http.StatusUnauthorized {
+					t.Errorf("HTTPError = %+v, want Method=GET URL=%q StatusCode=401", he, wantURL)
+				}
+				var cause *HTTPError
+				if !errors.As(he.Err, &cause) || cause.StatusCode != refreshStatus || cause.Method != http.MethodPost {
+					t.Errorf("HTTPError.Err = %v, want the refresh's own *HTTPError with Method=POST StatusCode=%d", he.Err, refreshStatus)
+				}
+			})
+
+			// The old path has no ctx to cut a retried 500 short, and that combination
+			// (a 5xx retried with real backoff under context.Background()) is already
+			// pinned by TestDoRawRetries5xxButNot4xx and, for the refresh-failure-stays-
+			// raw invariant itself, by TestDoRaw401RefreshFailureReturnsRawError. Skip it
+			// here rather than pay a real ~8s backoff for a case already covered.
+			if refreshStatus == http.StatusInternalServerError {
+				return
+			}
+			t.Run("GetFields_OldPathUnwrapped", func(t *testing.T) {
+				us, srv := newClient()
+				defer srv.Close()
+
+				_, err := us.GetFields("leads")
+				var he *HTTPError
+				if !errors.As(err, &he) {
+					t.Fatalf("err = %v, want *HTTPError (the refresh's own, unwrapped)", err)
+				}
+				if he.StatusCode != refreshStatus || he.Method != http.MethodPost {
+					t.Errorf("GetFields() err = %+v, want the raw refresh error: Method=POST StatusCode=%d", he, refreshStatus)
+				}
+				if he.StatusCode == http.StatusUnauthorized {
+					t.Errorf("GetFields() err has StatusCode=401: the old path must not gain the ctx path's 401 wrapping")
+				}
+			})
+		})
 	}
 }
