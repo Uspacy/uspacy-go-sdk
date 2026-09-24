@@ -191,6 +191,12 @@ func (us *Uspacy) doRawInternalCtx(ctx context.Context, url, method string, head
 		responseBody, err = io.ReadAll(res.Body)
 		res.Body.Close()
 		if err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				// ctx ended while the body was still being read: report it the same way
+				// as every other in-flight failure on this path, instead of the raw read
+				// error with no status and none of lastHTTPErr's context.
+				return abort(ctxErr)
+			}
 			return nil, 0, err
 		}
 

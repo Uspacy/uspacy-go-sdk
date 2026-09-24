@@ -858,6 +858,139 @@ func TestGetFieldsCtxAndGetEntityCtxRefreshStallKeepsEarlier429(t *testing.T) {
 	})
 }
 
+// A response whose body never finishes arriving must still honour ctx: if an earlier attempt
+// saw a 429, that *HTTPError wins over the bare context error once ctx ends mid-read.
+func TestGetFieldsCtxAndGetEntityCtxBodyStallKeepsEarlier429(t *testing.T) {
+	const respBody = "slow down"
+	newServer := func() *httptest.Server {
+		var calls int32
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if atomic.AddInt32(&calls, 1) == 1 {
+				w.Header().Set("Retry-After", "0")
+				w.WriteHeader(http.StatusTooManyRequests)
+				fmt.Fprint(w, respBody)
+				return
+			}
+			// Headers arrive (200), but the body itself never does.
+			w.WriteHeader(http.StatusOK)
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+			<-r.Context().Done()
+		}))
+	}
+
+	t.Run("GetFieldsCtx", func(t *testing.T) {
+		srv := newServer()
+		defer srv.Close()
+		us := New("token", "", srv.URL)
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetFieldsCtx(ctx, "leads")
+		elapsed := time.Since(start)
+
+		var he *HTTPError
+		if !errors.As(err, &he) || he.StatusCode != http.StatusTooManyRequests || string(he.Body) != respBody {
+			t.Fatalf("err = %v, want the 429 *HTTPError with body %q", err, respBody)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+
+	t.Run("GetEntityCtx", func(t *testing.T) {
+		srv := newServer()
+		defer srv.Close()
+		us := New("token", "", srv.URL)
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetEntityCtx(ctx, "contacts", 5)
+		elapsed := time.Since(start)
+
+		var he *HTTPError
+		if !errors.As(err, &he) || he.StatusCode != http.StatusTooManyRequests || string(he.Body) != respBody {
+			t.Fatalf("err = %v, want the 429 *HTTPError with body %q", err, respBody)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+}
+
+// A response whose body never finishes arriving, with no earlier 429/5xx to fall back on,
+// must report ctx's own error instead of the raw, unwrapped read error with status 0.
+func TestGetFieldsCtxAndGetEntityCtxBodyStallIsContextError(t *testing.T) {
+	newServer := func() *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+			<-r.Context().Done()
+		}))
+	}
+
+	t.Run("GetFieldsCtx", func(t *testing.T) {
+		srv := newServer()
+		defer srv.Close()
+		us := New("token", "", srv.URL)
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetFieldsCtx(ctx, "leads")
+		elapsed := time.Since(start)
+
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain", err)
+		}
+		// abortedWhileWaiting's wrapping, not the raw, unwrapped read error: a plain
+		// "context deadline exceeded" (io.ReadAll's error passed straight through) would
+		// also satisfy errors.Is above, so the prefix is what actually distinguishes the
+		// two.
+		if !strings.HasPrefix(err.Error(), "request aborted: ") {
+			t.Errorf("err = %q, want the \"request aborted: \" prefix", err)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+
+	t.Run("GetEntityCtx", func(t *testing.T) {
+		srv := newServer()
+		defer srv.Close()
+		us := New("token", "", srv.URL)
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+
+		start := time.Now()
+		_, err := us.GetEntityCtx(ctx, "contacts", 5)
+		elapsed := time.Since(start)
+
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
+		}
+		var he *HTTPError
+		if errors.As(err, &he) {
+			t.Errorf("err = %v, want no *HTTPError in the chain", err)
+		}
+		if !strings.HasPrefix(err.Error(), "request aborted: ") {
+			t.Errorf("err = %q, want the \"request aborted: \" prefix", err)
+		}
+		if elapsed >= time.Second {
+			t.Errorf("took %v, want well under 1s", elapsed)
+		}
+	})
+}
+
 // --- W1/W3 fixes: last-HTTP-error tracking, 3xx, connection failures ---
 
 func TestGetFieldsCtx_CancelStopsRetrySleep(t *testing.T) {
