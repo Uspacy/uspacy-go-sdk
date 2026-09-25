@@ -1,9 +1,12 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/Uspacy/uspacy-go-sdk/crm"
 )
@@ -100,6 +103,24 @@ func (us *Uspacy) GetList(entityType string, params url.Values, headers ...map[s
 	return us.doGetEmptyHeaders(url, headers...)
 }
 
+// GetEntityCtx returns one record as raw JSON: GET crm/v1/entities/{entityType}/{id}. The id
+// is joined onto the URL as its own path segment, so the slash before it survives (see the
+// #131 PatchEntity/EntityMassEdit regression, where joining it by plain string concatenation
+// instead silently dropped that slash). The request and its retry waits stop as soon as ctx is
+// done, and a final non-2xx answer — including a final 3xx, and a 401 whose token refresh
+// failed, whatever the refresh error was — is returned as an *HTTPError. If ctx ends, this
+// returns the last *HTTPError from a 429 or 5xx response if one occurred (a 401 a token
+// refresh resolved does not count); otherwise the context error, wrapped so
+// errors.Is(err, ctx.Err()) works.
+func (us *Uspacy) GetEntityCtx(ctx context.Context, entityType string, id int64) ([]byte, error) {
+	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), strconv.FormatInt(id, 10))
+	body, statusCode, err := us.doRawInternalCtx(ctx, url, http.MethodGet, headersMap, nil, false)
+	if err := finalizeCtxError(http.MethodGet, url, statusCode, body, err); err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
 // PatchEntity this method does not return any object, just error
 func (us *Uspacy) PatchEntity(entityType string, id string, entityData map[string]any) error {
 	_, err := us.doPatchEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), id), entityData)
@@ -177,6 +198,31 @@ func (us *Uspacy) GetFields(entityType string) (fields []crm.Field, err error) {
 	}
 	var resp crm.Fields
 	return resp.Data, json.Unmarshal(body, &resp)
+}
+
+// GetFieldsCtx returns the fields of an entity type: GET crm/v1/entities/{entityType}/fields
+// (the trailing slash crm.FieldsUrl carries is trimmed, same as GetFields). The request and
+// its retry waits stop as soon as ctx is done, and a final non-2xx answer — including a final
+// 3xx, and a 401 whose token refresh failed, whatever the refresh error was — is returned as
+// an *HTTPError. If ctx ends, this returns the last *HTTPError from a 429 or 5xx response if
+// one occurred (a 401 a token refresh resolved does not count); otherwise the context error,
+// wrapped so errors.Is(err, ctx.Err()) works.
+func (us *Uspacy) GetFieldsCtx(ctx context.Context, entityType string) ([]crm.Field, error) {
+	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType, ""))
+	body, statusCode, err := us.doRawInternalCtx(ctx, url, http.MethodGet, headersMap, nil, false)
+	if err := finalizeCtxError(http.MethodGet, url, statusCode, body, err); err != nil {
+		return nil, err
+	}
+	// Decode before returning resp.Data, rather than returning resp.Data alongside
+	// json.Unmarshal(body, &resp) in the same statement: that would rely on resp.Data being
+	// read only after Unmarshal populates it, which is true for the current compiler but is
+	// not part of the language's evaluation-order guarantee for a non-call operand next to a
+	// call in the same expression list.
+	var resp crm.Fields
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Data, nil
 }
 
 // CreateFunnel returns created funnel
