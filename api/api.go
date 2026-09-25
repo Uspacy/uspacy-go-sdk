@@ -255,8 +255,16 @@ func (us *Uspacy) doRawInternalCtx(ctx context.Context, url, method string, head
 	return responseBody, statusCode, nil
 }
 
-// sleepCtx waits d, or returns ctx.Err() as soon as ctx is done.
+// sleepCtx waits d, or returns ctx.Err() as soon as ctx is done. An already-done ctx wins
+// even when d is not positive (e.g. Retry-After: 0), so no further attempt starts after ctx
+// has ended; otherwise a non-positive d returns at once, without a timer.
 func sleepCtx(ctx context.Context, d time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if d <= 0 {
+		return nil
+	}
 	t := time.NewTimer(d)
 	defer t.Stop()
 	select {

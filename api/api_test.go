@@ -407,6 +407,44 @@ func TestRequestFailedAfterRetries(t *testing.T) {
 
 // --- Context-path tests for doRawInternalCtx ---
 
+func TestSleepCtx(t *testing.T) {
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	// An already-done ctx wins at every wait, including zero and negative ones (Retry-After: 0
+	// or a negative value). Without the up-front check, select could pick an already-fired
+	// timer over ctx.Done(), so repeat the call enough times to catch that.
+	for _, d := range []time.Duration{0, -time.Second, time.Hour} {
+		for i := 0; i < 200; i++ {
+			if err := sleepCtx(canceled, d); !errors.Is(err, context.Canceled) {
+				t.Fatalf("sleepCtx(canceled, %v) = %v, want context.Canceled", d, err)
+			}
+		}
+	}
+
+	// A live ctx with a non-positive wait returns nil at once.
+	for _, d := range []time.Duration{0, -time.Second} {
+		start := time.Now()
+		if err := sleepCtx(context.Background(), d); err != nil || time.Since(start) > 50*time.Millisecond {
+			t.Fatalf("sleepCtx(background, %v) = %v after %v, want nil at once", d, err, time.Since(start))
+		}
+	}
+
+	// A live ctx waits the full d.
+	start := time.Now()
+	if err := sleepCtx(context.Background(), 20*time.Millisecond); err != nil || time.Since(start) < 20*time.Millisecond {
+		t.Fatalf("sleepCtx(background, 20ms) = %v after %v, want nil after at least 20ms", err, time.Since(start))
+	}
+
+	// A ctx that ends mid-wait stops the wait with its own error.
+	short, cancelShort := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancelShort()
+	start = time.Now()
+	if err := sleepCtx(short, time.Hour); !errors.Is(err, context.DeadlineExceeded) || time.Since(start) > time.Second {
+		t.Fatalf("sleepCtx(deadline, 1h) = %v after %v, want context.DeadlineExceeded within 1s", err, time.Since(start))
+	}
+}
+
 // testJWT builds a syntactically valid but unsigned JWT whose payload sets the
 // "domain" claim, which is all UnmarshalTokenData/tokenRefreshCtx need from it.
 func testJWT(t *testing.T, domain string) string {
