@@ -1491,3 +1491,16 @@ func TestGetFieldsAndGetEntityParallelNoRace(t *testing.T) {
 	}()
 	wg.Wait()
 }
+
+func TestDeleteFilesByEntityIdQuery(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if r.Method != http.MethodDelete || q.Get("entityType") != "a&b" || q.Get("entityId") != "42" {
+			t.Errorf("request = %s %s, want DELETE with entityType=a&b and entityId=42", r.Method, r.URL)
+		}
+	}))
+	defer server.Close()
+	if _, err := New("token", "", server.URL).DeleteFilesByEntityId(context.Background(), "a&b", 42); err != nil {
+		t.Fatalf("DeleteFilesByEntityId() error = %v", err)
+	}
+}

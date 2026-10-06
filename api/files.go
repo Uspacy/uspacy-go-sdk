@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"strconv"
 
 	"github.com/Uspacy/uspacy-go-sdk/v2/files"
@@ -35,7 +36,10 @@ func (us *Uspacy) DeleteFileById(ctx context.Context, fileId int) (code int, err
 
 // DeleteFilesByEntityId this method delete all files by EntityId and return answer code and error
 func (us *Uspacy) DeleteFilesByEntityId(ctx context.Context, entityType string, entityId int64) (code int, err error) {
-	code, err = us.doDeleteEmptyHeaders(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s?%s&%d", files.FilesUrl, entityType, entityId)), nil)
+	params := url.Values{}
+	params.Set("entityType", entityType)
+	params.Set("entityId", strconv.FormatInt(entityId, 10))
+	code, err = us.doDeleteEmptyHeaders(ctx, us.buildURL(files.VersionUrl, files.FilesUrl)+"?"+params.Encode(), nil)
 	if err != nil {
 		return code, err
 	}
