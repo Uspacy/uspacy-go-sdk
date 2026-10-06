@@ -31,8 +31,8 @@ func (us *Uspacy) CreateSmartObjectField(ctx context.Context, tableName string, 
 }
 
 // CreateSmartObjectListValues adds values to a smart object list field and returns the field's values.
-func (us *Uspacy) CreateSmartObjectListValues(ctx context.Context, tableName string, listName string, listValue any) ([]crm.List, error) {
-	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, tableName, listName)), listValue)
+func (us *Uspacy) CreateSmartObjectListValues(ctx context.Context, tableName string, listName string, listValue any, opts ...RequestOption) ([]crm.List, error) {
+	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, tableName, listName)), listValue, opts...)
 	return decodeJSON[[]crm.List](responseBody, err)
 }
 
@@ -49,8 +49,8 @@ func (us *Uspacy) MoveSmartObjectFunnelStage(ctx context.Context, tableName stri
 }
 
 // GetSmartObjectFields returns the fields of a smart object.
-func (us *Uspacy) GetSmartObjectFields(ctx context.Context, tableName string) ([]crm.Field, error) {
-	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(smartobjects.FieldsUrl, tableName)))
+func (us *Uspacy) GetSmartObjectFields(ctx context.Context, tableName string, opts ...RequestOption) ([]crm.Field, error) {
+	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(smartobjects.FieldsUrl, tableName)), opts...)
 	resp, err := decodeJSON[crm.Fields](body, err)
 	if err != nil {
 		return nil, err
@@ -59,8 +59,8 @@ func (us *Uspacy) GetSmartObjectFields(ctx context.Context, tableName string) ([
 }
 
 // GetSmartObjectStages returns the kanban stages of a smart object.
-func (us *Uspacy) GetSmartObjectStages(ctx context.Context, tableName string) ([]crm.KanbanStage, error) {
-	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")))
+func (us *Uspacy) GetSmartObjectStages(ctx context.Context, tableName string, opts ...RequestOption) ([]crm.KanbanStage, error) {
+	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")), opts...)
 	resp, err := decodeJSON[crm.KanbanStages](body, err)
 	if err != nil {
 		return nil, err

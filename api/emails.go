@@ -8,8 +8,8 @@ import (
 )
 
 // GetMailFolders returns the mail folders.
-func (us *Uspacy) GetMailFolders(ctx context.Context) (emails.MailFolders, error) {
-	body, err := us.doGet(ctx, us.buildURL(emails.VersionUrl, emails.MailFoldersUrl))
+func (us *Uspacy) GetMailFolders(ctx context.Context, opts ...RequestOption) (emails.MailFolders, error) {
+	body, err := us.doGet(ctx, us.buildURL(emails.VersionUrl, emails.MailFoldersUrl), opts...)
 	return decodeJSON[emails.MailFolders](body, err)
 }
 
@@ -20,8 +20,8 @@ func (us *Uspacy) DoMailFolder(ctx context.Context, folder emails.MailFolder, op
 }
 
 // GetMailBoxes returns the mailboxes.
-func (us *Uspacy) GetMailBoxes(ctx context.Context) (emails.MailBoxes, error) {
-	body, err := us.doGet(ctx, us.buildURL(emails.VersionUrl, emails.MailBoxesUrl))
+func (us *Uspacy) GetMailBoxes(ctx context.Context, opts ...RequestOption) (emails.MailBoxes, error) {
+	body, err := us.doGet(ctx, us.buildURL(emails.VersionUrl, emails.MailBoxesUrl), opts...)
 	return decodeJSON[emails.MailBoxes](body, err)
 }
 
@@ -33,8 +33,8 @@ func (us *Uspacy) DoLettersByFolder(ctx context.Context, folderID string, letter
 }
 
 // DeleteLetterById deletes a letter and returns the HTTP status code.
-func (us *Uspacy) DeleteLetterById(ctx context.Context, letterId int) (code int, err error) {
-	code, err = us.doDelete(ctx, us.buildURL(emails.VersionUrl, fmt.Sprintf(emails.LetterById, letterId)), nil)
+func (us *Uspacy) DeleteLetterById(ctx context.Context, letterId int, opts ...RequestOption) (code int, err error) {
+	code, err = us.doDelete(ctx, us.buildURL(emails.VersionUrl, fmt.Sprintf(emails.LetterById, letterId)), nil, opts...)
 	if err != nil {
 		return code, err
 	}

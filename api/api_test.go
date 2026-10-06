@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1787,6 +1788,26 @@ func TestNextBackoffNoOverflow(t *testing.T) {
 		d := us.nextBackoff(c.attempt, 0, false)
 		if d < c.max/2 || d > c.max {
 			t.Errorf("nextBackoff(base=%v, max=%v, attempt=%d) = %v, want in [max/2, max]", c.base, c.max, c.attempt, d)
+		}
+	}
+}
+
+// Every method that sends a request must accept request options, so a new option works
+// everywhere without changing signatures again.
+func TestRequestMethodsAcceptRequestOptions(t *testing.T) {
+	ctxType := reflect.TypeOf((*context.Context)(nil)).Elem()
+	optsType := reflect.TypeOf([]RequestOption(nil))
+	exempt := map[string]bool{"TokenRefresh": true}
+
+	typ := reflect.TypeOf(&Uspacy{})
+	for i := 0; i < typ.NumMethod(); i++ {
+		m := typ.Method(i)
+		ft := m.Type // receiver is In(0)
+		if exempt[m.Name] || ft.NumIn() < 2 || ft.In(1) != ctxType {
+			continue
+		}
+		if !ft.IsVariadic() || ft.In(ft.NumIn()-1) != optsType {
+			t.Errorf("%s does not accept opts ...RequestOption as its last parameter", m.Name)
 		}
 	}
 }

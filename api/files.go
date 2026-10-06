@@ -21,8 +21,8 @@ func (us *Uspacy) CreateFile(ctx context.Context, entityType, entityId string, f
 }
 
 // DeleteFileById deletes a file and returns the HTTP status code.
-func (us *Uspacy) DeleteFileById(ctx context.Context, fileId int) (code int, err error) {
-	code, err = us.doDelete(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), nil)
+func (us *Uspacy) DeleteFileById(ctx context.Context, fileId int, opts ...RequestOption) (code int, err error) {
+	code, err = us.doDelete(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), nil, opts...)
 	if err != nil {
 		return code, err
 	}
@@ -30,11 +30,11 @@ func (us *Uspacy) DeleteFileById(ctx context.Context, fileId int) (code int, err
 }
 
 // DeleteFilesByEntityId deletes all files attached to an entity and returns the HTTP status code.
-func (us *Uspacy) DeleteFilesByEntityId(ctx context.Context, entityType string, entityId int64) (code int, err error) {
+func (us *Uspacy) DeleteFilesByEntityId(ctx context.Context, entityType string, entityId int64, opts ...RequestOption) (code int, err error) {
 	params := url.Values{}
 	params.Set("entityType", entityType)
 	params.Set("entityId", strconv.FormatInt(entityId, 10))
-	code, err = us.doDelete(ctx, us.buildURL(files.VersionUrl, files.FilesUrl)+"?"+params.Encode(), nil)
+	code, err = us.doDelete(ctx, us.buildURL(files.VersionUrl, files.FilesUrl)+"?"+params.Encode(), nil, opts...)
 	if err != nil {
 		return code, err
 	}
@@ -42,16 +42,16 @@ func (us *Uspacy) DeleteFilesByEntityId(ctx context.Context, entityType string, 
 }
 
 // GetFileById returns a file by its ID.
-func (us *Uspacy) GetFileById(ctx context.Context, fileId int) (files.File, error) {
-	body, err := us.doGet(ctx, us.buildURL(files.VersionUrl, files.FilesUrl, strconv.Itoa(fileId)))
+func (us *Uspacy) GetFileById(ctx context.Context, fileId int, opts ...RequestOption) (files.File, error) {
+	body, err := us.doGet(ctx, us.buildURL(files.VersionUrl, files.FilesUrl, strconv.Itoa(fileId)), opts...)
 	return decodeJSON[files.File](body, err)
 }
 
 // UpdateFile attaches a file to another entity and returns the updated file.
-func (us *Uspacy) UpdateFile(ctx context.Context, fileId int, entityId int64) (files.File, error) {
+func (us *Uspacy) UpdateFile(ctx context.Context, fileId int, entityId int64, opts ...RequestOption) (files.File, error) {
 	body := map[string]int64{
 		"entityId": entityId,
 	}
-	response, err := us.doPatch(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), body)
+	response, err := us.doPatch(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), body, opts...)
 	return decodeJSON[files.File](response, err)
 }

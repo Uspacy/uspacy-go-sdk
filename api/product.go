@@ -10,18 +10,18 @@ import (
 )
 
 // GetProduct returns a product by its ID.
-func (us *Uspacy) GetProduct(ctx context.Context, id string) (crm.Products, error) {
-	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ProductsUrl, id)))
+func (us *Uspacy) GetProduct(ctx context.Context, id string, opts ...RequestOption) (crm.Products, error) {
+	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ProductsUrl, id)), opts...)
 	return decodeJSON[crm.Products](responseBody, err)
 }
 
 // GetEntityProductList returns product list for entity
-func (us *Uspacy) GetEntityProductList(ctx context.Context, entityType string, entityID int64) (crm.EntityProductList, error) {
+func (us *Uspacy) GetEntityProductList(ctx context.Context, entityType string, entityID int64, opts ...RequestOption) (crm.EntityProductList, error) {
 	params := url.Values{
 		"entity_type": []string{entityType},
 		"entity_id":   []string{strconv.FormatInt(entityID, 10)},
 	}
-	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, crm.EntityProductListsUrl)+"?"+params.Encode())
+	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, crm.EntityProductListsUrl)+"?"+params.Encode(), opts...)
 	return decodeJSON[crm.EntityProductList](responseBody, err)
 }
 
@@ -32,8 +32,8 @@ func (us *Uspacy) CreateEntityListProduct(ctx context.Context, productData crm.C
 }
 
 // DeleteEntityListProduct deletes a product list item
-func (us *Uspacy) DeleteEntityListProduct(ctx context.Context, id int) (statusCode int, err error) {
-	return us.doDelete(ctx, us.buildURL(crm.VersionUrl, crm.ListProductsUrl, strconv.Itoa(id)), nil)
+func (us *Uspacy) DeleteEntityListProduct(ctx context.Context, id int, opts ...RequestOption) (statusCode int, err error) {
+	return us.doDelete(ctx, us.buildURL(crm.VersionUrl, crm.ListProductsUrl, strconv.Itoa(id)), nil, opts...)
 }
 
 // CreateProduct creates a product and returns it.
