@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -51,27 +50,16 @@ func (us *Uspacy) GetTasksList(ctx context.Context, params url.Values) (task.Tas
 	return decodeJSON[task.TasksList](body, err)
 }
 
-// GetTasksWithFilters returns tasks with filters as a map
-func (us *Uspacy) GetTasksWithFilters(ctx context.Context, params url.Values) (tasks []map[string]any, err error) {
+// GetTasksWithFilters returns the tasks matching params, each as a map of its raw JSON fields.
+func (us *Uspacy) GetTasksWithFilters(ctx context.Context, params url.Values) ([]map[string]any, error) {
 	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode())
+	resp, err := decodeJSON[struct {
+		Data []map[string]any `json:"data"`
+	}](body, err)
 	if err != nil {
-		return tasks, err
+		return nil, err
 	}
-	var result map[string]any
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return tasks, err
-	}
-	// Extract data array from response
-	if data, ok := result["data"].([]any); ok {
-		tasks = make([]map[string]any, len(data))
-		for i, item := range data {
-			if taskMap, ok := item.(map[string]any); ok {
-				tasks[i] = taskMap
-			}
-		}
-	}
-	return tasks, nil
+	return resp.Data, nil
 }
 
 // GetTaskById returns task by ID as a map

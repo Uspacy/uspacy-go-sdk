@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strconv"
 
@@ -83,9 +82,7 @@ func (us *Uspacy) GetList(ctx context.Context, entityType string, params url.Val
 // The id is its own path segment so the leading slash is preserved.
 // A non-2xx response is returned as *HTTPError.
 func (us *Uspacy) GetEntity(ctx context.Context, entityType string, id int64) ([]byte, error) {
-	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), strconv.FormatInt(id, 10))
-	body, _, err := us.doRaw(ctx, url, http.MethodGet, jsonHeaders(), nil)
-	return body, err
+	return us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), strconv.FormatInt(id, 10)))
 }
 
 // PatchEntity updates a CRM record.
@@ -145,8 +142,7 @@ func (us *Uspacy) DeleteField(ctx context.Context, entityType string, codeField 
 // GetFields returns the fields of an entity type: GET crm/v1/entities/{entityType}/fields.
 // A non-2xx response is returned as *HTTPError.
 func (us *Uspacy) GetFields(ctx context.Context, entityType string) ([]crm.Field, error) {
-	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType, ""))
-	body, _, err := us.doRaw(ctx, url, http.MethodGet, jsonHeaders(), nil)
+	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType, "")))
 	resp, err := decodeJSON[crm.Fields](body, err)
 	if err != nil {
 		return nil, err

@@ -324,6 +324,19 @@ func TestRequestFailedAfterAttempts(t *testing.T) {
 	}
 	wantDetails := "Error 'dial tcp: connection refused' on attempts: [1 2 3]\n"
 
+	t.Run("several errors are listed in the order they first occurred", func(t *testing.T) {
+		mixed := map[string]*errorLog{
+			"z: reset":   {message: "z: reset", attempts: []int{1, 3}},
+			"a: timeout": {message: "a: timeout", attempts: []int{2}},
+		}
+		want := "request failed (attempts: 3):\nError 'z: reset' on attempts: [1 3]\nError 'a: timeout' on attempts: [2]\n"
+		for range 20 { // map order is random per iteration, so repeat to catch an unsorted loop
+			if got := requestFailedAfterAttempts(context.Background(), 3, mixed).Error(); got != want {
+				t.Fatalf("Error() = %q, want %q", got, want)
+			}
+		}
+	})
+
 	t.Run("ctx.Err() nil keeps the pre-context text and type", func(t *testing.T) {
 		err := requestFailedAfterAttempts(context.Background(), defaultMaxRetries, logs)
 		wantText := fmt.Sprintf("request failed (attempts: %d):\n%s", defaultMaxRetries, wantDetails)
@@ -1775,6 +1788,24 @@ func TestNextBackoffNoOverflow(t *testing.T) {
 		if d < c.max/2 || d > c.max {
 			t.Errorf("nextBackoff(base=%v, max=%v, attempt=%d) = %v, want in [max/2, max]", c.base, c.max, c.attempt, d)
 		}
+	}
+}
+
+func TestGetTasksWithFilters(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("status") != "open" {
+			t.Errorf("query = %q, want status=open", r.URL.RawQuery)
+		}
+		fmt.Fprint(w, `{"data":[{"id":1,"title":"a"},{"id":2}],"meta":{"total":2}}`)
+	}))
+	defer server.Close()
+
+	tasks, err := New("token", "", server.URL).GetTasksWithFilters(context.Background(), url.Values{"status": {"open"}})
+	if err != nil {
+		t.Fatalf("GetTasksWithFilters() error = %v", err)
+	}
+	if len(tasks) != 2 || tasks[0]["title"] != "a" || tasks[1]["id"] != float64(2) {
+		t.Errorf("tasks = %v, want the two maps from data", tasks)
 	}
 }
 

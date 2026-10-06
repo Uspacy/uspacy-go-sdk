@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -38,7 +40,8 @@ type errorLog struct {
 	attempts []int
 }
 
-// Option configures an Uspacy client.
+// Option configures an Uspacy client. Options are meant to be passed to New; applying one
+// to a client that is already serving requests is not safe for concurrent use.
 type Option func(*Uspacy)
 
 // RequestOption configures an individual HTTP request.
@@ -313,7 +316,9 @@ func isIdempotent(method string) bool {
 // again. Idempotent methods always may; other methods only when the connection was
 // never established (dial or DNS failure), so the server cannot have seen the request.
 // A timeout or reset after the request was written is not retried for POST/PATCH,
-// because the server may already have created the record.
+// because the server may already have created the record. Other failures before the
+// request is sent, such as a TLS handshake error, are not retried either: they are
+// rarely transient (usually a certificate problem), so retrying would only add delay.
 func canRetryTransportError(method string, err error) bool {
 	if isIdempotent(method) {
 		return true
@@ -421,8 +426,12 @@ func (us *Uspacy) finalResult(method, url string, statusCode int, body []byte, e
 // first one included. If ctx ended in the meantime, its error is wrapped so
 // errors.Is(err, ctx.Err()) works; no *HTTPError exists on this path to carry it.
 func requestFailedAfterAttempts(ctx context.Context, attempts int, errorLogs map[string]*errorLog) error {
+	// List errors in the order they first occurred, so the text is the same on every run.
+	logs := slices.SortedFunc(maps.Values(errorLogs), func(a, b *errorLog) int {
+		return cmp.Compare(a.attempts[0], b.attempts[0])
+	})
 	var errorDetails strings.Builder
-	for _, log := range errorLogs {
+	for _, log := range logs {
 		fmt.Fprintf(&errorDetails, "Error '%s' on attempts: %v\n",
 			log.message, log.attempts)
 	}
