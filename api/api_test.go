@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -445,6 +447,7 @@ func TestDoRawInternalTokenRefreshCarriesContext(t *testing.T) {
 		<-r.Context().Done()
 	}))
 	defer refreshServer.Close()
+	defer refreshServer.CloseClientConnections() // end the detached shared refresh now, not at the client timeout
 
 	// The main server always answers 401, so doRequest always reaches the
 	// refresh path.
@@ -688,6 +691,7 @@ func TestGetFieldsAndGetEntityRefreshStallIsContextError(t *testing.T) {
 	t.Run("GetFields", func(t *testing.T) {
 		us, refreshServer, mainServer := newClient()
 		defer refreshServer.Close()
+		defer refreshServer.CloseClientConnections() // end the detached shared refresh now, not at the client timeout
 		defer mainServer.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 		defer cancel()
@@ -711,6 +715,7 @@ func TestGetFieldsAndGetEntityRefreshStallIsContextError(t *testing.T) {
 	t.Run("GetEntity", func(t *testing.T) {
 		us, refreshServer, mainServer := newClient()
 		defer refreshServer.Close()
+		defer refreshServer.CloseClientConnections() // end the detached shared refresh now, not at the client timeout
 		defer mainServer.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 		defer cancel()
@@ -752,6 +757,7 @@ func TestGetFieldsAndGetEntityRefreshCancelIsContextError(t *testing.T) {
 	t.Run("GetFields", func(t *testing.T) {
 		us, refreshServer, mainServer := newClient()
 		defer refreshServer.Close()
+		defer refreshServer.CloseClientConnections() // end the detached shared refresh now, not at the client timeout
 		defer mainServer.Close()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -776,6 +782,7 @@ func TestGetFieldsAndGetEntityRefreshCancelIsContextError(t *testing.T) {
 	t.Run("GetEntity", func(t *testing.T) {
 		us, refreshServer, mainServer := newClient()
 		defer refreshServer.Close()
+		defer refreshServer.CloseClientConnections() // end the detached shared refresh now, not at the client timeout
 		defer mainServer.Close()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -827,6 +834,7 @@ func TestGetFieldsAndGetEntityRefreshStallKeepsEarlier429(t *testing.T) {
 	t.Run("GetFields", func(t *testing.T) {
 		us, refreshServer, mainServer := newClient()
 		defer refreshServer.Close()
+		defer refreshServer.CloseClientConnections() // end the detached shared refresh now, not at the client timeout
 		defer mainServer.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 		defer cancel()
@@ -847,6 +855,7 @@ func TestGetFieldsAndGetEntityRefreshStallKeepsEarlier429(t *testing.T) {
 	t.Run("GetEntity", func(t *testing.T) {
 		us, refreshServer, mainServer := newClient()
 		defer refreshServer.Close()
+		defer refreshServer.CloseClientConnections() // end the detached shared refresh now, not at the client timeout
 		defer mainServer.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 		defer cancel()
@@ -1398,7 +1407,7 @@ func TestGetEntity502ThenLaterAttemptInFlight(t *testing.T) {
 		<-r.Context().Done()
 	}))
 	defer srv.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 3500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
 
 	_, err := New("token", "", srv.URL, WithRetryBackoff(10*time.Millisecond, 50*time.Millisecond)).GetEntity(ctx, "contacts", 5)
@@ -1490,6 +1499,191 @@ func TestGetFieldsAndGetEntityParallelNoRace(t *testing.T) {
 		_, _ = us.GetEntity(context.Background(), "contacts", 5)
 	}()
 	wg.Wait()
+}
+
+// --- request options, transport retries, shared token refresh ---
+
+// countingTransport counts round trips, including ones that never reach a server.
+type countingTransport struct {
+	n  atomic.Int32
+	rt http.RoundTripper
+}
+
+func (c *countingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	c.n.Add(1)
+	return c.rt.RoundTrip(r)
+}
+
+func TestRequestOptionsKeepContentTypeAndReplaceHeaders(t *testing.T) {
+	type seen struct {
+		contentType string
+		auth        []string
+		trace       string
+	}
+	got := make(chan seen, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got <- seen{r.Header.Get("Content-Type"), r.Header.Values("Authorization"), r.Header.Get("X-Trace")}
+		fmt.Fprint(w, `{"id":1}`)
+	}))
+	defer server.Close()
+	us := New("token", "", server.URL)
+
+	if _, _, err := us.CreateEntity(context.Background(), "leads", map[string]any{"x": 1},
+		WithHeader("X-Trace", "1"), WithHeader("Authorization", "Bearer other")); err != nil {
+		t.Fatalf("CreateEntity() error = %v", err)
+	}
+	s := <-got
+	if s.contentType != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json even with request options", s.contentType)
+	}
+	if len(s.auth) != 1 || s.auth[0] != "Bearer other" {
+		t.Errorf("Authorization = %q, want a single overridden value", s.auth)
+	}
+	if s.trace != "1" {
+		t.Errorf("X-Trace = %q, want 1", s.trace)
+	}
+
+	if _, err := us.CreateFile(context.Background(), "leads", "1",
+		map[string]io.ReadCloser{"a.txt": io.NopCloser(strings.NewReader("x"))}, WithHeader("X-Trace", "2")); err != nil {
+		t.Fatalf("CreateFile() error = %v", err)
+	}
+	s = <-got
+	if !strings.HasPrefix(s.contentType, "multipart/form-data") || s.trace != "2" {
+		t.Errorf("CreateFile headers = %+v, want multipart Content-Type and X-Trace 2", s)
+	}
+}
+
+// A POST that timed out after it was sent may already have been applied, so it must not
+// be sent again; an idempotent GET still is.
+func TestTransportTimeoutRetriesOnlyIdempotent(t *testing.T) {
+	var hits atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		select {
+		case <-time.After(time.Second):
+		case <-r.Context().Done():
+		}
+	}))
+	defer server.Close()
+	us := New("token", "", server.URL,
+		WithHTTPClient(&http.Client{Timeout: 50 * time.Millisecond}),
+		WithRetryBackoff(time.Millisecond, time.Millisecond))
+
+	if _, _, err := us.CreateEntity(context.Background(), "leads", map[string]any{"x": 1}); err == nil {
+		t.Fatal("CreateEntity() error = nil, want a timeout")
+	}
+	if got := hits.Load(); got != 1 {
+		t.Errorf("POST reached the server %d times, want 1", got)
+	}
+
+	hits.Store(0)
+	if _, err := us.GetEntity(context.Background(), "leads", 1); err == nil {
+		t.Fatal("GetEntity() error = nil, want a timeout")
+	}
+	if got := hits.Load(); got != defaultMaxRetries {
+		t.Errorf("GET reached the server %d times, want %d", got, defaultMaxRetries)
+	}
+}
+
+// A POST whose connection was never established cannot have been applied, so it is retried.
+func TestTransportDialErrorRetriesPost(t *testing.T) {
+	server := httptest.NewServer(http.NotFoundHandler())
+	addr := server.URL
+	server.Close()
+
+	ct := &countingTransport{rt: http.DefaultTransport}
+	us := New("token", "", addr, WithHTTPClient(&http.Client{Transport: ct}), WithRetryBackoff(time.Millisecond, time.Millisecond))
+	if _, _, err := us.CreateEntity(context.Background(), "leads", map[string]any{"x": 1}); err == nil {
+		t.Fatal("CreateEntity() error = nil, want connection refused")
+	}
+	if got := ct.n.Load(); got != defaultMaxRetries {
+		t.Errorf("round trips = %d, want %d", got, defaultMaxRetries)
+	}
+}
+
+// One caller giving up must not fail the shared refresh for another caller still waiting.
+func TestSharedRefreshSurvivesFirstCallerCancel(t *testing.T) {
+	var refreshHits atomic.Int32
+	refreshStarted := make(chan struct{})
+	release := make(chan struct{})
+	var newJWT string
+	refreshServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if refreshHits.Add(1) == 1 {
+			close(refreshStarted)
+		}
+		<-release
+		fmt.Fprintf(w, `{"jwt":%q,"refreshToken":"r2"}`, newJWT)
+	}))
+	defer refreshServer.Close()
+	domain := strings.TrimPrefix(refreshServer.URL, "https://")
+	newJWT = testJWT(t, domain+".new")
+
+	mainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != tokenPrefix+newJWT {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		fmt.Fprint(w, `{"data":[]}`)
+	}))
+	defer mainServer.Close()
+
+	us := New(testJWT(t, domain), "", mainServer.URL)
+	us.client = refreshServer.Client()
+
+	ctxA, cancelA := context.WithCancel(context.Background())
+	errA := make(chan error, 1)
+	go func() { _, err := us.GetFields(ctxA, "leads"); errA <- err }()
+	<-refreshStarted
+
+	errB := make(chan error, 1)
+	go func() { _, err := us.GetFields(context.Background(), "leads"); errB <- err }()
+	time.Sleep(100 * time.Millisecond) // let B join the refresh in flight
+	cancelA()
+	if err := <-errA; !errors.Is(err, context.Canceled) {
+		t.Errorf("caller A error = %v, want context.Canceled", err)
+	}
+	close(release)
+
+	if err := <-errB; err != nil {
+		t.Errorf("caller B error = %v, want nil: A's cancel must not fail the shared refresh", err)
+	}
+	if got := refreshHits.Load(); got != 1 {
+		t.Errorf("refresh requests = %d, want 1", got)
+	}
+	if got := us.RefreshToken(); got != "r2" {
+		t.Errorf("RefreshToken() = %q, want r2", got)
+	}
+}
+
+// A 401 for a token that has already been replaced retries with the new token instead of
+// refreshing again. "token" is not a JWT, so any refresh attempt would fail.
+func TestTokenRefreshSkipsWhenTokenAlreadyChanged(t *testing.T) {
+	us := New("token", "", "http://unused.invalid")
+	got, err := us.tokenRefresh(context.Background(), "older-token")
+	if err != nil || got != "token" {
+		t.Fatalf("tokenRefresh(stale) = %q, %v, want the current token and no refresh", got, err)
+	}
+	if _, err := us.TokenRefresh(context.Background()); err == nil {
+		t.Error("TokenRefresh() error = nil, want a forced refresh attempt that fails on the non-JWT token")
+	}
+}
+
+func TestNextBackoffNoOverflow(t *testing.T) {
+	cases := []struct {
+		base, max time.Duration
+		attempt   int
+	}{
+		{3 * time.Second, 30 * time.Second, 1000},
+		{time.Hour, math.MaxInt64, 100},
+		{time.Minute, time.Second, 0}, // base above max is capped
+	}
+	for _, c := range cases {
+		us := New("token", "", "", WithRetryBackoff(c.base, c.max))
+		d := us.nextBackoff(c.attempt, 0, false)
+		if d < c.max/2 || d > c.max {
+			t.Errorf("nextBackoff(base=%v, max=%v, attempt=%d) = %v, want in [max/2, max]", c.base, c.max, c.attempt, d)
+		}
+	}
 }
 
 func TestDeleteFilesByEntityIdQuery(t *testing.T) {

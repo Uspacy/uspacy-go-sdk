@@ -12,12 +12,12 @@ import (
 )
 
 // CreateFile creates a file attached to the given entity.
-func (us *Uspacy) CreateFile(ctx context.Context, entityType, entityId string, filesMap map[string]io.ReadCloser) (file files.Files, err error) {
+func (us *Uspacy) CreateFile(ctx context.Context, entityType, entityId string, filesMap map[string]io.ReadCloser, opts ...RequestOption) (file files.Files, err error) {
 	textParams := map[string]string{
 		"entityType": entityType,
 		"entityId":   entityId,
 	}
-	body, err := us.doPostFormData(ctx, us.buildURL(files.VersionUrl, files.FilesUrl), textParams, filesMap)
+	body, err := us.doPostFormData(ctx, us.buildURL(files.VersionUrl, files.FilesUrl), textParams, filesMap, opts...)
 	if err != nil {
 		return file, err
 	}

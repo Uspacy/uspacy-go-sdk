@@ -7,25 +7,47 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Uspacy/uspacy-go-sdk/v2/auth"
 )
 
-// tokenRefresh refreshes the bearer token, carrying ctx on the refresh request (and its
-// retry waits) so a done ctx aborts the refresh instead of running to completion.
-// Concurrent callers are deduplicated: only one refresh request is executed and its
-// result is shared.
-func (us *Uspacy) tokenRefresh(ctx context.Context) (string, error) {
-	res, err, _ := us.refreshFlight.Do("refresh", func() (any, error) {
-		return us.refreshTokenOnce(ctx)
-	})
-	if err != nil {
-		return "", err
+// refreshTimeout bounds a shared token refresh, which runs detached from any single
+// caller's ctx.
+const refreshTimeout = time.Minute
+
+// tokenRefresh refreshes the bearer token unless it already differs from staleToken, the
+// token that got the 401 (another caller refreshed it meanwhile); an empty staleToken
+// forces a refresh. Concurrent callers share one refresh request. That request does not
+// inherit cancellation from whichever caller started it, so one caller giving up does not
+// fail the refresh for the others; each caller still stops waiting as soon as its own ctx
+// is done.
+func (us *Uspacy) tokenRefresh(ctx context.Context, staleToken string) (string, error) {
+	if token := us.currentToken(); staleToken != "" && token != staleToken {
+		return token, nil
 	}
-	return res.(string), nil
+	ch := us.refreshFlight.DoChan("refresh", func() (any, error) {
+		refreshCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), refreshTimeout)
+		defer cancel()
+		return us.refreshTokenOnce(refreshCtx, staleToken)
+	})
+	select {
+	case res := <-ch:
+		if res.Err != nil {
+			return "", res.Err
+		}
+		return res.Val.(string), nil
+	case <-ctx.Done():
+		return "", ctx.Err()
+	}
 }
 
-func (us *Uspacy) refreshTokenOnce(ctx context.Context) (string, error) {
+func (us *Uspacy) refreshTokenOnce(ctx context.Context, staleToken string) (string, error) {
+	// Re-check inside the flight: a refresh that finished between the caller's check and
+	// this one has already replaced the stale token.
+	if token := us.currentToken(); staleToken != "" && token != staleToken {
+		return token, nil
+	}
 	var refresh auth.RefreshOutput
 	jwt, err := us.UnmarshalTokenData()
 	if err != nil {
@@ -51,16 +73,14 @@ func (us *Uspacy) refreshTokenOnce(ctx context.Context) (string, error) {
 	return refresh.Jwt, nil
 }
 
-// TokenRefresh refreshes the bearer token, carrying ctx on the refresh request (and its
-// retry waits) so a done ctx aborts the refresh instead of running to completion.
+// TokenRefresh forces a bearer token refresh and returns the new token. It returns as
+// soon as ctx is done; a refresh already in flight is shared with concurrent callers.
 func (us *Uspacy) TokenRefresh(ctx context.Context) (string, error) {
-	return us.tokenRefresh(ctx)
+	return us.tokenRefresh(ctx, "")
 }
 
 func (us *Uspacy) UnmarshalTokenData() (tokenData auth.JwtClaims, err error) {
-	us.mu.RLock()
-	token := us.bearerToken
-	us.mu.RUnlock()
+	token := us.currentToken()
 
 	// JWT format: header.payload.signature
 	parts := strings.Split(token, ".")

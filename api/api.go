@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
 	"math/rand/v2"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -154,8 +156,10 @@ func WithHTTPClient(c *http.Client) Option {
 }
 
 // prepareRequest creates and configures an HTTP request with appropriate headers and
-// authorization, bound to ctx so the caller can cancel it or let it time out.
-func (us *Uspacy) prepareRequest(ctx context.Context, url, method string, headers map[string]string, body []byte) (*http.Request, error) {
+// authorization, bound to ctx so the caller can cancel it or let it time out. It also
+// returns the bearer token the request carries, so a 401 can tell whether that token
+// has been refreshed since.
+func (us *Uspacy) prepareRequest(ctx context.Context, url, method string, headers map[string]string, body []byte) (*http.Request, string, error) {
 	var bodyReader io.Reader
 	if body != nil {
 		bodyReader = bytes.NewReader(body)
@@ -163,25 +167,25 @@ func (us *Uspacy) prepareRequest(ctx context.Context, url, method string, header
 
 	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	if len(headers) == 0 {
-		req.Header.Add("Content-Type", "application/json")
-	}
+	token := us.currentToken()
+	req.Header.Set("Authorization", tokenPrefix+token)
 
-	// Set authorization token
-	us.mu.RLock()
-	token := us.bearerToken
-	us.mu.RUnlock()
-	req.Header.Add("Authorization", tokenPrefix+token)
-
-	// Add custom headers
+	// Custom headers replace defaults (including Authorization) instead of duplicating them.
 	for key, value := range headers {
-		req.Header.Add(key, value)
+		req.Header.Set(key, value)
 	}
 
-	return req, nil
+	return req, token, nil
+}
+
+// currentToken returns the current bearer token. Safe for concurrent use.
+func (us *Uspacy) currentToken() string {
+	us.mu.RLock()
+	defer us.mu.RUnlock()
+	return us.bearerToken
 }
 
 // responseClass tells doRequest what to do with a single HTTP response.
@@ -217,7 +221,7 @@ func (us *Uspacy) doRequest(ctx context.Context, url, method string, headers map
 	)
 
 	for attempt := 0; attempt < us.maxRetries; attempt++ {
-		req, err := us.prepareRequest(ctx, url, method, headers, body)
+		req, usedToken, err := us.prepareRequest(ctx, url, method, headers, body)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -225,21 +229,27 @@ func (us *Uspacy) doRequest(ctx context.Context, url, method string, headers map
 		res, err := us.client.Do(req)
 		if err != nil {
 			us.logError(errorLogs, err.Error(), attempt+1)
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return us.abort(lastHTTPErr, ctxErr)
+			}
+			if !canRetryTransportError(method, err) {
+				return nil, 0, requestFailedAfterRetries(ctx, attempt+1, errorLogs)
+			}
 			if us.shouldRetry(attempt) {
 				if sleepErr := sleep(ctx, us.nextBackoff(attempt, 0, false)); sleepErr != nil {
-					return us.abort(method, url, lastHTTPErr, sleepErr)
+					return us.abort(lastHTTPErr, sleepErr)
 				}
-			} else if ctxErr := ctx.Err(); ctxErr != nil {
-				return us.abort(method, url, lastHTTPErr, ctxErr)
 			}
 			continue
 		}
 
+		// A failure while reading the body is not retried: the server has already answered,
+		// so for a non-idempotent method it may have applied the request.
 		responseBody, err = io.ReadAll(res.Body)
 		res.Body.Close()
 		if err != nil {
 			if ctxErr := ctx.Err(); ctxErr != nil {
-				return us.abort(method, url, lastHTTPErr, ctxErr)
+				return us.abort(lastHTTPErr, ctxErr)
 			}
 			return nil, 0, err
 		}
@@ -248,9 +258,9 @@ func (us *Uspacy) doRequest(ctx context.Context, url, method string, headers map
 
 		switch us.classifyResponse(method, statusCode, skipTokenRefresh, tokenRefreshed) {
 		case responseRefresh:
-			if _, err := us.tokenRefresh(ctx); err != nil {
+			if _, err := us.tokenRefresh(ctx, usedToken); err != nil {
 				if ctxErr := ctx.Err(); ctxErr != nil {
-					return us.abort(method, url, lastHTTPErr, ctxErr)
+					return us.abort(lastHTTPErr, ctxErr)
 				}
 				return nil, statusCode, &HTTPError{Method: method, URL: url, StatusCode: http.StatusUnauthorized, Err: err}
 			}
@@ -265,7 +275,7 @@ func (us *Uspacy) doRequest(ctx context.Context, url, method string, headers map
 					retryAfter, retryAfterSet = us.parseRetryAfter(res.Header.Get("Retry-After"))
 				}
 				if sleepErr := sleep(ctx, us.nextBackoff(attempt, retryAfter, retryAfterSet)); sleepErr != nil {
-					return us.abort(method, url, lastHTTPErr, sleepErr)
+					return us.abort(lastHTTPErr, sleepErr)
 				}
 			}
 			continue
@@ -299,6 +309,19 @@ func isIdempotent(method string) bool {
 	default:
 		return false
 	}
+}
+
+// canRetryTransportError reports whether a request that got no response may be sent
+// again. Idempotent methods always may; other methods only when the connection was
+// never established (dial or DNS failure), so the server cannot have seen the request.
+// A timeout or reset after the request was written is not retried for POST/PATCH,
+// because the server may already have created the record.
+func canRetryTransportError(method string, err error) bool {
+	if isIdempotent(method) {
+		return true
+	}
+	var opErr *net.OpError
+	return errors.As(err, &opErr) && opErr.Op == "dial"
 }
 
 // shouldRetry reports whether there are still attempts left after the current one.
@@ -349,18 +372,17 @@ func (us *Uspacy) nextBackoff(attempt int, retryAfter time.Duration, retryAfterS
 		return retryAfter
 	}
 
-	var shift uint
-	if attempt > 30 {
-		shift = 30
-	} else {
-		shift = uint(attempt)
+	// Double step by step instead of shifting, so a large attempt or base never overflows.
+	delay := us.retryBase
+	for i := 0; i < attempt && delay < us.retryMax; i++ {
+		if delay > us.retryMax/2 {
+			delay = us.retryMax
+			break
+		}
+		delay *= 2
 	}
-	delay := us.retryBase * (1 << shift)
-	if delay > us.retryMax || delay <= 0 {
+	if delay > us.retryMax {
 		delay = us.retryMax
-	}
-	if delay <= 0 {
-		return 0
 	}
 
 	// Equal jitter: [delay/2, delay).
@@ -372,7 +394,7 @@ func (us *Uspacy) nextBackoff(attempt int, retryAfter time.Duration, retryAfterS
 // already seen, it is preserved as an *HTTPError with ctxErr attached via Err so both
 // errors.As(*HTTPError) and errors.Is(ctxErr) work. Otherwise it returns a wrapped
 // context error.
-func (us *Uspacy) abort(method, url string, lastHTTPErr *HTTPError, ctxErr error) ([]byte, int, error) {
+func (us *Uspacy) abort(lastHTTPErr *HTTPError, ctxErr error) ([]byte, int, error) {
 	if lastHTTPErr != nil {
 		errWithCtx := *lastHTTPErr
 		errWithCtx.Err = ctxErr
@@ -536,7 +558,7 @@ func mergeHeaders(opts []RequestOption, defaults ...map[string]string) map[strin
 
 // doPostFormData performs a multipart form POST request with files and text parameters.
 // Returns error if no files are provided or if all provided files are invalid.
-func (us *Uspacy) doPostFormData(ctx context.Context, url string, textParams map[string]string, files map[string]io.ReadCloser) ([]byte, error) {
+func (us *Uspacy) doPostFormData(ctx context.Context, url string, textParams map[string]string, files map[string]io.ReadCloser, opts ...RequestOption) ([]byte, error) {
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no files provided for upload")
 	}
@@ -582,10 +604,10 @@ func (us *Uspacy) doPostFormData(ctx context.Context, url string, textParams map
 
 	writer.Close()
 
-	headers := map[string]string{
+	headers := mergeHeaders(opts, map[string]string{
 		"Content-Type": writer.FormDataContentType(),
 		"Accept":       "application/json",
-	}
+	})
 
 	response, _, err := us.doRaw(ctx, url, http.MethodPost, headers, body.Bytes())
 	return response, err
