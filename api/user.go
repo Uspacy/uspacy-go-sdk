@@ -25,7 +25,7 @@ func (us *Uspacy) CreateActiveUsers(ctx context.Context, usersData []user.UsersI
 	return decodeJSON[[]user.CreatedActiveUser](body, err)
 }
 
-// PatchUser patch user by Id and return it
+// PatchUser updates a user and returns it.
 func (us *Uspacy) PatchUser(ctx context.Context, userData user.User) (user.User, error) {
 	body, err := us.doPatchEmptyHeaders(ctx, us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, userData.ID)), userData)
 	return decodeJSON[user.User](body, err)

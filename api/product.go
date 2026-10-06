@@ -9,7 +9,7 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
 )
 
-// GetProduct returns list of products
+// GetProduct returns a product by its ID.
 func (us *Uspacy) GetProduct(ctx context.Context, id string) (crm.Products, error) {
 	responseBody, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ProductsUrl, id)))
 	return decodeJSON[crm.Products](responseBody, err)
@@ -36,7 +36,7 @@ func (us *Uspacy) DeleteEntityListProduct(ctx context.Context, id int) (statusCo
 	return us.doDeleteEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, crm.ListProductsUrl, strconv.Itoa(id)), nil)
 }
 
-// CreateProduct returns list of products
+// CreateProduct creates a product and returns it.
 func (us *Uspacy) CreateProduct(ctx context.Context, productData map[string]any, opts ...RequestOption) (crm.Products, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ProductsUrl, "")), productData, opts...)
 	return decodeJSON[crm.Products](responseBody, err)

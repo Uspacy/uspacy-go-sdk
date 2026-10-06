@@ -10,7 +10,7 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
 )
 
-// CreateEntity this method does not return any object, just error
+// CreateEntity creates a CRM record and returns its ID and the HTTP status code.
 func (us *Uspacy) CreateEntity(ctx context.Context, entityType string, entityData map[string]any, opts ...RequestOption) (int64, int, error) {
 	respBytes, code, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType)), entityData, opts...)
 	created, err := decodeJSON[createdID](respBytes, err)
@@ -20,7 +20,7 @@ func (us *Uspacy) CreateEntity(ctx context.Context, entityType string, entityDat
 	return created.ID, code, nil
 }
 
-// GetCrmEntitiesList this method return arrey of entities present in crm and error
+// GetCrmEntitiesList returns the entity types available in the CRM.
 func (us *Uspacy) GetCrmEntitiesList(ctx context.Context) ([]crm.CrmEntities, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, crm.EntitiesUrl))
 	resp, err := decodeJSON[crm.CrmEntitiesList](body, err)
@@ -30,13 +30,13 @@ func (us *Uspacy) GetCrmEntitiesList(ctx context.Context) ([]crm.CrmEntities, er
 	return resp.Data, nil
 }
 
-// GetEntities this method return arrey of entities present in crm and error
+// GetEntities returns the records of a CRM entity type matching params.
 func (us *Uspacy) GetEntities(ctx context.Context, entityType string, params url.Values) (crm.CRMEntity, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))+"?"+params.Encode())
 	return decodeJSON[crm.CRMEntity](body, err)
 }
 
-// GetCRMEntitiesForExport this method return arrey of objects wifh all fields and error
+// GetCRMEntitiesForExport returns the records of a CRM entity type with all their fields.
 func (us *Uspacy) GetCRMEntitiesForExport(ctx context.Context, entityType string, params url.Values) (crm.CRMEntityForExport, error) {
 	var entityRoute string
 	switch entityType {
@@ -88,7 +88,7 @@ func (us *Uspacy) GetEntity(ctx context.Context, entityType string, id int64) ([
 	return body, err
 }
 
-// PatchEntity this method does not return any object, just error
+// PatchEntity updates a CRM record.
 func (us *Uspacy) PatchEntity(ctx context.Context, entityType string, id string, entityData map[string]any) error {
 	_, err := us.doPatchEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), id), entityData)
 	if err != nil {
@@ -97,7 +97,7 @@ func (us *Uspacy) PatchEntity(ctx context.Context, entityType string, id string,
 	return nil
 }
 
-// EntityMassEdit this method does not return any object, just error
+// EntityMassEdit updates several CRM records of one entity type at once.
 func (us *Uspacy) EntityMassEdit(ctx context.Context, entityType string, entityData map[string]any) error {
 	_, err := us.doPatchEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), "mass_edit"), entityData)
 	if err != nil {
@@ -118,13 +118,13 @@ func (us *Uspacy) CreateCompany(ctx context.Context, companyData map[string]any,
 	return decodeJSON[crm.Company](body, err)
 }
 
-// CreateLeads returns created lead object
+// CreateLead returns the created lead.
 func (us *Uspacy) CreateLead(ctx context.Context, leadData map[string]any, opts ...RequestOption) (crm.Lead, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.LeadsNum.GetUrl())), leadData, opts...)
 	return decodeJSON[crm.Lead](body, err)
 }
 
-// CreateDeals returns created deal object
+// CreateDeal returns the created deal.
 func (us *Uspacy) CreateDeal(ctx context.Context, dealData map[string]any, opts ...RequestOption) (crm.Deal, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.DealsNum.GetUrl())), dealData, opts...)
 	return decodeJSON[crm.Deal](body, err)
@@ -136,7 +136,7 @@ func (us *Uspacy) GetField(ctx context.Context, entityType string, fieldType str
 	return decodeJSON[crm.Field](body, err)
 }
 
-// DeleteField delete selected field for given type of entity
+// DeleteField deletes a field of a CRM entity type.
 func (us *Uspacy) DeleteField(ctx context.Context, entityType string, codeField string) (err error) {
 	_, err = us.doDeleteEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType, codeField)), nil)
 	return err
@@ -206,13 +206,13 @@ func (us *Uspacy) CreateCRMField(ctx context.Context, entityType string, fieldDa
 	return decodeJSON[crm.Field](responseBody, err)
 }
 
-// GetListValues returns arrey of values for given type of CRM list
+// GetListValues returns the values of a CRM list field.
 func (us *Uspacy) GetListValues(ctx context.Context, entityType, listName string) ([]crm.List, error) {
 	responseBody, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, entityType, listName)))
 	return decodeJSON[[]crm.List](responseBody, err)
 }
 
-// CreateListValues returns arrey of values for given type of CRM list
+// CreateListValues adds values to a CRM list field and returns the field's values.
 func (us *Uspacy) CreateListValues(ctx context.Context, entityType, listName string, listValue any, opts ...RequestOption) ([]crm.List, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, entityType, listName)), listValue, opts...)
 	return decodeJSON[[]crm.List](responseBody, err)

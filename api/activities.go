@@ -10,8 +10,8 @@ import (
 )
 
 // CreateActivity sends a POST request to create a new activity using the provided entity data.
-// It returns the created activity's ID, the HTTP status code of the request, and any error encountered.
-// If an error occurs during the request or while unmarshalling the response, the error is returned along with a zero value for the ID.
+// It returns the created activity, the HTTP status code of the request, and any error encountered.
+// If the request fails, the activity is the zero value.
 func (us *Uspacy) CreateActivity(ctx context.Context, entityData map[string]any, opts ...RequestOption) (activities.Activity, int, error) {
 	respBytes, code, err := us.doPost(ctx, us.buildURL(activities.VersionUrl, activities.ActivitiesUrl), entityData, opts...)
 	v, err := decodeJSON[activities.Activity](respBytes, err)

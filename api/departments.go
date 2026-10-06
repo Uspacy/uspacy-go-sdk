@@ -19,13 +19,13 @@ func (us *Uspacy) CreateDepartment(ctx context.Context, departmentData departmen
 	return decodeJSON[departments.Department](body, err)
 }
 
-// PatchDepartment patch department by Id and return it
+// PatchDepartment updates a department and returns it.
 func (us *Uspacy) PatchDepartment(ctx context.Context, departmentID int, departmentData map[string]any) (departments.Department, error) {
 	body, err := us.doPatchEmptyHeaders(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmentID)), departmentData)
 	return decodeJSON[departments.Department](body, err)
 }
 
-// DepartmentAddUsers patch department by Id and return it
+// DepartmentAddUsers adds users to a department and returns the department.
 func (us *Uspacy) DepartmentAddUsers(ctx context.Context, departmentID int, usersIds []int) (departments.Department, error) {
 	body, err := us.doPatchEmptyHeaders(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsAddUsers, departmentID)), usersIds)
 	return decodeJSON[departments.Department](body, err)

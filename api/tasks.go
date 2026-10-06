@@ -29,13 +29,13 @@ func (us *Uspacy) CreateTransferTask(ctx context.Context, body any, opts ...Requ
 	return v, code, err
 }
 
-// PatchTask patch task by Id
+// PatchTask updates a task and returns it.
 func (us *Uspacy) PatchTask(ctx context.Context, taskId int, taskData map[string]any) (task.Task, error) {
 	resp, err := us.doPatchEmptyHeaders(ctx, us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)), taskData)
 	return decodeJSON[task.Task](resp, err)
 }
 
-// GetTaskFields returns Fields struct
+// GetTaskFields returns the task fields.
 func (us *Uspacy) GetTaskFields(ctx context.Context) ([]task.Field, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl))
 	resp, err := decodeJSON[task.TaskFields](body, err)
@@ -45,7 +45,7 @@ func (us *Uspacy) GetTaskFields(ctx context.Context) ([]task.Field, error) {
 	return resp.Fields, nil
 }
 
-// GetTasksList returns TasksList struct
+// GetTasksList returns the tasks matching params.
 func (us *Uspacy) GetTasksList(ctx context.Context, params url.Values) (task.TasksList, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode())
 	return decodeJSON[task.TasksList](body, err)

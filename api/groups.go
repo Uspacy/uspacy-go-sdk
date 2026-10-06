@@ -7,7 +7,7 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/v2/group"
 )
 
-// GetGroups returns  list of groups
+// GetGroups returns the list of groups.
 func (us *Uspacy) GetGroups(ctx context.Context, params ...url.Values) (group.Groups, error) {
 	urlStr := us.buildURL(group.VersionUrl, group.GroupUrl)
 	if len(params) != 0 {

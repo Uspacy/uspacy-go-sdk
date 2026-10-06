@@ -8,13 +8,13 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/v2/smartobjects"
 )
 
-// CreateSmartObject create smart object, retun created object and error
+// CreateSmartObject creates a smart object and returns it.
 func (us *Uspacy) CreateSmartObject(ctx context.Context, fieldData smartobjects.SmartObjectCreateRequest, opts ...RequestOption) (smartobjects.CrmSmartObject, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, crm.EntitiesUrl), fieldData, opts...)
 	return decodeJSON[smartobjects.CrmSmartObject](responseBody, err)
 }
 
-// CreateSmartObjectEntity this method return any created object id, responce come and error
+// CreateSmartObjectEntity creates a smart object record and returns its ID and the HTTP status code.
 func (us *Uspacy) CreateSmartObjectEntity(ctx context.Context, tableName string, entityData map[string]any, opts ...RequestOption) (int64, int, error) {
 	respBytes, code, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, tableName)), entityData, opts...)
 	created, err := decodeJSON[createdID](respBytes, err)
@@ -24,19 +24,19 @@ func (us *Uspacy) CreateSmartObjectEntity(ctx context.Context, tableName string,
 	return created.ID, code, nil
 }
 
-// CreateSmartObjectField create field for selected smart object, retun created field and error
+// CreateSmartObjectField creates a field of a smart object and returns it.
 func (us *Uspacy) CreateSmartObjectField(ctx context.Context, tableName string, fieldData smartobjects.Field, opts ...RequestOption) (crm.Field, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.CreateFieldUrl, tableName)), fieldData, opts...)
 	return decodeJSON[crm.Field](responseBody, err)
 }
 
-// CreateSmartObjectListValues returns arrey of values for given type of CRM list
+// CreateSmartObjectListValues adds values to a smart object list field and returns the field's values.
 func (us *Uspacy) CreateSmartObjectListValues(ctx context.Context, tableName string, listName string, listValue any) ([]crm.List, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, tableName, listName)), listValue)
 	return decodeJSON[[]crm.List](responseBody, err)
 }
 
-// CreateSmartObjectStage returns lwst of kanban stages
+// CreateSmartObjectStage creates a kanban stage of a smart object and returns it.
 func (us *Uspacy) CreateSmartObjectStage(ctx context.Context, tableName string, stageData any, opts ...RequestOption) (crm.KanbanStage, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")), stageData, opts...)
 	return decodeJSON[crm.KanbanStage](responseBody, err)
@@ -48,7 +48,7 @@ func (us *Uspacy) MoveSmartObjectFunnelStage(ctx context.Context, tableName stri
 	return err
 }
 
-// GetSmartObjectFields returns Fields struct for a given table name of smart object
+// GetSmartObjectFields returns the fields of a smart object.
 func (us *Uspacy) GetSmartObjectFields(ctx context.Context, tableName string) ([]crm.Field, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(smartobjects.FieldsUrl, tableName)))
 	resp, err := decodeJSON[crm.Fields](body, err)
@@ -58,7 +58,7 @@ func (us *Uspacy) GetSmartObjectFields(ctx context.Context, tableName string) ([
 	return resp.Data, nil
 }
 
-// GetSmartObjectStages list of smart object stages with given table name
+// GetSmartObjectStages returns the kanban stages of a smart object.
 func (us *Uspacy) GetSmartObjectStages(ctx context.Context, tableName string) ([]crm.KanbanStage, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")))
 	resp, err := decodeJSON[crm.KanbanStages](body, err)
