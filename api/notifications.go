@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/Uspacy/uspacy-go-sdk/notifications"
+	"github.com/Uspacy/uspacy-go-sdk/v2/notifications"
 )
 
 func (us *Uspacy) GetNotifications() (entities notifications.Notifications, err error) {

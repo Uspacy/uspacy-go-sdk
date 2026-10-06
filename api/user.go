@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Uspacy/uspacy-go-sdk/user"
+	"github.com/Uspacy/uspacy-go-sdk/v2/user"
 )
 
 // GetAllUsers gets all users

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Uspacy/uspacy-go-sdk/comments"
+	"github.com/Uspacy/uspacy-go-sdk/v2/comments"
 )
 
 // CreateComment returns created comment

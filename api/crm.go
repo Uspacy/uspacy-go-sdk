@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/Uspacy/uspacy-go-sdk/crm"
+	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
 )
 
 // CreateEntity this method does not return any object, just error

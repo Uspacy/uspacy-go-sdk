@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Uspacy/uspacy-go-sdk/auth"
+	"github.com/Uspacy/uspacy-go-sdk/v2/auth"
 )
 
 func (us *Uspacy) TokenRefresh() (string, error) {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"github.com/Uspacy/uspacy-go-sdk/group"
+	"github.com/Uspacy/uspacy-go-sdk/v2/group"
 )
 
 // GetGroups returns  list of groups

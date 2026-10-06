@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Uspacy/uspacy-go-sdk/crm"
-	"github.com/Uspacy/uspacy-go-sdk/smartobjects"
+	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
+	"github.com/Uspacy/uspacy-go-sdk/v2/smartobjects"
 )
 
 // CreateSmartObject create smart object, retun created object and error

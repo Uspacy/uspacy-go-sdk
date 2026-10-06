@@ -1,7 +1,7 @@
 package group
 
 import (
-	"github.com/Uspacy/uspacy-go-sdk/common"
+	"github.com/Uspacy/uspacy-go-sdk/v2/common"
 )
 
 const (

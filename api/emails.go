@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Uspacy/uspacy-go-sdk/emails"
+	"github.com/Uspacy/uspacy-go-sdk/v2/emails"
 )
 
 // GetMailFolders this method return list of mail folders

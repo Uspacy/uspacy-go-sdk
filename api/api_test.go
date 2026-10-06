@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Uspacy/uspacy-go-sdk/crm"
+	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
 )
 
 func TestBuildURL(t *testing.T) {

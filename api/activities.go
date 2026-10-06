@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/Uspacy/uspacy-go-sdk/activities"
+	"github.com/Uspacy/uspacy-go-sdk/v2/activities"
 )
 
 // CreateActivity sends a POST request to create a new activity using the provided entity data.

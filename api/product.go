@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/Uspacy/uspacy-go-sdk/crm"
+	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
 )
 
 // GetProduct returns list of products

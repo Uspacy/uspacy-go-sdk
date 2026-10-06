@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/Uspacy/uspacy-go-sdk/task"
+	"github.com/Uspacy/uspacy-go-sdk/v2/task"
 )
 
 // CreateTask creates a new task

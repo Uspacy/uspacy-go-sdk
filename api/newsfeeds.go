@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/Uspacy/uspacy-go-sdk/newsfeed"
+	"github.com/Uspacy/uspacy-go-sdk/v2/newsfeed"
 )
 
 // CreateNewsfeedPost returns created post

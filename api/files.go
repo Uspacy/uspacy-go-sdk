@@ -6,7 +6,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/Uspacy/uspacy-go-sdk/files"
+	"github.com/Uspacy/uspacy-go-sdk/v2/files"
 )
 
 func (us *Uspacy) CreateFile(entityType, entityId string, filesMap map[string]io.ReadCloser) (file files.Files, err error) {

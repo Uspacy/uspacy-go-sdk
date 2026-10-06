@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Uspacy/uspacy-go-sdk/departments"
+	"github.com/Uspacy/uspacy-go-sdk/v2/departments"
 )
 
 // GetDepartments returns list of departments
