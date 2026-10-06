@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -8,8 +9,8 @@ import (
 )
 
 // GetDepartments returns list of departments
-func (us *Uspacy) GetDepartments() (departmentsArrey departments.Departments, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")))
+func (us *Uspacy) GetDepartments(ctx context.Context) (departmentsArrey departments.Departments, err error) {
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")))
 	if err != nil {
 		return departmentsArrey, err
 	}
@@ -17,8 +18,8 @@ func (us *Uspacy) GetDepartments() (departmentsArrey departments.Departments, er
 }
 
 // CreateDepartment returns created department
-func (us *Uspacy) CreateDepartment(departmentData departments.Department, headers ...map[string]string) (department departments.Department, err error) {
-	body, _, err := us.doPost(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), departmentData, headers...)
+func (us *Uspacy) CreateDepartment(ctx context.Context, departmentData departments.Department, opts ...RequestOption) (department departments.Department, err error) {
+	body, _, err := us.doPost(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), departmentData, opts...)
 	if err != nil {
 		return department, err
 	}
@@ -26,8 +27,8 @@ func (us *Uspacy) CreateDepartment(departmentData departments.Department, header
 }
 
 // PatchDepartment patch department by Id and return it
-func (us *Uspacy) PatchDepartment(departmentID int, departmentData map[string]any) (department departments.Department, err error) {
-	body, err := us.doPatchEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmentID)), departmentData)
+func (us *Uspacy) PatchDepartment(ctx context.Context, departmentID int, departmentData map[string]any) (department departments.Department, err error) {
+	body, err := us.doPatchEmptyHeaders(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmentID)), departmentData)
 	if err != nil {
 		return department, err
 	}
@@ -35,8 +36,8 @@ func (us *Uspacy) PatchDepartment(departmentID int, departmentData map[string]an
 }
 
 // DepartmentAddUsers patch department by Id and return it
-func (us *Uspacy) DepartmentAddUsers(departmentID int, usersIds []int) (department departments.Department, err error) {
-	body, err := us.doPatchEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsAddUsers, departmentID)), usersIds)
+func (us *Uspacy) DepartmentAddUsers(ctx context.Context, departmentID int, usersIds []int) (department departments.Department, err error) {
+	body, err := us.doPatchEmptyHeaders(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsAddUsers, departmentID)), usersIds)
 	if err != nil {
 		return department, err
 	}

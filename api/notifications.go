@@ -1,13 +1,15 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/Uspacy/uspacy-go-sdk/v2/notifications"
 )
 
-func (us *Uspacy) GetNotifications() (entities notifications.Notifications, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(notifications.VersionURL, notifications.NotificationsURL))
+// GetNotifications returns notifications list
+func (us *Uspacy) GetNotifications(ctx context.Context) (entities notifications.Notifications, err error) {
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL))
 	if err != nil {
 		return entities, err
 	}
@@ -16,8 +18,9 @@ func (us *Uspacy) GetNotifications() (entities notifications.Notifications, err 
 	return entities, err
 }
 
-func (us *Uspacy) CreateNotification(request notifications.CreateNotificationRequest) (entities notifications.Notifications, statusCode int, err error) {
-	body, statusCode, err := us.doPost(us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request)
+// CreateNotification creates a notification
+func (us *Uspacy) CreateNotification(ctx context.Context, request notifications.CreateNotificationRequest) (entities notifications.Notifications, statusCode int, err error) {
+	body, statusCode, err := us.doPost(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request)
 	if err != nil {
 		return entities, statusCode, err
 	}
@@ -26,11 +29,13 @@ func (us *Uspacy) CreateNotification(request notifications.CreateNotificationReq
 	return entities, statusCode, err
 }
 
-func (us *Uspacy) MarkNotificationsAsRead(request notifications.MarkNotificationsAsReadRequest) (statusCode int, err error) {
-	_, statusCode, err = us.doPost(us.buildURL(notifications.VersionURL, notifications.NotificationsURL, notifications.MarkAsReadURL), request)
+// MarkNotificationsAsRead marks notifications as read
+func (us *Uspacy) MarkNotificationsAsRead(ctx context.Context, request notifications.MarkNotificationsAsReadRequest) (statusCode int, err error) {
+	_, statusCode, err = us.doPost(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL, notifications.MarkAsReadURL), request)
 	return statusCode, err
 }
 
-func (us *Uspacy) DeleteNotification(request notifications.DeleteNotificationRequest) (statusCode int, err error) {
-	return us.doDeleteEmptyHeaders(us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request)
+// DeleteNotification deletes a notification
+func (us *Uspacy) DeleteNotification(ctx context.Context, request notifications.DeleteNotificationRequest) (statusCode int, err error) {
+	return us.doDeleteEmptyHeaders(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request)
 }

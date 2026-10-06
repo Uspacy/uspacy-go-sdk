@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -12,8 +13,8 @@ import (
 // CreateActivity sends a POST request to create a new activity using the provided entity data.
 // It returns the created activity's ID, the HTTP status code of the request, and any error encountered.
 // If an error occurs during the request or while unmarshalling the response, the error is returned along with a zero value for the ID.
-func (us *Uspacy) CreateActivity(entityData map[string]any, headers ...map[string]string) (entity activities.Activity, code int, err error) {
-	respBytes, code, err := us.doPost(us.buildURL(activities.VersionUrl, activities.ActivitiesUrl), entityData, headers...)
+func (us *Uspacy) CreateActivity(ctx context.Context, entityData map[string]any, opts ...RequestOption) (entity activities.Activity, code int, err error) {
+	respBytes, code, err := us.doPost(ctx, us.buildURL(activities.VersionUrl, activities.ActivitiesUrl), entityData, opts...)
 	if err != nil {
 		return entity, code, err
 	}
@@ -23,12 +24,12 @@ func (us *Uspacy) CreateActivity(entityData map[string]any, headers ...map[strin
 // GetActivitiesList retrieves a list of activities based on the provided query parameters.
 // It constructs the request URL using the base activities URL and optional query parameters (if provided).
 // Returns an `ActivitiesList` containing the list of activities and any error encountered during the request or unmarshalling.
-func (us *Uspacy) GetActivitiesList(params url.Values) (entities activities.ActivitiesList, err error) {
+func (us *Uspacy) GetActivitiesList(ctx context.Context, params url.Values) (entities activities.ActivitiesList, err error) {
 	url := us.buildURL(activities.VersionUrl, activities.ActivitiesUrl)
 	if len(params) != 0 {
 		url = url + "?" + params.Encode()
 	}
-	body, err := us.doGetEmptyHeaders(url)
+	body, err := us.doGetEmptyHeaders(ctx, url)
 	if err != nil {
 		return entities, err
 	}
@@ -38,12 +39,12 @@ func (us *Uspacy) GetActivitiesList(params url.Values) (entities activities.Acti
 // GetActivity retrieves details of a specific activity based on its entity ID and optional query parameters.
 // The URL is constructed by formatting the activity URL with the given entity ID and appending query parameters if provided.
 // Returns the requested `Activity` object and any error encountered during the request or unmarshalling.
-func (us *Uspacy) GetActivity(entityId int64, params url.Values) (entity activities.Activity, err error) {
+func (us *Uspacy) GetActivity(ctx context.Context, entityId int64, params url.Values) (entity activities.Activity, err error) {
 	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
 	if len(params) != 0 {
 		url = url + "?" + params.Encode()
 	}
-	body, err := us.doGetEmptyHeaders(url)
+	body, err := us.doGetEmptyHeaders(ctx, url)
 	if err != nil {
 		return entity, err
 	}
@@ -53,9 +54,9 @@ func (us *Uspacy) GetActivity(entityId int64, params url.Values) (entity activit
 // PatchActivity updates an existing activity identified by the entity ID with the provided entity data.
 // It sends a PATCH request to the constructed URL.
 // The function does not return any object, only an error if the request fails or if an issue occurs during the operation.
-func (us *Uspacy) PatchActivity(entityId int64, entityData map[string]any) error {
+func (us *Uspacy) PatchActivity(ctx context.Context, entityId int64, entityData map[string]any) error {
 	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
-	_, err := us.doPatchEmptyHeaders(url, entityData)
+	_, err := us.doPatchEmptyHeaders(ctx, url, entityData)
 	if err != nil {
 		return err
 	}
@@ -65,16 +66,16 @@ func (us *Uspacy) PatchActivity(entityId int64, entityData map[string]any) error
 // DeleteActivity deletes an existing activity identified by the entity ID.
 // It sends a DELETE request to the constructed URL and returns the HTTP status code and any error encountered during the request.
 // The HTTP status code can be used to check if the deletion was successful.
-func (us *Uspacy) DeleteActivity(entityId int64) (int, error) {
+func (us *Uspacy) DeleteActivity(ctx context.Context, entityId int64) (int, error) {
 	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
-	return us.doDeleteEmptyHeaders(url, nil)
+	return us.doDeleteEmptyHeaders(ctx, url, nil)
 }
 
 // MassDeletionActivities sends a DELETE request to delete multiple activities based on the provided deletion data.
 // The deletionData parameter contains the necessary information for mass deletion (like IDs or criteria).
 // It constructs the request URL using the base mass deletion URL and sends the request with the provided body.
 // Returns the HTTP status code of the request and any error encountered during the process.
-func (us *Uspacy) MassDeletionActivies(deletionData activities.MassDeletionBody) (int, error) {
+func (us *Uspacy) MassDeletionActivies(ctx context.Context, deletionData activities.MassDeletionBody) (int, error) {
 	url := us.buildURL(activities.VersionUrl, activities.MassDeletion)
-	return us.doDeleteEmptyHeaders(url, deletionData)
+	return us.doDeleteEmptyHeaders(ctx, url, deletionData)
 }

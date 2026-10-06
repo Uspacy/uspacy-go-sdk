@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/url"
 
@@ -8,7 +9,7 @@ import (
 )
 
 // GetGroups returns  list of groups
-func (us *Uspacy) GetGroups(params ...url.Values) (groups group.Groups, err error) {
+func (us *Uspacy) GetGroups(ctx context.Context, params ...url.Values) (groups group.Groups, err error) {
 	urlStr := us.buildURL(group.VersionUrl, group.GroupUrl)
 	if len(params) != 0 {
 		mergedParams := make(url.Values)
@@ -21,7 +22,7 @@ func (us *Uspacy) GetGroups(params ...url.Values) (groups group.Groups, err erro
 		}
 		urlStr = urlStr + "?" + mergedParams.Encode()
 	}
-	body, err := us.doGetEmptyHeaders(urlStr)
+	body, err := us.doGetEmptyHeaders(ctx, urlStr)
 	if err != nil {
 		return groups, err
 	}
@@ -29,8 +30,8 @@ func (us *Uspacy) GetGroups(params ...url.Values) (groups group.Groups, err erro
 }
 
 // CreateGroup returns created group object
-func (us *Uspacy) CreateGroup(groupData url.Values) (_group group.Group, err error) {
-	body, err := us.doPostEncodedForm(us.buildURL(group.VersionUrl, group.GroupUrl), groupData)
+func (us *Uspacy) CreateGroup(ctx context.Context, groupData url.Values) (_group group.Group, err error) {
+	body, err := us.doPostEncodedForm(ctx, us.buildURL(group.VersionUrl, group.GroupUrl), groupData)
 	if err != nil {
 		return _group, err
 	}
@@ -38,8 +39,8 @@ func (us *Uspacy) CreateGroup(groupData url.Values) (_group group.Group, err err
 }
 
 // CreateTransferGroup creates a new transfer group
-func (us *Uspacy) CreateTransferGroup(body any, headers ...map[string]string) (groups group.TransferGroupOutput, err error) {
-	resp, _, err := us.doPost(us.buildURL(group.VersionUrl, group.TransferUrl), body, headers...)
+func (us *Uspacy) CreateTransferGroup(ctx context.Context, body any, opts ...RequestOption) (groups group.TransferGroupOutput, err error) {
+	resp, _, err := us.doPost(ctx, us.buildURL(group.VersionUrl, group.TransferUrl), body, opts...)
 	if err != nil {
 		return groups, err
 	}

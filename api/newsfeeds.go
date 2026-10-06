@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -9,8 +10,8 @@ import (
 )
 
 // CreateNewsfeedPost returns created post
-func (us *Uspacy) CreateNewsfeedPost(postData url.Values) (err error) {
-	_, err = us.doPostEncodedForm(us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData)
+func (us *Uspacy) CreateNewsfeedPost(ctx context.Context, postData url.Values) (err error) {
+	_, err = us.doPostEncodedForm(ctx, us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData)
 	if err != nil {
 		return err
 	}
@@ -18,8 +19,8 @@ func (us *Uspacy) CreateNewsfeedPost(postData url.Values) (err error) {
 }
 
 // GetNewsfeeds gets all newsfeeds
-func (us *Uspacy) GetNewsfeeds(page, list, groupId int) (posts newsfeed.GetNewsfeed, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(newsfeed.VersionUrl, fmt.Sprintf(newsfeed.GetPostsUrl, page, list, groupId)))
+func (us *Uspacy) GetNewsfeeds(ctx context.Context, page, list, groupId int) (posts newsfeed.GetNewsfeed, err error) {
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(newsfeed.VersionUrl, fmt.Sprintf(newsfeed.GetPostsUrl, page, list, groupId)))
 	if err != nil {
 		return posts, err
 	}

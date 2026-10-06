@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -8,8 +9,8 @@ import (
 )
 
 // CreateComment returns created comment
-func (us *Uspacy) CreateComment(commentsData comments.Comment, headers ...map[string]string) (comment comments.Comment, err error) {
-	body, _, err := us.doPost(us.buildURL(comments.VersionUrl, fmt.Sprintf(comments.CommentsUrl, "")), commentsData, headers...)
+func (us *Uspacy) CreateComment(ctx context.Context, commentsData comments.Comment, opts ...RequestOption) (comment comments.Comment, err error) {
+	body, _, err := us.doPost(ctx, us.buildURL(comments.VersionUrl, fmt.Sprintf(comments.CommentsUrl, "")), commentsData, opts...)
 	if err != nil {
 		return comment, err
 	}

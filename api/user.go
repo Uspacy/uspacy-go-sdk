@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -8,8 +9,8 @@ import (
 )
 
 // GetAllUsers gets all users
-func (us *Uspacy) GetAllUsers() (users []user.User, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, user.SelectAllUsersQuery)))
+func (us *Uspacy) GetAllUsers(ctx context.Context) (users []user.User, err error) {
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, user.SelectAllUsersQuery)))
 	if err != nil {
 		return users, err
 	}
@@ -17,17 +18,17 @@ func (us *Uspacy) GetAllUsers() (users []user.User, err error) {
 }
 
 // GetUsersByPage gets users by page
-func (us *Uspacy) GetUsersByPage(page string) (users user.Users, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, fmt.Sprintf(user.PagePagination, page))))
+func (us *Uspacy) GetUsersByPage(ctx context.Context, page string) (users user.Users, err error) {
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, fmt.Sprintf(user.PagePagination, page))))
 	if err != nil {
 		return users, err
 	}
 	return users, json.Unmarshal(body, &users)
 }
 
-// CreateActiveUser returns created users
-func (us *Uspacy) CreateActiveUsers(usersData []user.UsersInvite, headers ...map[string]string) (users []user.CreatedActiveUser, err error) {
-	body, _, err := us.doPost(us.buildURL(user.VersionUrl, user.CreateActiveUser), usersData, headers...)
+// CreateActiveUsers returns created users
+func (us *Uspacy) CreateActiveUsers(ctx context.Context, usersData []user.UsersInvite, opts ...RequestOption) (users []user.CreatedActiveUser, err error) {
+	body, _, err := us.doPost(ctx, us.buildURL(user.VersionUrl, user.CreateActiveUser), usersData, opts...)
 	if err != nil {
 		return users, err
 	}
@@ -35,8 +36,8 @@ func (us *Uspacy) CreateActiveUsers(usersData []user.UsersInvite, headers ...map
 }
 
 // PatchUser patch user by Id and return it
-func (us *Uspacy) PatchUser(userData user.User) (_user user.User, err error) {
-	body, err := us.doPatchEmptyHeaders(us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, userData.ID)), userData)
+func (us *Uspacy) PatchUser(ctx context.Context, userData user.User) (_user user.User, err error) {
+	body, err := us.doPatchEmptyHeaders(ctx, us.buildURL(user.VersionUrl, fmt.Sprintf(user.UserUrl, userData.ID)), userData)
 	if err != nil {
 		return _user, err
 	}

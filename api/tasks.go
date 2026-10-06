@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -9,8 +10,8 @@ import (
 )
 
 // CreateTask creates a new task
-func (us *Uspacy) CreateTask(taskData url.Values) (newTask task.Task, err error) {
-	resp, err := us.doPostEncodedForm(us.buildURL(task.VersionUrl, task.TaskUrl), taskData)
+func (us *Uspacy) CreateTask(ctx context.Context, taskData url.Values) (newTask task.Task, err error) {
+	resp, err := us.doPostEncodedForm(ctx, us.buildURL(task.VersionUrl, task.TaskUrl), taskData)
 	if err != nil {
 		return newTask, err
 	}
@@ -18,8 +19,8 @@ func (us *Uspacy) CreateTask(taskData url.Values) (newTask task.Task, err error)
 }
 
 // CreateTaskThroughMap creates a new task through a map
-func (us *Uspacy) CreateTaskThroughMap(taskData map[string]any, headers ...map[string]string) (newTask task.Task, statusCode int, err error) {
-	resp, code, err := us.doPost(us.buildURL(task.VersionUrl, task.TaskUrl), taskData, headers...)
+func (us *Uspacy) CreateTaskThroughMap(ctx context.Context, taskData map[string]any, opts ...RequestOption) (newTask task.Task, statusCode int, err error) {
+	resp, code, err := us.doPost(ctx, us.buildURL(task.VersionUrl, task.TaskUrl), taskData, opts...)
 	if err != nil {
 		return newTask, code, err
 	}
@@ -27,8 +28,8 @@ func (us *Uspacy) CreateTaskThroughMap(taskData map[string]any, headers ...map[s
 }
 
 // CreateTransferTask creates a new transfer task
-func (us *Uspacy) CreateTransferTask(body any, headers ...map[string]string) (tasks task.TransferTaskOutput, statusCode int, err error) {
-	resp, code, err := us.doPost(us.buildURL(task.VersionUrl, task.TransferUrl), body, headers...)
+func (us *Uspacy) CreateTransferTask(ctx context.Context, body any, opts ...RequestOption) (tasks task.TransferTaskOutput, statusCode int, err error) {
+	resp, code, err := us.doPost(ctx, us.buildURL(task.VersionUrl, task.TransferUrl), body, opts...)
 	if err != nil {
 		return tasks, code, err
 	}
@@ -36,27 +37,30 @@ func (us *Uspacy) CreateTransferTask(body any, headers ...map[string]string) (ta
 }
 
 // PatchTask patch task by Id
-func (us *Uspacy) PatchTask(taskId int, taskData map[string]any) (updatedTask task.Task, err error) {
-	resp, err := us.doPatchEmptyHeaders(us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)), taskData)
+func (us *Uspacy) PatchTask(ctx context.Context, taskId int, taskData map[string]any) (updatedTask task.Task, err error) {
+	resp, err := us.doPatchEmptyHeaders(ctx, us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)), taskData)
 	if err != nil {
 		return updatedTask, err
 	}
 	return updatedTask, json.Unmarshal(resp, &updatedTask)
 }
 
-// GetFields returns Fields struct
-func (us *Uspacy) GetTaskFields() (fields []task.Field, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl))
+// GetTaskFields returns Fields struct
+func (us *Uspacy) GetTaskFields(ctx context.Context) (fields []task.Field, err error) {
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl))
 	if err != nil {
 		return fields, err
 	}
 	var resp task.TaskFields
-	return resp.Fields, json.Unmarshal(body, &resp)
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return fields, err
+	}
+	return resp.Fields, nil
 }
 
 // GetTasksList returns TasksList struct
-func (us *Uspacy) GetTasksList(params url.Values) (tasks task.TasksList, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl) + "?" + params.Encode())
+func (us *Uspacy) GetTasksList(ctx context.Context, params url.Values) (tasks task.TasksList, err error) {
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode())
 	if err != nil {
 		return tasks, err
 	}
@@ -65,8 +69,8 @@ func (us *Uspacy) GetTasksList(params url.Values) (tasks task.TasksList, err err
 }
 
 // GetTasksWithFilters returns tasks with filters as a map
-func (us *Uspacy) GetTasksWithFilters(params url.Values) (tasks []map[string]any, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TaskUrl) + "?" + params.Encode())
+func (us *Uspacy) GetTasksWithFilters(ctx context.Context, params url.Values) (tasks []map[string]any, err error) {
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode())
 	if err != nil {
 		return tasks, err
 	}
@@ -88,14 +92,14 @@ func (us *Uspacy) GetTasksWithFilters(params url.Values) (tasks []map[string]any
 }
 
 // GetTaskById returns task by ID as a map
-func (us *Uspacy) GetTaskById(taskId int, params ...url.Values) (taskData map[string]any, err error) {
+func (us *Uspacy) GetTaskById(ctx context.Context, taskId int, params ...url.Values) (taskData map[string]any, err error) {
 	var urlStr string
 	if len(params) > 0 && params[0] != nil {
 		urlStr = us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)) + "?" + params[0].Encode()
 	} else {
 		urlStr = us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId))
 	}
-	body, err := us.doGetEmptyHeaders(urlStr)
+	body, err := us.doGetEmptyHeaders(ctx, urlStr)
 	if err != nil {
 		return taskData, err
 	}
@@ -103,21 +107,24 @@ func (us *Uspacy) GetTaskById(taskId int, params ...url.Values) (taskData map[st
 	return result, json.Unmarshal(body, &result)
 }
 
-// GetTaskStagesByGroupId
-func (us *Uspacy) GetTaskStagesByGroupId(groupId int) (kanbanStages []task.TaskGroupStage, err error) {
+// GetTaskStagesByGroupId returns task stages by group id
+func (us *Uspacy) GetTaskStagesByGroupId(ctx context.Context, groupId int) (kanbanStages []task.TaskGroupStage, err error) {
 	params := url.Values{}
 	params.Set("groupId", fmt.Sprintf("%d", groupId))
-	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.KanbanStages) + "?" + params.Encode())
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.KanbanStages)+"?"+params.Encode())
 	if err != nil {
 		return kanbanStages, err
 	}
 	var resp task.TaskGroupStages
-	return resp.Data, json.Unmarshal(body, &resp)
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return kanbanStages, err
+	}
+	return resp.Data, nil
 }
 
-// GetTempleateById
-func (us *Uspacy) GetTemplateById(templateId int) (template task.Template, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(task.VersionUrl, task.TemplateUrl, fmt.Sprintf("%d", templateId)))
+// GetTemplateById returns template by id
+func (us *Uspacy) GetTemplateById(ctx context.Context, templateId int) (template task.Template, err error) {
+	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TemplateUrl, fmt.Sprintf("%d", templateId)))
 	if err != nil {
 		return template, err
 	}
@@ -126,8 +133,8 @@ func (us *Uspacy) GetTemplateById(templateId int) (template task.Template, err e
 }
 
 // CreateTaskStage creates a new task stage
-func (us *Uspacy) CreateTaskStage(stageData task.TaskGroupStage) (kanbanStage task.TaskGroupStage, statusCode int, err error) {
-	body, code, err := us.doPost(us.buildURL(task.VersionUrl, task.KanbanStages), stageData)
+func (us *Uspacy) CreateTaskStage(ctx context.Context, stageData task.TaskGroupStage) (kanbanStage task.TaskGroupStage, statusCode int, err error) {
+	body, code, err := us.doPost(ctx, us.buildURL(task.VersionUrl, task.KanbanStages), stageData)
 	if err != nil {
 		return kanbanStage, code, err
 	}
@@ -136,20 +143,20 @@ func (us *Uspacy) CreateTaskStage(stageData task.TaskGroupStage) (kanbanStage ta
 }
 
 // DeleteTaskStage deletes a task stage
-func (us *Uspacy) DeleteTaskStage(stageId int) (err error) {
-	_, err = us.doDeleteEmptyHeaders(us.buildURL(task.VersionUrl, task.KanbanStages, fmt.Sprintf("%d", stageId)), nil)
+func (us *Uspacy) DeleteTaskStage(ctx context.Context, stageId int) (err error) {
+	_, err = us.doDeleteEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.KanbanStages, fmt.Sprintf("%d", stageId)), nil)
 	return err
 }
 
 // TaskStatusReady marks task as ready
-func (us *Uspacy) TaskStatusReady(taskId int) (err error) {
-	_, err = us.doPatchEmptyHeaders(us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId), task.TaskStatusReady), nil)
+func (us *Uspacy) TaskStatusReady(ctx context.Context, taskId int) (err error) {
+	_, err = us.doPatchEmptyHeaders(ctx, us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId), task.TaskStatusReady), nil)
 	return err
 }
 
 // CreateTaskField creates a new task field
-func (us *Uspacy) CreateTaskField(fieldData task.Field) (field task.Field, statusCode int, err error) {
-	resp, code, err := us.doPost(us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl), fieldData)
+func (us *Uspacy) CreateTaskField(ctx context.Context, fieldData task.Field) (field task.Field, statusCode int, err error) {
+	resp, code, err := us.doPost(ctx, us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl), fieldData)
 	if err != nil {
 		return field, code, err
 	}
