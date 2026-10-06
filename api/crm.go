@@ -183,6 +183,8 @@ func (us *Uspacy) GetAllFunnelStages(ctx context.Context, entityType string) ([]
 }
 
 // GetFunnelStageById returns kanban stage by id.
+//
+// Renamed in v2 from GetFunnelStageDyId.
 func (us *Uspacy) GetFunnelStageById(ctx context.Context, entityType string, id int) (crm.KanbanStages, error) {
 	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, fmt.Sprintf(crm.StageByFunnelIdUrl, id))))
 	return decodeJSON[crm.KanbanStages](responseBody, err)

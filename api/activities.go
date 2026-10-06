@@ -66,6 +66,8 @@ func (us *Uspacy) DeleteActivity(ctx context.Context, entityId int64) (int, erro
 // The deletionData parameter contains the necessary information for mass deletion (like IDs or criteria).
 // It constructs the request URL using the base mass deletion URL and sends the request with the provided body.
 // Returns the HTTP status code of the request and any error encountered during the process.
+//
+// Renamed in v2 from MassDeletionActivies.
 func (us *Uspacy) MassDeleteActivities(ctx context.Context, deletionData activities.MassDeletionBody) (int, error) {
 	url := us.buildURL(activities.VersionUrl, activities.MassDeletion)
 	return us.doDelete(ctx, url, deletionData)
