@@ -436,8 +436,9 @@ func requestFailedAfterAttempts(ctx context.Context, attempts int, errorLogs map
 
 // HTTPError represents a failed HTTP call. Every public method reports a final non-2xx
 // answer as *HTTPError, including 3xx and a 401 whose token refresh failed (the refresh
-// error is attached via Err). Error() keeps the historical text so existing string parsing
-// keeps working. Use errors.As for *HTTPError and errors.Is on Err for context errors.
+// error is attached via Err). Error() starts with the historical text so existing string
+// matching keeps working. Use errors.As for *HTTPError and errors.Is for a wrapped cause,
+// such as a context error.
 type HTTPError struct {
 	Method     string
 	URL        string
@@ -446,10 +447,16 @@ type HTTPError struct {
 	Err        error // optional cause, e.g. a failed token refresh after a 401 or a context error
 }
 
-// Error returns text identical to the SDK's historical inline error message. It does not
-// include Err, so wrapping a cause never changes this text.
+// Error starts with the SDK's historical message, "request failed: [GET] <url>, status
+// code: <n>, response: <body>", so existing string matching keeps working. When Err is set,
+// its text follows as ", cause: <err>": for a 401 whose token refresh failed, that is the
+// refresh error, which v1 returned on its own (e.g. a 403 "Unauthenticated").
 func (e *HTTPError) Error() string {
-	return fmt.Sprintf("request failed: [%s] %s, status code: %d, response: %s", e.Method, e.URL, e.StatusCode, string(e.Body))
+	msg := fmt.Sprintf("request failed: [%s] %s, status code: %d, response: %s", e.Method, e.URL, e.StatusCode, string(e.Body))
+	if e.Err != nil {
+		msg += ", cause: " + e.Err.Error()
+	}
+	return msg
 }
 
 // Unwrap exposes Err so callers can use errors.Is / errors.As on the cause.

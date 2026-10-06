@@ -281,9 +281,36 @@ func TestHTTPErrorUnwrap(t *testing.T) {
 	if !errors.Is(err, cause) {
 		t.Error("errors.Is(err, cause) = false, want true")
 	}
-	wantText := "request failed: [GET] https://example.uspacy.ua/x, status code: 401, response: "
+	wantText := "request failed: [GET] https://example.uspacy.ua/x, status code: 401, response: , cause: refresh failed"
 	if err.Error() != wantText {
 		t.Errorf("Error() = %q, want %q", err.Error(), wantText)
+	}
+}
+
+// v1 returned a failed refresh's own error, and callers detect auth failures by its text
+// (e.g. "status code: 403" + "unauthenticated"). The 401 *HTTPError must keep that text.
+func TestRefreshFailureTextIncludesRefreshResponse(t *testing.T) {
+	refreshServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"message":"Unauthenticated."}`)
+	}))
+	defer refreshServer.Close()
+	mainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer mainServer.Close()
+
+	us := New(testJWT(t, strings.TrimPrefix(refreshServer.URL, "https://")), "", mainServer.URL)
+	us.client = refreshServer.Client()
+	_, err := us.GetFields(context.Background(), "leads")
+
+	var he *HTTPError
+	if !errors.As(err, &he) || he.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("err = %v, want a 401 *HTTPError", err)
+	}
+	text := strings.ToLower(err.Error())
+	if !strings.Contains(text, "status code: 403") || !strings.Contains(text, "unauthenticated") {
+		t.Errorf("Error() = %q, want the refresh response (status code: 403, Unauthenticated) in it", err.Error())
 	}
 }
 
