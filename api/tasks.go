@@ -31,13 +31,13 @@ func (us *Uspacy) CreateTransferTask(ctx context.Context, body any, opts ...Requ
 
 // PatchTask updates a task and returns it.
 func (us *Uspacy) PatchTask(ctx context.Context, taskId int, taskData map[string]any) (task.Task, error) {
-	resp, err := us.doPatchEmptyHeaders(ctx, us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)), taskData)
+	resp, err := us.doPatch(ctx, us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)), taskData)
 	return decodeJSON[task.Task](resp, err)
 }
 
 // GetTaskFields returns the task fields.
 func (us *Uspacy) GetTaskFields(ctx context.Context) ([]task.Field, error) {
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl))
+	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl))
 	resp, err := decodeJSON[task.TaskFields](body, err)
 	if err != nil {
 		return nil, err
@@ -47,13 +47,13 @@ func (us *Uspacy) GetTaskFields(ctx context.Context) ([]task.Field, error) {
 
 // GetTasksList returns the tasks matching params.
 func (us *Uspacy) GetTasksList(ctx context.Context, params url.Values) (task.TasksList, error) {
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode())
+	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode())
 	return decodeJSON[task.TasksList](body, err)
 }
 
 // GetTasksWithFilters returns tasks with filters as a map
 func (us *Uspacy) GetTasksWithFilters(ctx context.Context, params url.Values) (tasks []map[string]any, err error) {
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode())
+	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode())
 	if err != nil {
 		return tasks, err
 	}
@@ -80,7 +80,7 @@ func (us *Uspacy) GetTaskById(ctx context.Context, taskId int, params ...url.Val
 	if len(params) > 0 && params[0] != nil {
 		urlStr += "?" + params[0].Encode()
 	}
-	body, err := us.doGetEmptyHeaders(ctx, urlStr)
+	body, err := us.doGet(ctx, urlStr)
 	return decodeJSON[map[string]any](body, err)
 }
 
@@ -88,7 +88,7 @@ func (us *Uspacy) GetTaskById(ctx context.Context, taskId int, params ...url.Val
 func (us *Uspacy) GetTaskStagesByGroupId(ctx context.Context, groupId int) ([]task.TaskGroupStage, error) {
 	params := url.Values{}
 	params.Set("groupId", fmt.Sprintf("%d", groupId))
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.KanbanStages)+"?"+params.Encode())
+	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.KanbanStages)+"?"+params.Encode())
 	resp, err := decodeJSON[task.TaskGroupStages](body, err)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (us *Uspacy) GetTaskStagesByGroupId(ctx context.Context, groupId int) ([]ta
 
 // GetTemplateById returns template by id
 func (us *Uspacy) GetTemplateById(ctx context.Context, templateId int) (task.Template, error) {
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.TemplateUrl, fmt.Sprintf("%d", templateId)))
+	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.TemplateUrl, fmt.Sprintf("%d", templateId)))
 	return decodeJSON[task.Template](body, err)
 }
 
@@ -111,13 +111,13 @@ func (us *Uspacy) CreateTaskStage(ctx context.Context, stageData task.TaskGroupS
 
 // DeleteTaskStage deletes a task stage
 func (us *Uspacy) DeleteTaskStage(ctx context.Context, stageId int) (err error) {
-	_, err = us.doDeleteEmptyHeaders(ctx, us.buildURL(task.VersionUrl, task.KanbanStages, fmt.Sprintf("%d", stageId)), nil)
+	_, err = us.doDelete(ctx, us.buildURL(task.VersionUrl, task.KanbanStages, fmt.Sprintf("%d", stageId)), nil)
 	return err
 }
 
 // TaskStatusReady marks task as ready
 func (us *Uspacy) TaskStatusReady(ctx context.Context, taskId int) (err error) {
-	_, err = us.doPatchEmptyHeaders(ctx, us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId), task.TaskStatusReady), nil)
+	_, err = us.doPatch(ctx, us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId), task.TaskStatusReady), nil)
 	return err
 }
 

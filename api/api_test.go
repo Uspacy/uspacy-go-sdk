@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -286,23 +287,19 @@ func TestHTTPErrorUnwrap(t *testing.T) {
 	}
 }
 
-// requestFailedAfterRetries builds the error for doRequest's post-loop path, taken
-// when every attempt fails at the transport level (statusCode stays 0). Exercising that
-// exact path through doRequest itself would need two real backoff sleeps
-// (defaultMaxRetries=3, with jittered ~3s/~5s delays) to run to completion without ctx firing,
-// and then ctx to end in the narrow window right after the third attempt's immediate
-// failure — the only attempt with no following sleep to catch a ctx that ends during it.
-// That window can't be hit deterministically (the two backoffs jitter independently across
-// a ~2s range each), so this test drives the extracted helper directly instead.
-func TestRequestFailedAfterRetries(t *testing.T) {
+// requestFailedAfterAttempts builds the error when no attempt got an HTTP response. Its
+// ctx branch is reachable through doRequest only if ctx ends in the narrow window after
+// the last attempt's failure has been checked, which can't be hit deterministically, so
+// this test drives the helper directly.
+func TestRequestFailedAfterAttempts(t *testing.T) {
 	logs := map[string]*errorLog{
 		"dial tcp: connection refused": {message: "dial tcp: connection refused", attempts: []int{1, 2, 3}},
 	}
 	wantDetails := "Error 'dial tcp: connection refused' on attempts: [1 2 3]\n"
 
 	t.Run("ctx.Err() nil keeps the pre-context text and type", func(t *testing.T) {
-		err := requestFailedAfterRetries(context.Background(), defaultMaxRetries, logs)
-		wantText := fmt.Sprintf("request failed after %d retries:\n%s", defaultMaxRetries, wantDetails)
+		err := requestFailedAfterAttempts(context.Background(), defaultMaxRetries, logs)
+		wantText := fmt.Sprintf("request failed (attempts: %d):\n%s", defaultMaxRetries, wantDetails)
 		if err.Error() != wantText {
 			t.Errorf("Error() = %q, want %q", err.Error(), wantText)
 		}
@@ -315,11 +312,11 @@ func TestRequestFailedAfterRetries(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		err := requestFailedAfterRetries(ctx, defaultMaxRetries, logs)
+		err := requestFailedAfterAttempts(ctx, defaultMaxRetries, logs)
 		if !errors.Is(err, context.Canceled) {
 			t.Fatalf("err = %v, want context.Canceled in its chain", err)
 		}
-		wantPrefix := fmt.Sprintf("request failed after %d retries:\n%scontext error: ", defaultMaxRetries, wantDetails)
+		wantPrefix := fmt.Sprintf("request failed (attempts: %d):\n%scontext error: ", defaultMaxRetries, wantDetails)
 		if !strings.HasPrefix(err.Error(), wantPrefix) {
 			t.Errorf("Error() = %q, want prefix %q", err.Error(), wantPrefix)
 		}
@@ -330,7 +327,7 @@ func TestRequestFailedAfterRetries(t *testing.T) {
 		defer cancel()
 		<-ctx.Done()
 
-		err := requestFailedAfterRetries(ctx, defaultMaxRetries, logs)
+		err := requestFailedAfterAttempts(ctx, defaultMaxRetries, logs)
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("err = %v, want context.DeadlineExceeded in its chain", err)
 		}
@@ -1543,13 +1540,24 @@ func TestRequestOptionsKeepContentTypeAndReplaceHeaders(t *testing.T) {
 		t.Errorf("X-Trace = %q, want 1", s.trace)
 	}
 
+	// Form bodies are encoded for their own Content-Type (multipart: with its boundary),
+	// so a Content-Type option must not replace it.
 	if _, err := us.CreateFile(context.Background(), "leads", "1",
-		map[string]io.ReadCloser{"a.txt": io.NopCloser(strings.NewReader("x"))}, WithHeader("X-Trace", "2")); err != nil {
+		map[string]io.ReadCloser{"a.txt": io.NopCloser(strings.NewReader("x"))},
+		WithHeader("X-Trace", "2"), WithHeader("Content-Type", "application/json")); err != nil {
 		t.Fatalf("CreateFile() error = %v", err)
 	}
 	s = <-got
-	if !strings.HasPrefix(s.contentType, "multipart/form-data") || s.trace != "2" {
-		t.Errorf("CreateFile headers = %+v, want multipart Content-Type and X-Trace 2", s)
+	if !strings.HasPrefix(s.contentType, "multipart/form-data; boundary=") || s.trace != "2" {
+		t.Errorf("CreateFile headers = %+v, want multipart Content-Type with boundary and X-Trace 2", s)
+	}
+
+	if _, err := us.doPostEncodedForm(context.Background(), us.buildURL("tasks"), url.Values{"a": {"1"}},
+		WithHeader("Content-Type", "application/json")); err != nil {
+		t.Fatalf("doPostEncodedForm() error = %v", err)
+	}
+	if s = <-got; s.contentType != "application/x-www-form-urlencoded" {
+		t.Errorf("form Content-Type = %q, want application/x-www-form-urlencoded", s.contentType)
 	}
 }
 
@@ -1569,8 +1577,9 @@ func TestTransportTimeoutRetriesOnlyIdempotent(t *testing.T) {
 		WithHTTPClient(&http.Client{Timeout: 50 * time.Millisecond}),
 		WithRetryBackoff(time.Millisecond, time.Millisecond))
 
-	if _, _, err := us.CreateEntity(context.Background(), "leads", map[string]any{"x": 1}); err == nil {
-		t.Fatal("CreateEntity() error = nil, want a timeout")
+	_, _, err := us.CreateEntity(context.Background(), "leads", map[string]any{"x": 1})
+	if err == nil || !strings.HasPrefix(err.Error(), "request failed (attempts: 1):") {
+		t.Fatalf("CreateEntity() error = %v, want a timeout after 1 attempt", err)
 	}
 	if got := hits.Load(); got != 1 {
 		t.Errorf("POST reached the server %d times, want 1", got)

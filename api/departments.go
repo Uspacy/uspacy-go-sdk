@@ -9,7 +9,7 @@ import (
 
 // GetDepartments returns list of departments
 func (us *Uspacy) GetDepartments(ctx context.Context) (departments.Departments, error) {
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")))
+	body, err := us.doGet(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")))
 	return decodeJSON[departments.Departments](body, err)
 }
 
@@ -21,12 +21,12 @@ func (us *Uspacy) CreateDepartment(ctx context.Context, departmentData departmen
 
 // PatchDepartment updates a department and returns it.
 func (us *Uspacy) PatchDepartment(ctx context.Context, departmentID int, departmentData map[string]any) (departments.Department, error) {
-	body, err := us.doPatchEmptyHeaders(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmentID)), departmentData)
+	body, err := us.doPatch(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmentID)), departmentData)
 	return decodeJSON[departments.Department](body, err)
 }
 
 // DepartmentAddUsers adds users to a department and returns the department.
 func (us *Uspacy) DepartmentAddUsers(ctx context.Context, departmentID int, usersIds []int) (departments.Department, error) {
-	body, err := us.doPatchEmptyHeaders(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsAddUsers, departmentID)), usersIds)
+	body, err := us.doPatch(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsAddUsers, departmentID)), usersIds)
 	return decodeJSON[departments.Department](body, err)
 }

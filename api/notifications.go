@@ -8,7 +8,7 @@ import (
 
 // GetNotifications returns notifications list
 func (us *Uspacy) GetNotifications(ctx context.Context) (notifications.Notifications, error) {
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL))
+	body, err := us.doGet(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL))
 	return decodeJSON[notifications.Notifications](body, err)
 }
 
@@ -27,5 +27,5 @@ func (us *Uspacy) MarkNotificationsAsRead(ctx context.Context, request notificat
 
 // DeleteNotification deletes a notification
 func (us *Uspacy) DeleteNotification(ctx context.Context, request notifications.DeleteNotificationRequest) (statusCode int, err error) {
-	return us.doDeleteEmptyHeaders(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request)
+	return us.doDelete(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request)
 }

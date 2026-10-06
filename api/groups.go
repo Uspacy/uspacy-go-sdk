@@ -21,7 +21,7 @@ func (us *Uspacy) GetGroups(ctx context.Context, params ...url.Values) (group.Gr
 		}
 		urlStr = urlStr + "?" + mergedParams.Encode()
 	}
-	body, err := us.doGetEmptyHeaders(ctx, urlStr)
+	body, err := us.doGet(ctx, urlStr)
 	return decodeJSON[group.Groups](body, err)
 }
 

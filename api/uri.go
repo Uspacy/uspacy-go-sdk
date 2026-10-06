@@ -1,7 +1,9 @@
 package api
 
-// headersMap holds the default headers of a JSON request. Helpers copy it before adding
-// request options, so callers never mutate it.
-var headersMap = map[string]string{
-	"Content-Type": "application/json",
+// jsonHeaders returns a new map with the default headers of a JSON request. Each call
+// returns a fresh map, so callers can add to it without affecting other requests.
+func jsonHeaders() map[string]string {
+	return map[string]string{
+		"Content-Type": "application/json",
+	}
 }

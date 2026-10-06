@@ -48,7 +48,10 @@ type requestConfig struct {
 	headers map[string]string
 }
 
-// WithHeader adds a single HTTP header to the request. An empty value is ignored.
+// WithHeader sets a single HTTP header on the request, replacing a default of the same
+// name. An empty value is ignored, so an optional value (e.g. an unset request id) can be
+// passed through without sending an empty header. Request options cannot change the
+// Content-Type of form and file uploads, which must match how the body was encoded.
 func WithHeader(key, value string) RequestOption {
 	return func(cfg *requestConfig) {
 		if value == "" {
@@ -228,7 +231,7 @@ func (us *Uspacy) doRequest(ctx context.Context, url, method string, headers map
 				return us.abort(lastHTTPErr, ctxErr)
 			}
 			if !canRetryTransportError(method, err) {
-				return nil, 0, requestFailedAfterRetries(ctx, attempt+1, errorLogs)
+				return nil, 0, requestFailedAfterAttempts(ctx, attempt+1, errorLogs)
 			}
 			if us.shouldRetry(attempt) {
 				if sleepErr := sleep(ctx, us.nextBackoff(attempt, 0, false)); sleepErr != nil {
@@ -357,8 +360,9 @@ func sleep(ctx context.Context, d time.Duration) error {
 }
 
 // nextBackoff returns the wait duration before the next attempt. If retryAfterSet is
-// true the header value is used directly (capped at maxRetryAfter); otherwise the delay
-// is exponential (base * 2^attempt) with equal jitter, capped at retryMax.
+// true the header value is used directly (capped at maxRetryAfter). Otherwise the delay
+// is min(base * 2^attempt, retryMax), computed by doubling so it cannot overflow, with
+// equal jitter: a random value in [delay/2, delay).
 func (us *Uspacy) nextBackoff(attempt int, retryAfter time.Duration, retryAfterSet bool) time.Duration {
 	if retryAfterSet {
 		if retryAfter > maxRetryAfter {
@@ -401,7 +405,7 @@ func (us *Uspacy) abort(lastHTTPErr *HTTPError, ctxErr error) ([]byte, int, erro
 // finalResult builds the return value once the retry loop is done.
 func (us *Uspacy) finalResult(method, url string, statusCode int, body []byte, errorLogs map[string]*errorLog, lastHTTPErr *HTTPError, ctx context.Context) ([]byte, int, error) {
 	if len(errorLogs) > 0 && statusCode == 0 {
-		return nil, 0, requestFailedAfterRetries(ctx, us.maxRetries, errorLogs)
+		return nil, 0, requestFailedAfterAttempts(ctx, us.maxRetries, errorLogs)
 	}
 	if statusCode < 200 || statusCode >= 300 {
 		if lastHTTPErr != nil && lastHTTPErr.StatusCode == statusCode {
@@ -412,20 +416,22 @@ func (us *Uspacy) finalResult(method, url string, statusCode int, body []byte, e
 	return body, statusCode, nil
 }
 
-// requestFailedAfterRetries builds the error when every attempt failed at the transport
-// level, so no HTTP response was ever received.
-func requestFailedAfterRetries(ctx context.Context, retries int, errorLogs map[string]*errorLog) error {
+// requestFailedAfterAttempts builds the error when the request got no HTTP response on
+// any of its attempts (transport errors only). attempts counts every request sent, the
+// first one included. If ctx ended in the meantime, its error is wrapped so
+// errors.Is(err, ctx.Err()) works; no *HTTPError exists on this path to carry it.
+func requestFailedAfterAttempts(ctx context.Context, attempts int, errorLogs map[string]*errorLog) error {
 	var errorDetails strings.Builder
 	for _, log := range errorLogs {
 		fmt.Fprintf(&errorDetails, "Error '%s' on attempts: %v\n",
 			log.message, log.attempts)
 	}
 	if ctxErr := ctx.Err(); ctxErr != nil {
-		return fmt.Errorf("request failed after %d retries:\n%scontext error: %w",
-			retries, errorDetails.String(), ctxErr)
+		return fmt.Errorf("request failed (attempts: %d):\n%scontext error: %w",
+			attempts, errorDetails.String(), ctxErr)
 	}
-	return fmt.Errorf("request failed after %d retries:\n%s",
-		retries, errorDetails.String())
+	return fmt.Errorf("request failed (attempts: %d):\n%s",
+		attempts, errorDetails.String())
 }
 
 // HTTPError represents a failed HTTP call. Every public method reports a final non-2xx
@@ -481,14 +487,14 @@ func (us *Uspacy) parseRetryAfter(header string) (time.Duration, bool) {
 	return 0, false
 }
 
-// doGetEmptyHeaders performs a GET request with default headers and optional additional headers.
-func (us *Uspacy) doGetEmptyHeaders(ctx context.Context, url string, opts ...RequestOption) ([]byte, error) {
+// doGet performs a GET request with the default JSON headers plus any request options.
+func (us *Uspacy) doGet(ctx context.Context, url string, opts ...RequestOption) ([]byte, error) {
 	requestHeaders := mergeHeaders(opts)
 	response, _, err := us.doRaw(ctx, url, http.MethodGet, requestHeaders, nil)
 	return response, err
 }
 
-// doPost performs a POST request with JSON body and optional additional headers.
+// doPost performs a POST request with a JSON body.
 func (us *Uspacy) doPost(ctx context.Context, url string, body any, opts ...RequestOption) ([]byte, int, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -500,8 +506,8 @@ func (us *Uspacy) doPost(ctx context.Context, url string, body any, opts ...Requ
 	return response, code, err
 }
 
-// doPatchEmptyHeaders performs a PATCH request with default headers and JSON body.
-func (us *Uspacy) doPatchEmptyHeaders(ctx context.Context, url string, body any, opts ...RequestOption) ([]byte, error) {
+// doPatch performs a PATCH request with a JSON body.
+func (us *Uspacy) doPatch(ctx context.Context, url string, body any, opts ...RequestOption) ([]byte, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -514,17 +520,16 @@ func (us *Uspacy) doPatchEmptyHeaders(ctx context.Context, url string, body any,
 
 // doPostEncodedForm performs a POST request with form-encoded data.
 func (us *Uspacy) doPostEncodedForm(ctx context.Context, url string, values url.Values, opts ...RequestOption) ([]byte, error) {
-	requestHeaders := mergeHeaders(opts, map[string]string{
-		"Content-Type": "application/x-www-form-urlencoded",
-		"Accept":       "application/json",
-	})
+	requestHeaders := mergeHeaders(opts, map[string]string{"Accept": "application/json"})
+	// The body is encoded for this Content-Type, so request options cannot override it.
+	requestHeaders["Content-Type"] = "application/x-www-form-urlencoded"
 
 	response, _, err := us.doRaw(ctx, url, http.MethodPost, requestHeaders, []byte(values.Encode()))
 	return response, err
 }
 
-// doDeleteEmptyHeaders performs a DELETE request with default headers and optional JSON body.
-func (us *Uspacy) doDeleteEmptyHeaders(ctx context.Context, url string, body any, opts ...RequestOption) (int, error) {
+// doDelete performs a DELETE request with an optional JSON body.
+func (us *Uspacy) doDelete(ctx context.Context, url string, body any, opts ...RequestOption) (int, error) {
 	var jsonBody []byte
 	var err error
 	if body != nil {
@@ -539,10 +544,10 @@ func (us *Uspacy) doDeleteEmptyHeaders(ctx context.Context, url string, body any
 	return code, err
 }
 
-// mergeHeaders builds a header map from default JSON headers plus any request options.
+// mergeHeaders builds a request's headers: the default JSON headers, then defaults, then
+// request options, each overriding the previous.
 func mergeHeaders(opts []RequestOption, defaults ...map[string]string) map[string]string {
-	requestHeaders := make(map[string]string)
-	maps.Copy(requestHeaders, headersMap)
+	requestHeaders := jsonHeaders()
 	for _, h := range defaults {
 		maps.Copy(requestHeaders, h)
 	}
@@ -599,10 +604,10 @@ func (us *Uspacy) doPostFormData(ctx context.Context, url string, textParams map
 
 	writer.Close()
 
-	headers := mergeHeaders(opts, map[string]string{
-		"Content-Type": writer.FormDataContentType(),
-		"Accept":       "application/json",
-	})
+	headers := mergeHeaders(opts, map[string]string{"Accept": "application/json"})
+	// The Content-Type carries the multipart boundary the body was written with, so
+	// request options cannot override it.
+	headers["Content-Type"] = writer.FormDataContentType()
 
 	response, _, err := us.doRaw(ctx, url, http.MethodPost, headers, body.Bytes())
 	return response, err

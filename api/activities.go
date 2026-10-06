@@ -26,7 +26,7 @@ func (us *Uspacy) GetActivitiesList(ctx context.Context, params url.Values) (act
 	if len(params) != 0 {
 		url = url + "?" + params.Encode()
 	}
-	body, err := us.doGetEmptyHeaders(ctx, url)
+	body, err := us.doGet(ctx, url)
 	return decodeJSON[activities.ActivitiesList](body, err)
 }
 
@@ -38,7 +38,7 @@ func (us *Uspacy) GetActivity(ctx context.Context, entityId int64, params url.Va
 	if len(params) != 0 {
 		url = url + "?" + params.Encode()
 	}
-	body, err := us.doGetEmptyHeaders(ctx, url)
+	body, err := us.doGet(ctx, url)
 	return decodeJSON[activities.Activity](body, err)
 }
 
@@ -47,7 +47,7 @@ func (us *Uspacy) GetActivity(ctx context.Context, entityId int64, params url.Va
 // The function does not return any object, only an error if the request fails or if an issue occurs during the operation.
 func (us *Uspacy) PatchActivity(ctx context.Context, entityId int64, entityData map[string]any) error {
 	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
-	_, err := us.doPatchEmptyHeaders(ctx, url, entityData)
+	_, err := us.doPatch(ctx, url, entityData)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (us *Uspacy) PatchActivity(ctx context.Context, entityId int64, entityData 
 // The HTTP status code can be used to check if the deletion was successful.
 func (us *Uspacy) DeleteActivity(ctx context.Context, entityId int64) (int, error) {
 	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
-	return us.doDeleteEmptyHeaders(ctx, url, nil)
+	return us.doDelete(ctx, url, nil)
 }
 
 // MassDeleteActivities sends a DELETE request to delete multiple activities based on the provided deletion data.
@@ -68,5 +68,5 @@ func (us *Uspacy) DeleteActivity(ctx context.Context, entityId int64) (int, erro
 // Returns the HTTP status code of the request and any error encountered during the process.
 func (us *Uspacy) MassDeleteActivities(ctx context.Context, deletionData activities.MassDeletionBody) (int, error) {
 	url := us.buildURL(activities.VersionUrl, activities.MassDeletion)
-	return us.doDeleteEmptyHeaders(ctx, url, deletionData)
+	return us.doDelete(ctx, url, deletionData)
 }

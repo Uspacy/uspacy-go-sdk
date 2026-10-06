@@ -11,7 +11,7 @@ import (
 
 // GetProduct returns a product by its ID.
 func (us *Uspacy) GetProduct(ctx context.Context, id string) (crm.Products, error) {
-	responseBody, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ProductsUrl, id)))
+	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ProductsUrl, id)))
 	return decodeJSON[crm.Products](responseBody, err)
 }
 
@@ -21,7 +21,7 @@ func (us *Uspacy) GetEntityProductList(ctx context.Context, entityType string, e
 		"entity_type": []string{entityType},
 		"entity_id":   []string{strconv.FormatInt(entityID, 10)},
 	}
-	responseBody, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, crm.EntityProductListsUrl)+"?"+params.Encode())
+	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, crm.EntityProductListsUrl)+"?"+params.Encode())
 	return decodeJSON[crm.EntityProductList](responseBody, err)
 }
 
@@ -33,7 +33,7 @@ func (us *Uspacy) CreateEntityListProduct(ctx context.Context, productData crm.C
 
 // DeleteEntityListProduct deletes a product list item
 func (us *Uspacy) DeleteEntityListProduct(ctx context.Context, id int) (statusCode int, err error) {
-	return us.doDeleteEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, crm.ListProductsUrl, strconv.Itoa(id)), nil)
+	return us.doDelete(ctx, us.buildURL(crm.VersionUrl, crm.ListProductsUrl, strconv.Itoa(id)), nil)
 }
 
 // CreateProduct creates a product and returns it.

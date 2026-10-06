@@ -22,7 +22,7 @@ func (us *Uspacy) CreateFile(ctx context.Context, entityType, entityId string, f
 
 // DeleteFileById deletes a file and returns the HTTP status code.
 func (us *Uspacy) DeleteFileById(ctx context.Context, fileId int) (code int, err error) {
-	code, err = us.doDeleteEmptyHeaders(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), nil)
+	code, err = us.doDelete(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), nil)
 	if err != nil {
 		return code, err
 	}
@@ -34,7 +34,7 @@ func (us *Uspacy) DeleteFilesByEntityId(ctx context.Context, entityType string, 
 	params := url.Values{}
 	params.Set("entityType", entityType)
 	params.Set("entityId", strconv.FormatInt(entityId, 10))
-	code, err = us.doDeleteEmptyHeaders(ctx, us.buildURL(files.VersionUrl, files.FilesUrl)+"?"+params.Encode(), nil)
+	code, err = us.doDelete(ctx, us.buildURL(files.VersionUrl, files.FilesUrl)+"?"+params.Encode(), nil)
 	if err != nil {
 		return code, err
 	}
@@ -43,7 +43,7 @@ func (us *Uspacy) DeleteFilesByEntityId(ctx context.Context, entityType string, 
 
 // GetFileById returns a file by its ID.
 func (us *Uspacy) GetFileById(ctx context.Context, fileId int) (files.File, error) {
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(files.VersionUrl, files.FilesUrl, strconv.Itoa(fileId)))
+	body, err := us.doGet(ctx, us.buildURL(files.VersionUrl, files.FilesUrl, strconv.Itoa(fileId)))
 	return decodeJSON[files.File](body, err)
 }
 
@@ -52,6 +52,6 @@ func (us *Uspacy) UpdateFile(ctx context.Context, fileId int, entityId int64) (f
 	body := map[string]int64{
 		"entityId": entityId,
 	}
-	response, err := us.doPatchEmptyHeaders(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), body)
+	response, err := us.doPatch(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), body)
 	return decodeJSON[files.File](response, err)
 }

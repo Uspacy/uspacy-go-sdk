@@ -50,7 +50,7 @@ func (us *Uspacy) MoveSmartObjectFunnelStage(ctx context.Context, tableName stri
 
 // GetSmartObjectFields returns the fields of a smart object.
 func (us *Uspacy) GetSmartObjectFields(ctx context.Context, tableName string) ([]crm.Field, error) {
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(smartobjects.FieldsUrl, tableName)))
+	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(smartobjects.FieldsUrl, tableName)))
 	resp, err := decodeJSON[crm.Fields](body, err)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (us *Uspacy) GetSmartObjectFields(ctx context.Context, tableName string) ([
 
 // GetSmartObjectStages returns the kanban stages of a smart object.
 func (us *Uspacy) GetSmartObjectStages(ctx context.Context, tableName string) ([]crm.KanbanStage, error) {
-	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")))
+	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")))
 	resp, err := decodeJSON[crm.KanbanStages](body, err)
 	if err != nil {
 		return nil, err
