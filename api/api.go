@@ -87,7 +87,9 @@ const (
 	defaultRetryMax      = 30 * time.Second
 )
 
-// New creates an Uspacy object. Options can be passed to customize retry behavior.
+// New creates an Uspacy object. token authenticates API calls; refresh is sent to the
+// token refresh endpoint when a call gets a 401 (or on TokenRefresh). If refresh is empty,
+// token is used for both. Options can be passed to customize retry behavior.
 func New(token, refresh, host string, opts ...Option) *Uspacy {
 	bearerToken := strings.TrimPrefix(token, tokenPrefix)
 	refreshToken := strings.TrimPrefix(refresh, tokenPrefix)
@@ -114,13 +116,6 @@ func New(token, refresh, host string, opts ...Option) *Uspacy {
 	}
 
 	return us
-}
-
-// RefreshToken returns the current refresh token. Safe for concurrent use.
-func (us *Uspacy) RefreshToken() string {
-	us.mu.RLock()
-	defer us.mu.RUnlock()
-	return us.refreshToken
 }
 
 // WithMaxRetries sets the maximum number of request attempts (must be > 0).

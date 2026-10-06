@@ -1650,8 +1650,43 @@ func TestSharedRefreshSurvivesFirstCallerCancel(t *testing.T) {
 	if got := refreshHits.Load(); got != 1 {
 		t.Errorf("refresh requests = %d, want 1", got)
 	}
-	if got := us.RefreshToken(); got != "r2" {
-		t.Errorf("RefreshToken() = %q, want r2", got)
+	if _, refresh := us.Tokens(); refresh != "r2" {
+		t.Errorf("Tokens() refresh = %q, want r2", refresh)
+	}
+}
+
+// The refresh endpoint must get the refresh token, not the (possibly expired) access token,
+// and both new tokens must be visible through Tokens.
+func TestRefreshSendsRefreshTokenAndUpdatesTokens(t *testing.T) {
+	refreshAuth := make(chan string, 1)
+	var newJWT string
+	refreshServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		refreshAuth <- r.Header.Get("Authorization")
+		fmt.Fprintf(w, `{"jwt":%q,"refreshToken":"refresh-2"}`, newJWT)
+	}))
+	defer refreshServer.Close()
+	domain := strings.TrimPrefix(refreshServer.URL, "https://")
+	newJWT = testJWT(t, domain+".new")
+
+	mainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != tokenPrefix+newJWT {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		fmt.Fprint(w, `{"data":[]}`)
+	}))
+	defer mainServer.Close()
+
+	us := New(testJWT(t, domain), "Bearer refresh-1", mainServer.URL)
+	us.client = refreshServer.Client()
+	if _, err := us.GetFields(context.Background(), "leads"); err != nil {
+		t.Fatalf("GetFields() error = %v", err)
+	}
+	if got := <-refreshAuth; got != "Bearer refresh-1" {
+		t.Errorf("refresh Authorization = %q, want the refresh token", got)
+	}
+	if access, refresh := us.Tokens(); access != newJWT || refresh != "refresh-2" {
+		t.Errorf("Tokens() = %q, %q, want the refreshed pair", access, refresh)
 	}
 }
 

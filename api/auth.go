@@ -53,11 +53,15 @@ func (us *Uspacy) refreshTokenOnce(ctx context.Context, staleToken string) (stri
 	if err != nil {
 		return "", err
 	}
+	// The refresh endpoint authenticates with the refresh token, not the access token,
+	// which may already have expired by the time a 401 triggers this refresh.
+	_, refreshToken := us.Tokens()
+	headers := mergeHeaders(nil, map[string]string{"Authorization": tokenPrefix + refreshToken})
 	body, _, err := us.doRequest(
 		ctx,
 		fmt.Sprintf("%s%s/%s/%s", "https://", jwt.Domain, auth.VersionUrl, auth.RefreshTokenUrl),
 		http.MethodPost,
-		headersMap,
+		headers,
 		nil,
 		true) // skip token refresh: never refresh the token to refresh the token
 	if err != nil {
@@ -66,11 +70,26 @@ func (us *Uspacy) refreshTokenOnce(ctx context.Context, staleToken string) (stri
 	if err := json.Unmarshal(body, &refresh); err != nil {
 		return "", err
 	}
+	if refresh.Jwt == "" {
+		return "", fmt.Errorf("token refresh: response has no jwt")
+	}
 	us.mu.Lock()
 	us.bearerToken = refresh.Jwt
-	us.refreshToken = refresh.RefreshToken
+	// Keep the current refresh token if the response does not rotate it.
+	if refresh.RefreshToken != "" {
+		us.refreshToken = refresh.RefreshToken
+	}
 	us.mu.Unlock()
 	return refresh.Jwt, nil
+}
+
+// Tokens returns the current access and refresh tokens as one consistent pair, so a
+// caller persisting them never mixes tokens from two different refreshes. Safe for
+// concurrent use.
+func (us *Uspacy) Tokens() (access, refresh string) {
+	us.mu.RLock()
+	defer us.mu.RUnlock()
+	return us.bearerToken, us.refreshToken
 }
 
 // TokenRefresh forces a bearer token refresh and returns the new token. It returns as
