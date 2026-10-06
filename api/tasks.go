@@ -8,20 +8,22 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/v2/task"
 )
 
-// CreateTask creates a new task
+// CreateTask creates a task from form values and returns it.
 func (us *Uspacy) CreateTask(ctx context.Context, taskData url.Values, opts ...RequestOption) (task.Task, error) {
 	resp, err := us.doPostEncodedForm(ctx, us.buildURL(task.VersionUrl, task.TaskUrl), taskData, opts...)
 	return decodeJSON[task.Task](resp, err)
 }
 
-// CreateTaskThroughMap creates a new task through a map
+// CreateTaskThroughMap creates a task from a JSON body and returns it with the HTTP status
+// code.
 func (us *Uspacy) CreateTaskThroughMap(ctx context.Context, taskData map[string]any, opts ...RequestOption) (task.Task, int, error) {
 	resp, code, err := us.doPost(ctx, us.buildURL(task.VersionUrl, task.TaskUrl), taskData, opts...)
 	v, err := decodeJSON[task.Task](resp, err)
 	return v, code, err
 }
 
-// CreateTransferTask creates a new transfer task
+// CreateTransferTask creates tasks in bulk through the transfer endpoint and returns the
+// result with the HTTP status code.
 func (us *Uspacy) CreateTransferTask(ctx context.Context, body any, opts ...RequestOption) (task.TransferTaskOutput, int, error) {
 	resp, code, err := us.doPost(ctx, us.buildURL(task.VersionUrl, task.TransferUrl), body, opts...)
 	v, err := decodeJSON[task.TransferTaskOutput](resp, err)
@@ -73,7 +75,7 @@ func (us *Uspacy) GetTaskById(ctx context.Context, taskId int, params url.Values
 	return decodeJSON[map[string]any](body, err)
 }
 
-// GetTaskStagesByGroupId returns task stages by group id
+// GetTaskStagesByGroupId returns the kanban stages of a group's tasks.
 func (us *Uspacy) GetTaskStagesByGroupId(ctx context.Context, groupId int, opts ...RequestOption) ([]task.TaskGroupStage, error) {
 	params := url.Values{}
 	params.Set("groupId", fmt.Sprintf("%d", groupId))
@@ -85,32 +87,32 @@ func (us *Uspacy) GetTaskStagesByGroupId(ctx context.Context, groupId int, opts 
 	return resp.Data, nil
 }
 
-// GetTemplateById returns template by id
+// GetTemplateById returns a task template by ID.
 func (us *Uspacy) GetTemplateById(ctx context.Context, templateId int, opts ...RequestOption) (task.Template, error) {
 	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.TemplateUrl, fmt.Sprintf("%d", templateId)), opts...)
 	return decodeJSON[task.Template](body, err)
 }
 
-// CreateTaskStage creates a new task stage
+// CreateTaskStage creates a task kanban stage and returns it with the HTTP status code.
 func (us *Uspacy) CreateTaskStage(ctx context.Context, stageData task.TaskGroupStage, opts ...RequestOption) (task.TaskGroupStage, int, error) {
 	body, code, err := us.doPost(ctx, us.buildURL(task.VersionUrl, task.KanbanStages), stageData, opts...)
 	v, err := decodeJSON[task.TaskGroupStage](body, err)
 	return v, code, err
 }
 
-// DeleteTaskStage deletes a task stage
+// DeleteTaskStage deletes a task kanban stage.
 func (us *Uspacy) DeleteTaskStage(ctx context.Context, stageId int, opts ...RequestOption) (err error) {
 	_, err = us.doDelete(ctx, us.buildURL(task.VersionUrl, task.KanbanStages, fmt.Sprintf("%d", stageId)), nil, opts...)
 	return err
 }
 
-// TaskStatusReady marks task as ready
+// TaskStatusReady marks a task as ready.
 func (us *Uspacy) TaskStatusReady(ctx context.Context, taskId int, opts ...RequestOption) (err error) {
 	_, err = us.doPatch(ctx, us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId), task.TaskStatusReady), nil, opts...)
 	return err
 }
 
-// CreateTaskField creates a new task field
+// CreateTaskField creates a task field and returns it with the HTTP status code.
 func (us *Uspacy) CreateTaskField(ctx context.Context, fieldData task.Field, opts ...RequestOption) (task.Field, int, error) {
 	body, code, err := us.doPost(ctx, us.buildURL(task.VersionUrl, task.TaskUrl, task.FieldUrl), fieldData, opts...)
 	v, err := decodeJSON[task.Field](body, err)

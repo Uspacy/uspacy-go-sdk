@@ -98,6 +98,8 @@ func (us *Uspacy) TokenRefresh(ctx context.Context) (string, error) {
 	return us.tokenRefresh(ctx, "")
 }
 
+// UnmarshalTokenData decodes the claims of the current access token. It does not verify
+// the token's signature.
 func (us *Uspacy) UnmarshalTokenData() (tokenData auth.JwtClaims, err error) {
 	token := us.currentToken()
 

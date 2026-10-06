@@ -42,7 +42,8 @@ func (us *Uspacy) CreateSmartObjectStage(ctx context.Context, tableName string, 
 	return decodeJSON[crm.KanbanStage](responseBody, err)
 }
 
-// MoveSmartObjectFunnelStage moves a funnel stage
+// MoveSmartObjectFunnelStage moves a smart object record to another kanban stage. reason
+// explains a move to a failure stage.
 func (us *Uspacy) MoveSmartObjectFunnelStage(ctx context.Context, tableName string, entityId int64, stageId string, reason crm.KanbanFailReasonCRM, opts ...RequestOption) (err error) {
 	_, _, err = us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.MoveKanbanStageUrl, tableName, entityId, stageId)), reason, opts...)
 	return err

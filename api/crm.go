@@ -48,27 +48,27 @@ func (us *Uspacy) GetCRMEntitiesForExport(ctx context.Context, entityType string
 	return decodeJSON[crm.CRMEntityForExport](body, err)
 }
 
-// GetContacts returns an array of contact objects and an error.
+// GetContacts returns the contacts matching params.
 func (us *Uspacy) GetContacts(ctx context.Context, params url.Values, opts ...RequestOption) (crm.Contacts, error) {
 	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.ContactsNum.GetUrl()))+"?"+params.Encode(), opts...)
 	return decodeJSON[crm.Contacts](body, err)
 }
 
-// GetDeals returns an array of deal objects and an error.
+// GetDeals returns the deals matching params.
 func (us *Uspacy) GetDeals(ctx context.Context, params url.Values, opts ...RequestOption) (crm.Deals, error) {
 	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.DealsNum.GetUrl()))+"?"+params.Encode(), opts...)
 	return decodeJSON[crm.Deals](body, err)
 }
 
-// GetLeads returns an array of lead objects and an error.
+// GetLeads returns the leads matching params.
 func (us *Uspacy) GetLeads(ctx context.Context, params url.Values, opts ...RequestOption) (crm.Leads, error) {
 	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.LeadsNum.GetUrl()))+"?"+params.Encode(), opts...)
 	return decodeJSON[crm.Leads](body, err)
 }
 
-// GetList returns raw response for CRM entities with filters
-// This method is useful for searching entities with custom filters
-// entityType should be one of: crm.LeadsNum.GetUrl(), crm.DealsNum.GetUrl(), crm.ContactsNum.GetUrl(), crm.CompaniesNum.GetUrl()
+// GetList returns the records of a CRM entity type matching params as raw JSON, for
+// filters the typed methods do not cover. entityType is one of crm.LeadsNum.GetUrl(),
+// crm.DealsNum.GetUrl(), crm.ContactsNum.GetUrl() or crm.CompaniesNum.GetUrl().
 func (us *Uspacy) GetList(ctx context.Context, entityType string, params url.Values, opts ...RequestOption) ([]byte, error) {
 	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))
 	if len(params) > 0 {
@@ -78,9 +78,7 @@ func (us *Uspacy) GetList(ctx context.Context, entityType string, params url.Val
 	return us.doGet(ctx, url, opts...)
 }
 
-// GetEntity returns one record as raw JSON: GET crm/v1/entities/{entityType}/{id}.
-// The id is its own path segment so the leading slash is preserved.
-// A non-2xx response is returned as *HTTPError.
+// GetEntity returns a CRM record as raw JSON.
 func (us *Uspacy) GetEntity(ctx context.Context, entityType string, id int64, opts ...RequestOption) ([]byte, error) {
 	return us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), strconv.FormatInt(id, 10)), opts...)
 }
@@ -103,13 +101,13 @@ func (us *Uspacy) EntityMassEdit(ctx context.Context, entityType string, entityD
 	return nil
 }
 
-// CreateContact returns created contact object
+// CreateContact creates a contact and returns it.
 func (us *Uspacy) CreateContact(ctx context.Context, contactData map[string]any, opts ...RequestOption) (crm.Contact, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.ContactsNum.GetUrl())), contactData, opts...)
 	return decodeJSON[crm.Contact](body, err)
 }
 
-// CreateCompany returns created company object
+// CreateCompany creates a company and returns it.
 func (us *Uspacy) CreateCompany(ctx context.Context, companyData map[string]any, opts ...RequestOption) (crm.Company, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.CompaniesNum.GetUrl())), companyData, opts...)
 	return decodeJSON[crm.Company](body, err)
@@ -127,7 +125,7 @@ func (us *Uspacy) CreateDeal(ctx context.Context, dealData map[string]any, opts 
 	return decodeJSON[crm.Deal](body, err)
 }
 
-// GetField returns Field struct for a given type of entity & field
+// GetField returns the field with code fieldType of a CRM entity type.
 func (us *Uspacy) GetField(ctx context.Context, entityType string, fieldType string, opts ...RequestOption) (crm.Field, error) {
 	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType, fieldType)), opts...)
 	return decodeJSON[crm.Field](body, err)
@@ -139,8 +137,7 @@ func (us *Uspacy) DeleteField(ctx context.Context, entityType string, codeField 
 	return err
 }
 
-// GetFields returns the fields of an entity type: GET crm/v1/entities/{entityType}/fields.
-// A non-2xx response is returned as *HTTPError.
+// GetFields returns the fields of a CRM entity type.
 func (us *Uspacy) GetFields(ctx context.Context, entityType string, opts ...RequestOption) ([]crm.Field, error) {
 	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType, "")), opts...)
 	resp, err := decodeJSON[crm.Fields](body, err)
@@ -150,25 +147,25 @@ func (us *Uspacy) GetFields(ctx context.Context, entityType string, opts ...Requ
 	return resp.Data, nil
 }
 
-// CreateFunnel returns created funnel
+// CreateFunnel creates a funnel for a CRM entity type and returns it.
 func (us *Uspacy) CreateFunnel(ctx context.Context, entityType string, funnelData any, opts ...RequestOption) (crm.Funnel, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FunnelUrl, entityType)), funnelData, opts...)
 	return decodeJSON[crm.Funnel](responseBody, err)
 }
 
-// GetFunnels returns funnels by entityType
+// GetFunnels returns the funnels of a CRM entity type.
 func (us *Uspacy) GetFunnels(ctx context.Context, entityType string, opts ...RequestOption) (crm.FunnelsById, error) {
 	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FunnelUrl, entityType)), opts...)
 	return decodeJSON[crm.FunnelsById](responseBody, err)
 }
 
-// CreateFunnelStage returns created kanban stage
+// CreateFunnelStage creates a kanban stage for a CRM entity type and returns it.
 func (us *Uspacy) CreateFunnelStage(ctx context.Context, entityType string, stageData any, opts ...RequestOption) (crm.KanbanStage, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, "")), stageData, opts...)
 	return decodeJSON[crm.KanbanStage](responseBody, err)
 }
 
-// GetAllFunnelStages returns all kanban stages
+// GetAllFunnelStages returns all kanban stages of a CRM entity type.
 func (us *Uspacy) GetAllFunnelStages(ctx context.Context, entityType string, opts ...RequestOption) ([]crm.KanbanStage, error) {
 	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, "")), opts...)
 	resp, err := decodeJSON[crm.KanbanStages](responseBody, err)
@@ -178,7 +175,7 @@ func (us *Uspacy) GetAllFunnelStages(ctx context.Context, entityType string, opt
 	return resp.Data, nil
 }
 
-// GetFunnelStageById returns kanban stage by id.
+// GetFunnelStageById returns the kanban stages of the funnel with the given id.
 //
 // Renamed in v2 from GetFunnelStageDyId.
 func (us *Uspacy) GetFunnelStageById(ctx context.Context, entityType string, id int, opts ...RequestOption) (crm.KanbanStages, error) {
@@ -186,19 +183,20 @@ func (us *Uspacy) GetFunnelStageById(ctx context.Context, entityType string, id 
 	return decodeJSON[crm.KanbanStages](responseBody, err)
 }
 
-// PatchFunnelStage returns kanban stage
+// PatchFunnelStage updates a kanban stage and returns it.
 func (us *Uspacy) PatchFunnelStage(ctx context.Context, entityType string, id int, stage crm.FunnelStage, opts ...RequestOption) (crm.KanbanStage, error) {
 	responseBody, err := us.doPatch(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, id)), stage, opts...)
 	return decodeJSON[crm.KanbanStage](responseBody, err)
 }
 
-// MoveFunnelStage moves a funnel stage
+// MoveFunnelStage moves a CRM record to another kanban stage. reason explains a move to
+// a failure stage.
 func (us *Uspacy) MoveFunnelStage(ctx context.Context, entityType string, entityId int64, stageId string, reason crm.KanbanFailReasonCRM, opts ...RequestOption) (err error) {
 	_, _, err = us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.MoveKanbanStageUrl, entityType, entityId, stageId)), reason, opts...)
 	return err
 }
 
-// CreateCRMField in CRM entity returns created field
+// CreateCRMField creates a field of a CRM entity type and returns it.
 func (us *Uspacy) CreateCRMField(ctx context.Context, entityType string, fieldData any, opts ...RequestOption) (crm.Field, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.CreateFieldUrl, entityType)), fieldData, opts...)
 	return decodeJSON[crm.Field](responseBody, err)
@@ -216,7 +214,7 @@ func (us *Uspacy) CreateListValues(ctx context.Context, entityType, listName str
 	return decodeJSON[[]crm.List](responseBody, err)
 }
 
-// CreateFailReasons returns all reasons for funnel with failWrite.ID
+// CreateFailReasons adds a failure reason to the funnel failReason.ID and returns it.
 func (us *Uspacy) CreateFailReasons(ctx context.Context, failReason crm.Reason, opts ...RequestOption) (crm.Reason, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ReasonsUrl, failReason.ID)), crm.FailWrite{
 		Title: failReason.Title,
@@ -226,7 +224,7 @@ func (us *Uspacy) CreateFailReasons(ctx context.Context, failReason crm.Reason, 
 	return decodeJSON[crm.Reason](responseBody, err)
 }
 
-// CreateCall returns created call
+// CreateCall records a call and returns it.
 func (us *Uspacy) CreateCall(ctx context.Context, callValue crm.Call, opts ...RequestOption) (crm.Call, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, crm.CallUrl), callValue, opts...)
 	return decodeJSON[crm.Call](responseBody, err)

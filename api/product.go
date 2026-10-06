@@ -9,13 +9,14 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
 )
 
-// GetProduct returns a product by its ID.
+// GetProduct fetches static/products/{id}; an empty id lists all products. The
+// response is decoded as crm.Products.
 func (us *Uspacy) GetProduct(ctx context.Context, id string, opts ...RequestOption) (crm.Products, error) {
 	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ProductsUrl, id)), opts...)
 	return decodeJSON[crm.Products](responseBody, err)
 }
 
-// GetEntityProductList returns product list for entity
+// GetEntityProductList returns the product list of a CRM record.
 func (us *Uspacy) GetEntityProductList(ctx context.Context, entityType string, entityID int64, opts ...RequestOption) (crm.EntityProductList, error) {
 	params := url.Values{
 		"entity_type": []string{entityType},
@@ -25,18 +26,20 @@ func (us *Uspacy) GetEntityProductList(ctx context.Context, entityType string, e
 	return decodeJSON[crm.EntityProductList](responseBody, err)
 }
 
-// CreateEntityListProduct creates a product list for entity
+// CreateEntityListProduct adds a product to a CRM record's product list and returns the
+// new item.
 func (us *Uspacy) CreateEntityListProduct(ctx context.Context, productData crm.CreateEntityListProductRequest, opts ...RequestOption) (crm.EntityListProduct, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, crm.ListProductsUrl), productData, opts...)
 	return decodeJSON[crm.EntityListProduct](responseBody, err)
 }
 
-// DeleteEntityListProduct deletes a product list item
+// DeleteEntityListProduct removes an item from a CRM record's product list and returns the
+// HTTP status code.
 func (us *Uspacy) DeleteEntityListProduct(ctx context.Context, id int, opts ...RequestOption) (statusCode int, err error) {
 	return us.doDelete(ctx, us.buildURL(crm.VersionUrl, crm.ListProductsUrl, strconv.Itoa(id)), nil, opts...)
 }
 
-// CreateProduct creates a product and returns it.
+// CreateProduct creates a product. The response is decoded as crm.Products.
 func (us *Uspacy) CreateProduct(ctx context.Context, productData map[string]any, opts ...RequestOption) (crm.Products, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ProductsUrl, "")), productData, opts...)
 	return decodeJSON[crm.Products](responseBody, err)

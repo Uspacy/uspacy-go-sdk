@@ -7,13 +7,13 @@ import (
 	"github.com/Uspacy/uspacy-go-sdk/v2/departments"
 )
 
-// GetDepartments returns list of departments
+// GetDepartments returns all departments.
 func (us *Uspacy) GetDepartments(ctx context.Context, opts ...RequestOption) (departments.Departments, error) {
 	body, err := us.doGet(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), opts...)
 	return decodeJSON[departments.Departments](body, err)
 }
 
-// CreateDepartment returns created department
+// CreateDepartment creates a department and returns it.
 func (us *Uspacy) CreateDepartment(ctx context.Context, departmentData departments.Department, opts ...RequestOption) (departments.Department, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), departmentData, opts...)
 	return decodeJSON[departments.Department](body, err)
