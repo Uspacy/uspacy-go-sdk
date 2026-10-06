@@ -645,6 +645,15 @@ type createdID struct {
 	ID int64 `json:"id"`
 }
 
+// withQuery appends params to u as a query string. It returns u unchanged when params is
+// empty, so a nil params never leaves a trailing "?".
+func withQuery(u string, params url.Values) string {
+	if len(params) == 0 {
+		return u
+	}
+	return u + "?" + params.Encode()
+}
+
 // buildURL constructs a full URL by joining all parts with "/"
 func (us *Uspacy) buildURL(parts ...string) string {
 	allParts := append([]string{us.mainHost}, parts...)

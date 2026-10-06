@@ -1812,6 +1812,32 @@ func TestRequestMethodsAcceptRequestOptions(t *testing.T) {
 	}
 }
 
+func TestWithQuery(t *testing.T) {
+	if got := withQuery("https://h/leads", nil); got != "https://h/leads" {
+		t.Errorf("withQuery(nil) = %q, want no query", got)
+	}
+	if got := withQuery("https://h/leads", url.Values{"page": {"2"}, "a": {"b c"}}); got != "https://h/leads?a=b+c&page=2" {
+		t.Errorf("withQuery(params) = %q, want an encoded query", got)
+	}
+}
+
+// A list method called with nil params must not send a trailing "?".
+func TestListMethodsWithoutParamsSendNoQuery(t *testing.T) {
+	requestURI := make(chan string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestURI <- r.RequestURI
+		fmt.Fprint(w, `{"data":[]}`)
+	}))
+	defer server.Close()
+
+	if _, err := New("token", "", server.URL).GetLeads(context.Background(), nil); err != nil {
+		t.Fatalf("GetLeads() error = %v", err)
+	}
+	if got := <-requestURI; got != "/crm/v1/entities/leads" {
+		t.Errorf("request URI = %q, want /crm/v1/entities/leads", got)
+	}
+}
+
 func TestGetTasksWithFilters(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("status") != "open" {

@@ -21,24 +21,16 @@ func (us *Uspacy) CreateFile(ctx context.Context, entityType, entityId string, f
 }
 
 // DeleteFileById deletes a file and returns the HTTP status code.
-func (us *Uspacy) DeleteFileById(ctx context.Context, fileId int, opts ...RequestOption) (code int, err error) {
-	code, err = us.doDelete(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), nil, opts...)
-	if err != nil {
-		return code, err
-	}
-	return code, err
+func (us *Uspacy) DeleteFileById(ctx context.Context, fileId int, opts ...RequestOption) (int, error) {
+	return us.doDelete(ctx, us.buildURL(files.VersionUrl, fmt.Sprintf("%s/%d", files.FilesUrl, fileId)), nil, opts...)
 }
 
 // DeleteFilesByEntityId deletes all files attached to an entity and returns the HTTP status code.
-func (us *Uspacy) DeleteFilesByEntityId(ctx context.Context, entityType string, entityId int64, opts ...RequestOption) (code int, err error) {
+func (us *Uspacy) DeleteFilesByEntityId(ctx context.Context, entityType string, entityId int64, opts ...RequestOption) (int, error) {
 	params := url.Values{}
 	params.Set("entityType", entityType)
 	params.Set("entityId", strconv.FormatInt(entityId, 10))
-	code, err = us.doDelete(ctx, us.buildURL(files.VersionUrl, files.FilesUrl)+"?"+params.Encode(), nil, opts...)
-	if err != nil {
-		return code, err
-	}
-	return code, err
+	return us.doDelete(ctx, withQuery(us.buildURL(files.VersionUrl, files.FilesUrl), params), nil, opts...)
 }
 
 // GetFileById returns a file by its ID.

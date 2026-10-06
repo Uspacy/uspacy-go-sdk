@@ -48,13 +48,13 @@ func (us *Uspacy) GetTaskFields(ctx context.Context, opts ...RequestOption) ([]t
 
 // GetTasksList returns the tasks matching params.
 func (us *Uspacy) GetTasksList(ctx context.Context, params url.Values, opts ...RequestOption) (task.TasksList, error) {
-	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode(), opts...)
+	body, err := us.doGet(ctx, withQuery(us.buildURL(task.VersionUrl, task.TaskUrl), params), opts...)
 	return decodeJSON[task.TasksList](body, err)
 }
 
 // GetTasksWithFilters returns the tasks matching params, each as a map of its raw JSON fields.
 func (us *Uspacy) GetTasksWithFilters(ctx context.Context, params url.Values, opts ...RequestOption) ([]map[string]any, error) {
-	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.TaskUrl)+"?"+params.Encode(), opts...)
+	body, err := us.doGet(ctx, withQuery(us.buildURL(task.VersionUrl, task.TaskUrl), params), opts...)
 	resp, err := decodeJSON[struct {
 		Data []map[string]any `json:"data"`
 	}](body, err)
@@ -67,10 +67,7 @@ func (us *Uspacy) GetTasksWithFilters(ctx context.Context, params url.Values, op
 // GetTaskById returns a task by ID as a map of its raw JSON fields. params is optional;
 // pass nil for none.
 func (us *Uspacy) GetTaskById(ctx context.Context, taskId int, params url.Values, opts ...RequestOption) (map[string]any, error) {
-	urlStr := us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId))
-	if len(params) != 0 {
-		urlStr += "?" + params.Encode()
-	}
+	urlStr := withQuery(us.buildURL(task.VersionUrl, fmt.Sprintf(task.TaskIdUrl, taskId)), params)
 	body, err := us.doGet(ctx, urlStr, opts...)
 	return decodeJSON[map[string]any](body, err)
 }
@@ -79,7 +76,7 @@ func (us *Uspacy) GetTaskById(ctx context.Context, taskId int, params url.Values
 func (us *Uspacy) GetTaskStagesByGroupId(ctx context.Context, groupId int, opts ...RequestOption) ([]task.TaskGroupStage, error) {
 	params := url.Values{}
 	params.Set("groupId", fmt.Sprintf("%d", groupId))
-	body, err := us.doGet(ctx, us.buildURL(task.VersionUrl, task.KanbanStages)+"?"+params.Encode(), opts...)
+	body, err := us.doGet(ctx, withQuery(us.buildURL(task.VersionUrl, task.KanbanStages), params), opts...)
 	resp, err := decodeJSON[task.TaskGroupStages](body, err)
 	if err != nil {
 		return nil, err

@@ -9,12 +9,9 @@ import (
 )
 
 // CreateNewsfeedPost creates a newsfeed post.
-func (us *Uspacy) CreateNewsfeedPost(ctx context.Context, postData url.Values, opts ...RequestOption) (err error) {
-	_, err = us.doPostEncodedForm(ctx, us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData, opts...)
-	if err != nil {
-		return err
-	}
-	return nil
+func (us *Uspacy) CreateNewsfeedPost(ctx context.Context, postData url.Values, opts ...RequestOption) error {
+	_, err := us.doPostEncodedForm(ctx, us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData, opts...)
+	return err
 }
 
 // GetNewsfeeds returns a page of newsfeed posts of a group.

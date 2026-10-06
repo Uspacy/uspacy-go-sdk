@@ -18,20 +18,14 @@ func (us *Uspacy) CreateActivity(ctx context.Context, entityData map[string]any,
 
 // GetActivitiesList returns the activities matching params; pass nil for no filter.
 func (us *Uspacy) GetActivitiesList(ctx context.Context, params url.Values, opts ...RequestOption) (activities.ActivitiesList, error) {
-	url := us.buildURL(activities.VersionUrl, activities.ActivitiesUrl)
-	if len(params) != 0 {
-		url = url + "?" + params.Encode()
-	}
+	url := withQuery(us.buildURL(activities.VersionUrl, activities.ActivitiesUrl), params)
 	body, err := us.doGet(ctx, url, opts...)
 	return decodeJSON[activities.ActivitiesList](body, err)
 }
 
 // GetActivity returns an activity by ID. params is optional; pass nil for none.
 func (us *Uspacy) GetActivity(ctx context.Context, entityId int64, params url.Values, opts ...RequestOption) (activities.Activity, error) {
-	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
-	if len(params) != 0 {
-		url = url + "?" + params.Encode()
-	}
+	url := withQuery(us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10))), params)
 	body, err := us.doGet(ctx, url, opts...)
 	return decodeJSON[activities.Activity](body, err)
 }
@@ -40,10 +34,7 @@ func (us *Uspacy) GetActivity(ctx context.Context, entityId int64, params url.Va
 func (us *Uspacy) PatchActivity(ctx context.Context, entityId int64, entityData map[string]any, opts ...RequestOption) error {
 	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
 	_, err := us.doPatch(ctx, url, entityData, opts...)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // DeleteActivity deletes an activity and returns the HTTP status code.

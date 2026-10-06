@@ -22,7 +22,7 @@ func (us *Uspacy) GetEntityProductList(ctx context.Context, entityType string, e
 		"entity_type": []string{entityType},
 		"entity_id":   []string{strconv.FormatInt(entityID, 10)},
 	}
-	responseBody, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, crm.EntityProductListsUrl)+"?"+params.Encode(), opts...)
+	responseBody, err := us.doGet(ctx, withQuery(us.buildURL(crm.VersionUrl, crm.EntityProductListsUrl), params), opts...)
 	return decodeJSON[crm.EntityProductList](responseBody, err)
 }
 

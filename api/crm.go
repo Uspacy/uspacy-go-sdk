@@ -31,7 +31,7 @@ func (us *Uspacy) GetCrmEntitiesList(ctx context.Context, opts ...RequestOption)
 
 // GetEntities returns the records of a CRM entity type matching params.
 func (us *Uspacy) GetEntities(ctx context.Context, entityType string, params url.Values, opts ...RequestOption) (crm.CRMEntity, error) {
-	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))+"?"+params.Encode(), opts...)
+	body, err := us.doGet(ctx, withQuery(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType)), params), opts...)
 	return decodeJSON[crm.CRMEntity](body, err)
 }
 
@@ -44,25 +44,25 @@ func (us *Uspacy) GetCRMEntitiesForExport(ctx context.Context, entityType string
 	default:
 		entityRoute = fmt.Sprintf(crm.EntityUrl, entityType)
 	}
-	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, entityRoute)+"?"+params.Encode(), opts...)
+	body, err := us.doGet(ctx, withQuery(us.buildURL(crm.VersionUrl, entityRoute), params), opts...)
 	return decodeJSON[crm.CRMEntityForExport](body, err)
 }
 
 // GetContacts returns the contacts matching params.
 func (us *Uspacy) GetContacts(ctx context.Context, params url.Values, opts ...RequestOption) (crm.Contacts, error) {
-	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.ContactsNum.GetUrl()))+"?"+params.Encode(), opts...)
+	body, err := us.doGet(ctx, withQuery(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.ContactsNum.GetUrl())), params), opts...)
 	return decodeJSON[crm.Contacts](body, err)
 }
 
 // GetDeals returns the deals matching params.
 func (us *Uspacy) GetDeals(ctx context.Context, params url.Values, opts ...RequestOption) (crm.Deals, error) {
-	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.DealsNum.GetUrl()))+"?"+params.Encode(), opts...)
+	body, err := us.doGet(ctx, withQuery(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.DealsNum.GetUrl())), params), opts...)
 	return decodeJSON[crm.Deals](body, err)
 }
 
 // GetLeads returns the leads matching params.
 func (us *Uspacy) GetLeads(ctx context.Context, params url.Values, opts ...RequestOption) (crm.Leads, error) {
-	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.LeadsNum.GetUrl()))+"?"+params.Encode(), opts...)
+	body, err := us.doGet(ctx, withQuery(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.LeadsNum.GetUrl())), params), opts...)
 	return decodeJSON[crm.Leads](body, err)
 }
 
@@ -70,10 +70,7 @@ func (us *Uspacy) GetLeads(ctx context.Context, params url.Values, opts ...Reque
 // filters the typed methods do not cover. entityType is one of crm.LeadsNum.GetUrl(),
 // crm.DealsNum.GetUrl(), crm.ContactsNum.GetUrl() or crm.CompaniesNum.GetUrl().
 func (us *Uspacy) GetList(ctx context.Context, entityType string, params url.Values, opts ...RequestOption) ([]byte, error) {
-	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))
-	if len(params) > 0 {
-		url += "?" + params.Encode()
-	}
+	url := withQuery(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType)), params)
 
 	return us.doGet(ctx, url, opts...)
 }
@@ -86,19 +83,13 @@ func (us *Uspacy) GetEntity(ctx context.Context, entityType string, id int64, op
 // PatchEntity updates a CRM record.
 func (us *Uspacy) PatchEntity(ctx context.Context, entityType string, id string, entityData map[string]any, opts ...RequestOption) error {
 	_, err := us.doPatch(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), id), entityData, opts...)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // EntityMassEdit updates several CRM records of one entity type at once.
 func (us *Uspacy) EntityMassEdit(ctx context.Context, entityType string, entityData map[string]any, opts ...RequestOption) error {
 	_, err := us.doPatch(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType), "mass_edit"), entityData, opts...)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // CreateContact creates a contact and returns it.

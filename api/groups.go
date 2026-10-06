@@ -9,10 +9,7 @@ import (
 
 // GetGroups returns the groups matching params; pass nil for no filter.
 func (us *Uspacy) GetGroups(ctx context.Context, params url.Values, opts ...RequestOption) (group.Groups, error) {
-	urlStr := us.buildURL(group.VersionUrl, group.GroupUrl)
-	if len(params) != 0 {
-		urlStr += "?" + params.Encode()
-	}
+	urlStr := withQuery(us.buildURL(group.VersionUrl, group.GroupUrl), params)
 	body, err := us.doGet(ctx, urlStr, opts...)
 	return decodeJSON[group.Groups](body, err)
 }

@@ -33,10 +33,6 @@ func (us *Uspacy) DoLettersByFolder(ctx context.Context, folderID string, letter
 }
 
 // DeleteLetterById deletes a letter and returns the HTTP status code.
-func (us *Uspacy) DeleteLetterById(ctx context.Context, letterId int, opts ...RequestOption) (code int, err error) {
-	code, err = us.doDelete(ctx, us.buildURL(emails.VersionUrl, fmt.Sprintf(emails.LetterById, letterId)), nil, opts...)
-	if err != nil {
-		return code, err
-	}
-	return code, err
+func (us *Uspacy) DeleteLetterById(ctx context.Context, letterId int, opts ...RequestOption) (int, error) {
+	return us.doDelete(ctx, us.buildURL(emails.VersionUrl, fmt.Sprintf(emails.LetterById, letterId)), nil, opts...)
 }
