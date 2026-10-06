@@ -71,11 +71,11 @@ func (us *Uspacy) DeleteActivity(ctx context.Context, entityId int64) (int, erro
 	return us.doDeleteEmptyHeaders(ctx, url, nil)
 }
 
-// MassDeletionActivities sends a DELETE request to delete multiple activities based on the provided deletion data.
+// MassDeleteActivities sends a DELETE request to delete multiple activities based on the provided deletion data.
 // The deletionData parameter contains the necessary information for mass deletion (like IDs or criteria).
 // It constructs the request URL using the base mass deletion URL and sends the request with the provided body.
 // Returns the HTTP status code of the request and any error encountered during the process.
-func (us *Uspacy) MassDeletionActivies(ctx context.Context, deletionData activities.MassDeletionBody) (int, error) {
+func (us *Uspacy) MassDeleteActivities(ctx context.Context, deletionData activities.MassDeletionBody) (int, error) {
 	url := us.buildURL(activities.VersionUrl, activities.MassDeletion)
 	return us.doDeleteEmptyHeaders(ctx, url, deletionData)
 }

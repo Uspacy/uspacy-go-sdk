@@ -236,8 +236,8 @@ func (us *Uspacy) GetAllFunnelStages(ctx context.Context, entityType string) (ka
 	return resp.Data, nil
 }
 
-// GetFunnelStageDyId returns kanban stage
-func (us *Uspacy) GetFunnelStageDyId(ctx context.Context, entityType string, id int) (kanbanStages crm.KanbanStages, err error) {
+// GetFunnelStageById returns kanban stage by id.
+func (us *Uspacy) GetFunnelStageById(ctx context.Context, entityType string, id int) (kanbanStages crm.KanbanStages, err error) {
 	responseBody, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, fmt.Sprintf(crm.StageByFunnelIdUrl, id))))
 	if err != nil {
 		return kanbanStages, err
