@@ -608,6 +608,22 @@ func (us *Uspacy) doPostFormData(ctx context.Context, url string, textParams map
 	return response, err
 }
 
+// decodeJSON returns err if the request failed, otherwise body decoded into a T. On a
+// decode error the partially decoded value is returned along with the error.
+func decodeJSON[T any](body []byte, err error) (T, error) {
+	var v T
+	if err != nil {
+		return v, err
+	}
+	err = json.Unmarshal(body, &v)
+	return v, err
+}
+
+// createdID is the response of endpoints that create a record and return only its id.
+type createdID struct {
+	ID int64 `json:"id"`
+}
+
 // buildURL constructs a full URL by joining all parts with "/"
 func (us *Uspacy) buildURL(parts ...string) string {
 	allParts := append([]string{us.mainHost}, parts...)

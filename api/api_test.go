@@ -1703,6 +1703,27 @@ func TestTokenRefreshSkipsWhenTokenAlreadyChanged(t *testing.T) {
 	}
 }
 
+func TestDecodeJSON(t *testing.T) {
+	type item struct {
+		ID int `json:"id"`
+	}
+
+	reqErr := errors.New("request failed")
+	if v, err := decodeJSON[item]([]byte(`{"id":1}`), reqErr); err != reqErr || v.ID != 0 {
+		t.Errorf("decodeJSON(body, reqErr) = %+v, %v, want zero value and the request error", v, err)
+	}
+	if v, err := decodeJSON[item]([]byte(`{"id":7}`), nil); err != nil || v.ID != 7 {
+		t.Errorf("decodeJSON(valid) = %+v, %v, want {ID:7}, nil", v, err)
+	}
+	var syntaxErr *json.SyntaxError
+	if _, err := decodeJSON[item]([]byte(`{`), nil); !errors.As(err, &syntaxErr) {
+		t.Errorf("decodeJSON(invalid) error = %v, want *json.SyntaxError", err)
+	}
+	if v, err := decodeJSON[[]item]([]byte(`[{"id":1},{"id":2}]`), nil); err != nil || len(v) != 2 {
+		t.Errorf("decodeJSON[[]item] = %+v, %v, want two items", v, err)
+	}
+}
+
 func TestNextBackoffNoOverflow(t *testing.T) {
 	cases := []struct {
 		base, max time.Duration

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -13,42 +12,34 @@ import (
 // CreateActivity sends a POST request to create a new activity using the provided entity data.
 // It returns the created activity's ID, the HTTP status code of the request, and any error encountered.
 // If an error occurs during the request or while unmarshalling the response, the error is returned along with a zero value for the ID.
-func (us *Uspacy) CreateActivity(ctx context.Context, entityData map[string]any, opts ...RequestOption) (entity activities.Activity, code int, err error) {
+func (us *Uspacy) CreateActivity(ctx context.Context, entityData map[string]any, opts ...RequestOption) (activities.Activity, int, error) {
 	respBytes, code, err := us.doPost(ctx, us.buildURL(activities.VersionUrl, activities.ActivitiesUrl), entityData, opts...)
-	if err != nil {
-		return entity, code, err
-	}
-	return entity, code, json.Unmarshal(respBytes, &entity)
+	v, err := decodeJSON[activities.Activity](respBytes, err)
+	return v, code, err
 }
 
 // GetActivitiesList retrieves a list of activities based on the provided query parameters.
 // It constructs the request URL using the base activities URL and optional query parameters (if provided).
 // Returns an `ActivitiesList` containing the list of activities and any error encountered during the request or unmarshalling.
-func (us *Uspacy) GetActivitiesList(ctx context.Context, params url.Values) (entities activities.ActivitiesList, err error) {
+func (us *Uspacy) GetActivitiesList(ctx context.Context, params url.Values) (activities.ActivitiesList, error) {
 	url := us.buildURL(activities.VersionUrl, activities.ActivitiesUrl)
 	if len(params) != 0 {
 		url = url + "?" + params.Encode()
 	}
 	body, err := us.doGetEmptyHeaders(ctx, url)
-	if err != nil {
-		return entities, err
-	}
-	return entities, json.Unmarshal(body, &entities)
+	return decodeJSON[activities.ActivitiesList](body, err)
 }
 
 // GetActivity retrieves details of a specific activity based on its entity ID and optional query parameters.
 // The URL is constructed by formatting the activity URL with the given entity ID and appending query parameters if provided.
 // Returns the requested `Activity` object and any error encountered during the request or unmarshalling.
-func (us *Uspacy) GetActivity(ctx context.Context, entityId int64, params url.Values) (entity activities.Activity, err error) {
+func (us *Uspacy) GetActivity(ctx context.Context, entityId int64, params url.Values) (activities.Activity, error) {
 	url := us.buildURL(activities.VersionUrl, fmt.Sprintf(activities.ActivityUrl, strconv.FormatInt(entityId, 10)))
 	if len(params) != 0 {
 		url = url + "?" + params.Encode()
 	}
 	body, err := us.doGetEmptyHeaders(ctx, url)
-	if err != nil {
-		return entity, err
-	}
-	return entity, json.Unmarshal(body, &entity)
+	return decodeJSON[activities.Activity](body, err)
 }
 
 // PatchActivity updates an existing activity identified by the entity ID with the provided entity data.

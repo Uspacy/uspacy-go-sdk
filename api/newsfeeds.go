@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -19,10 +18,7 @@ func (us *Uspacy) CreateNewsfeedPost(ctx context.Context, postData url.Values) (
 }
 
 // GetNewsfeeds gets all newsfeeds
-func (us *Uspacy) GetNewsfeeds(ctx context.Context, page, list, groupId int) (posts newsfeed.GetNewsfeed, err error) {
+func (us *Uspacy) GetNewsfeeds(ctx context.Context, page, list, groupId int) (newsfeed.GetNewsfeed, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(newsfeed.VersionUrl, fmt.Sprintf(newsfeed.GetPostsUrl, page, list, groupId)))
-	if err != nil {
-		return posts, err
-	}
-	return posts, json.Unmarshal(body, &posts)
+	return decodeJSON[newsfeed.GetNewsfeed](body, err)
 }

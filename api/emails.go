@@ -2,46 +2,34 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/Uspacy/uspacy-go-sdk/v2/emails"
 )
 
 // GetMailFolders this method return list of mail folders
-func (us *Uspacy) GetMailFolders(ctx context.Context) (folders emails.MailFolders, err error) {
+func (us *Uspacy) GetMailFolders(ctx context.Context) (emails.MailFolders, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(emails.VersionUrl, emails.MailFoldersUrl))
-	if err != nil {
-		return folders, err
-	}
-	return folders, json.Unmarshal(body, &folders)
+	return decodeJSON[emails.MailFolders](body, err)
 }
 
 // DoMailFolder this method create mail folder and return created mail folder object or error
-func (us *Uspacy) DoMailFolder(ctx context.Context, folder emails.MailFolder, opts ...RequestOption) (createdFolder emails.MailFolder, err error) {
+func (us *Uspacy) DoMailFolder(ctx context.Context, folder emails.MailFolder, opts ...RequestOption) (emails.MailFolder, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(emails.VersionUrl, emails.MailFoldersUrl), folder, opts...)
-	if err != nil {
-		return createdFolder, err
-	}
-	return createdFolder, json.Unmarshal(body, &createdFolder)
+	return decodeJSON[emails.MailFolder](body, err)
 }
 
 // GetMailBoxes this method return list of mail boxes
-func (us *Uspacy) GetMailBoxes(ctx context.Context) (boxes emails.MailBoxes, err error) {
+func (us *Uspacy) GetMailBoxes(ctx context.Context) (emails.MailBoxes, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(emails.VersionUrl, emails.MailBoxesUrl))
-	if err != nil {
-		return boxes, err
-	}
-	return boxes, json.Unmarshal(body, &boxes)
+	return decodeJSON[emails.MailBoxes](body, err)
 }
 
 // DoLettersByFolder this method crete letter in folder and return created letter object or error
-func (us *Uspacy) DoLettersByFolder(ctx context.Context, folderID string, letter map[string]any, opts ...RequestOption) (createdLetter emails.Letter, code int, err error) {
+func (us *Uspacy) DoLettersByFolder(ctx context.Context, folderID string, letter map[string]any, opts ...RequestOption) (emails.Letter, int, error) {
 	body, code, err := us.doPost(ctx, us.buildURL(emails.VersionUrl, fmt.Sprintf(emails.LettersByFolderUrl, folderID)), letter, opts...)
-	if err != nil {
-		return createdLetter, code, err
-	}
-	return createdLetter, code, json.Unmarshal(body, &createdLetter)
+	v, err := decodeJSON[emails.Letter](body, err)
+	return v, code, err
 }
 
 // DeleteLetterById this method delete letter by Id and return answer code and error

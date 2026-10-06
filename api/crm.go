@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,42 +13,31 @@ import (
 // CreateEntity this method does not return any object, just error
 func (us *Uspacy) CreateEntity(ctx context.Context, entityType string, entityData map[string]any, opts ...RequestOption) (int64, int, error) {
 	respBytes, code, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType)), entityData, opts...)
+	created, err := decodeJSON[createdID](respBytes, err)
 	if err != nil {
 		return 0, code, err
 	}
-
-	var respData struct {
-		ID int64 `json:"id"`
-	}
-	if err := json.Unmarshal(respBytes, &respData); err != nil {
-		return 0, code, err
-	}
-
-	return respData.ID, code, nil
+	return created.ID, code, nil
 }
 
 // GetCrmEntitiesList this method return arrey of entities present in crm and error
-func (us *Uspacy) GetCrmEntitiesList(ctx context.Context) (entities []crm.CrmEntities, err error) {
+func (us *Uspacy) GetCrmEntitiesList(ctx context.Context) ([]crm.CrmEntities, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, crm.EntitiesUrl))
+	resp, err := decodeJSON[crm.CrmEntitiesList](body, err)
 	if err != nil {
-		return entities, err
+		return nil, err
 	}
-	var resp = crm.CrmEntitiesList{}
-	err = json.Unmarshal(body, &resp)
-	return resp.Data, err
+	return resp.Data, nil
 }
 
 // GetEntities this method return arrey of entities present in crm and error
-func (us *Uspacy) GetEntities(ctx context.Context, entityType string, params url.Values) (entities crm.CRMEntity, err error) {
+func (us *Uspacy) GetEntities(ctx context.Context, entityType string, params url.Values) (crm.CRMEntity, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, entityType))+"?"+params.Encode())
-	if err != nil {
-		return entities, err
-	}
-	return entities, json.Unmarshal(body, &entities)
+	return decodeJSON[crm.CRMEntity](body, err)
 }
 
 // GetCRMEntitiesForExport this method return arrey of objects wifh all fields and error
-func (us *Uspacy) GetCRMEntitiesForExport(ctx context.Context, entityType string, params url.Values) (entities crm.CRMEntityForExport, err error) {
+func (us *Uspacy) GetCRMEntitiesForExport(ctx context.Context, entityType string, params url.Values) (crm.CRMEntityForExport, error) {
 	var entityRoute string
 	switch entityType {
 	case crm.ProductsNum.GetUrl():
@@ -58,37 +46,25 @@ func (us *Uspacy) GetCRMEntitiesForExport(ctx context.Context, entityType string
 		entityRoute = fmt.Sprintf(crm.EntityUrl, entityType)
 	}
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, entityRoute)+"?"+params.Encode())
-	if err != nil {
-		return entities, err
-	}
-	return entities, json.Unmarshal(body, &entities)
+	return decodeJSON[crm.CRMEntityForExport](body, err)
 }
 
 // GetContacts returns an array of contact objects and an error.
-func (us *Uspacy) GetContacts(ctx context.Context, params url.Values) (entities crm.Contacts, err error) {
+func (us *Uspacy) GetContacts(ctx context.Context, params url.Values) (crm.Contacts, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.ContactsNum.GetUrl()))+"?"+params.Encode())
-	if err != nil {
-		return entities, err
-	}
-	return entities, json.Unmarshal(body, &entities)
+	return decodeJSON[crm.Contacts](body, err)
 }
 
 // GetDeals returns an array of deal objects and an error.
-func (us *Uspacy) GetDeals(ctx context.Context, params url.Values) (entities crm.Deals, err error) {
+func (us *Uspacy) GetDeals(ctx context.Context, params url.Values) (crm.Deals, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.DealsNum.GetUrl()))+"?"+params.Encode())
-	if err != nil {
-		return entities, err
-	}
-	return entities, json.Unmarshal(body, &entities)
+	return decodeJSON[crm.Deals](body, err)
 }
 
 // GetLeads returns an array of lead objects and an error.
-func (us *Uspacy) GetLeads(ctx context.Context, params url.Values) (entities crm.Leads, err error) {
+func (us *Uspacy) GetLeads(ctx context.Context, params url.Values) (crm.Leads, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.LeadsNum.GetUrl()))+"?"+params.Encode())
-	if err != nil {
-		return entities, err
-	}
-	return entities, json.Unmarshal(body, &entities)
+	return decodeJSON[crm.Leads](body, err)
 }
 
 // GetList returns raw response for CRM entities with filters
@@ -131,48 +107,33 @@ func (us *Uspacy) EntityMassEdit(ctx context.Context, entityType string, entityD
 }
 
 // CreateContact returns created contact object
-func (us *Uspacy) CreateContact(ctx context.Context, contactData map[string]any, opts ...RequestOption) (contact crm.Contact, err error) {
+func (us *Uspacy) CreateContact(ctx context.Context, contactData map[string]any, opts ...RequestOption) (crm.Contact, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.ContactsNum.GetUrl())), contactData, opts...)
-	if err != nil {
-		return contact, err
-	}
-	return contact, json.Unmarshal(body, &contact)
+	return decodeJSON[crm.Contact](body, err)
 }
 
 // CreateCompany returns created company object
-func (us *Uspacy) CreateCompany(ctx context.Context, companyData map[string]any, opts ...RequestOption) (company crm.Company, err error) {
+func (us *Uspacy) CreateCompany(ctx context.Context, companyData map[string]any, opts ...RequestOption) (crm.Company, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.CompaniesNum.GetUrl())), companyData, opts...)
-	if err != nil {
-		return company, err
-	}
-	return company, json.Unmarshal(body, &company)
+	return decodeJSON[crm.Company](body, err)
 }
 
 // CreateLeads returns created lead object
-func (us *Uspacy) CreateLead(ctx context.Context, leadData map[string]any, opts ...RequestOption) (lead crm.Lead, err error) {
+func (us *Uspacy) CreateLead(ctx context.Context, leadData map[string]any, opts ...RequestOption) (crm.Lead, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.LeadsNum.GetUrl())), leadData, opts...)
-	if err != nil {
-		return lead, err
-	}
-	return lead, json.Unmarshal(body, &lead)
+	return decodeJSON[crm.Lead](body, err)
 }
 
 // CreateDeals returns created deal object
-func (us *Uspacy) CreateDeal(ctx context.Context, dealData map[string]any, opts ...RequestOption) (deal crm.Deal, err error) {
+func (us *Uspacy) CreateDeal(ctx context.Context, dealData map[string]any, opts ...RequestOption) (crm.Deal, error) {
 	body, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, crm.DealsNum.GetUrl())), dealData, opts...)
-	if err != nil {
-		return deal, err
-	}
-	return deal, json.Unmarshal(body, &deal)
+	return decodeJSON[crm.Deal](body, err)
 }
 
 // GetField returns Field struct for a given type of entity & field
-func (us *Uspacy) GetField(ctx context.Context, entityType string, fieldType string) (field crm.Field, err error) {
+func (us *Uspacy) GetField(ctx context.Context, entityType string, fieldType string) (crm.Field, error) {
 	body, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType, fieldType)))
-	if err != nil {
-		return field, err
-	}
-	return field, json.Unmarshal(body, &field)
+	return decodeJSON[crm.Field](body, err)
 }
 
 // DeleteField delete selected field for given type of entity
@@ -186,72 +147,51 @@ func (us *Uspacy) DeleteField(ctx context.Context, entityType string, codeField 
 func (us *Uspacy) GetFields(ctx context.Context, entityType string) ([]crm.Field, error) {
 	url := us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FieldsUrl, entityType, ""))
 	body, _, err := us.doRaw(ctx, url, http.MethodGet, headersMap, nil)
+	resp, err := decodeJSON[crm.Fields](body, err)
 	if err != nil {
-		return nil, err
-	}
-	var resp crm.Fields
-	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, err
 	}
 	return resp.Data, nil
 }
 
 // CreateFunnel returns created funnel
-func (us *Uspacy) CreateFunnel(ctx context.Context, entityType string, funnelData any, opts ...RequestOption) (entityFunnel crm.Funnel, err error) {
+func (us *Uspacy) CreateFunnel(ctx context.Context, entityType string, funnelData any, opts ...RequestOption) (crm.Funnel, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FunnelUrl, entityType)), funnelData, opts...)
-	if err != nil {
-		return entityFunnel, err
-	}
-	return entityFunnel, json.Unmarshal(responseBody, &entityFunnel)
+	return decodeJSON[crm.Funnel](responseBody, err)
 }
 
 // GetFunnels returns funnels by entityType
-func (us *Uspacy) GetFunnels(ctx context.Context, entityType string) (funnels crm.FunnelsById, err error) {
+func (us *Uspacy) GetFunnels(ctx context.Context, entityType string) (crm.FunnelsById, error) {
 	responseBody, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.FunnelUrl, entityType)))
-	if err != nil {
-		return funnels, err
-	}
-	return funnels, json.Unmarshal(responseBody, &funnels)
+	return decodeJSON[crm.FunnelsById](responseBody, err)
 }
 
 // CreateFunnelStage returns created kanban stage
-func (us *Uspacy) CreateFunnelStage(ctx context.Context, entityType string, stageData any, opts ...RequestOption) (kanbanStage crm.KanbanStage, err error) {
+func (us *Uspacy) CreateFunnelStage(ctx context.Context, entityType string, stageData any, opts ...RequestOption) (crm.KanbanStage, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, "")), stageData, opts...)
-	if err != nil {
-		return kanbanStage, err
-	}
-	return kanbanStage, json.Unmarshal(responseBody, &kanbanStage)
+	return decodeJSON[crm.KanbanStage](responseBody, err)
 }
 
 // GetAllFunnelStages returns all kanban stages
-func (us *Uspacy) GetAllFunnelStages(ctx context.Context, entityType string) (kanbanStages []crm.KanbanStage, err error) {
+func (us *Uspacy) GetAllFunnelStages(ctx context.Context, entityType string) ([]crm.KanbanStage, error) {
 	responseBody, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, "")))
+	resp, err := decodeJSON[crm.KanbanStages](responseBody, err)
 	if err != nil {
-		return kanbanStages, err
-	}
-	var resp crm.KanbanStages
-	if err := json.Unmarshal(responseBody, &resp); err != nil {
-		return kanbanStages, err
+		return nil, err
 	}
 	return resp.Data, nil
 }
 
 // GetFunnelStageById returns kanban stage by id.
-func (us *Uspacy) GetFunnelStageById(ctx context.Context, entityType string, id int) (kanbanStages crm.KanbanStages, err error) {
+func (us *Uspacy) GetFunnelStageById(ctx context.Context, entityType string, id int) (crm.KanbanStages, error) {
 	responseBody, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, fmt.Sprintf(crm.StageByFunnelIdUrl, id))))
-	if err != nil {
-		return kanbanStages, err
-	}
-	return kanbanStages, json.Unmarshal(responseBody, &kanbanStages)
+	return decodeJSON[crm.KanbanStages](responseBody, err)
 }
 
 // PatchFunnelStage returns kanban stage
-func (us *Uspacy) PatchFunnelStage(ctx context.Context, entityType string, id int, stage crm.FunnelStage) (kanbanStage crm.KanbanStage, err error) {
+func (us *Uspacy) PatchFunnelStage(ctx context.Context, entityType string, id int, stage crm.FunnelStage) (crm.KanbanStage, error) {
 	responseBody, err := us.doPatchEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, id)), stage)
-	if err != nil {
-		return kanbanStage, err
-	}
-	return kanbanStage, json.Unmarshal(responseBody, &kanbanStage)
+	return decodeJSON[crm.KanbanStage](responseBody, err)
 }
 
 // MoveFunnelStage moves a funnel stage
@@ -261,50 +201,35 @@ func (us *Uspacy) MoveFunnelStage(ctx context.Context, entityType string, entity
 }
 
 // CreateCRMField in CRM entity returns created field
-func (us *Uspacy) CreateCRMField(ctx context.Context, entityType string, fieldData any, opts ...RequestOption) (entityField crm.Field, err error) {
+func (us *Uspacy) CreateCRMField(ctx context.Context, entityType string, fieldData any, opts ...RequestOption) (crm.Field, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.CreateFieldUrl, entityType)), fieldData, opts...)
-	if err != nil {
-		return entityField, err
-	}
-	return entityField, json.Unmarshal(responseBody, &entityField)
+	return decodeJSON[crm.Field](responseBody, err)
 }
 
 // GetListValues returns arrey of values for given type of CRM list
-func (us *Uspacy) GetListValues(ctx context.Context, entityType, listName string) (lists []crm.List, err error) {
+func (us *Uspacy) GetListValues(ctx context.Context, entityType, listName string) ([]crm.List, error) {
 	responseBody, err := us.doGetEmptyHeaders(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, entityType, listName)))
-	if err != nil {
-		return lists, err
-	}
-	return lists, json.Unmarshal(responseBody, &lists)
+	return decodeJSON[[]crm.List](responseBody, err)
 }
 
 // CreateListValues returns arrey of values for given type of CRM list
-func (us *Uspacy) CreateListValues(ctx context.Context, entityType, listName string, listValue any, opts ...RequestOption) (lists []crm.List, err error) {
+func (us *Uspacy) CreateListValues(ctx context.Context, entityType, listName string, listValue any, opts ...RequestOption) ([]crm.List, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, entityType, listName)), listValue, opts...)
-	if err != nil {
-		return lists, err
-	}
-	return lists, json.Unmarshal(responseBody, &lists)
+	return decodeJSON[[]crm.List](responseBody, err)
 }
 
 // CreateFailReasons returns all reasons for funnel with failWrite.ID
-func (us *Uspacy) CreateFailReasons(ctx context.Context, failReason crm.Reason, opts ...RequestOption) (reasons crm.Reason, err error) {
+func (us *Uspacy) CreateFailReasons(ctx context.Context, failReason crm.Reason, opts ...RequestOption) (crm.Reason, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ReasonsUrl, failReason.ID)), crm.FailWrite{
 		Title: failReason.Title,
 		Sort:  failReason.Sort,
 		Type:  "FAIL",
 	}, opts...)
-	if err != nil {
-		return reasons, err
-	}
-	return reasons, json.Unmarshal(responseBody, &reasons)
+	return decodeJSON[crm.Reason](responseBody, err)
 }
 
 // CreateCall returns created call
-func (us *Uspacy) CreateCall(ctx context.Context, callValue crm.Call, opts ...RequestOption) (call crm.Call, err error) {
+func (us *Uspacy) CreateCall(ctx context.Context, callValue crm.Call, opts ...RequestOption) (crm.Call, error) {
 	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, crm.CallUrl), callValue, opts...)
-	if err != nil {
-		return call, err
-	}
-	return call, json.Unmarshal(responseBody, &call)
+	return decodeJSON[crm.Call](responseBody, err)
 }
