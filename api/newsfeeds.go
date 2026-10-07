@@ -1,27 +1,21 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"net/url"
 
-	"github.com/Uspacy/uspacy-go-sdk/newsfeed"
+	"github.com/Uspacy/uspacy-go-sdk/v2/newsfeed"
 )
 
-// CreateNewsfeedPost returns created post
-func (us *Uspacy) CreateNewsfeedPost(postData url.Values) (err error) {
-	_, err = us.doPostEncodedForm(us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData)
-	if err != nil {
-		return err
-	}
-	return nil
+// CreateNewsfeedPost creates a newsfeed post.
+func (us *Uspacy) CreateNewsfeedPost(ctx context.Context, postData url.Values, opts ...RequestOption) error {
+	_, err := us.doPostEncodedForm(ctx, us.buildURL(newsfeed.VersionUrl, newsfeed.DoPostUrl), postData, opts...)
+	return err
 }
 
-// GetNewsfeeds gets all newsfeeds
-func (us *Uspacy) GetNewsfeeds(page, list, groupId int) (posts newsfeed.GetNewsfeed, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(newsfeed.VersionUrl, fmt.Sprintf(newsfeed.GetPostsUrl, page, list, groupId)))
-	if err != nil {
-		return posts, err
-	}
-	return posts, json.Unmarshal(body, &posts)
+// GetNewsfeeds returns a page of newsfeed posts of a group.
+func (us *Uspacy) GetNewsfeeds(ctx context.Context, page, list, groupId int, opts ...RequestOption) (newsfeed.GetNewsfeed, error) {
+	body, err := us.doGet(ctx, us.buildURL(newsfeed.VersionUrl, fmt.Sprintf(newsfeed.GetPostsUrl, page, list, groupId)), opts...)
+	return decodeJSON[newsfeed.GetNewsfeed](body, err)
 }

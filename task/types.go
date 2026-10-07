@@ -1,6 +1,6 @@
 package task
 
-import "github.com/Uspacy/uspacy-go-sdk/common"
+import "github.com/Uspacy/uspacy-go-sdk/v2/common"
 
 const (
 	VersionUrl      = "tasks/v1"

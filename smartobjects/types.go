@@ -1,6 +1,6 @@
 package smartobjects
 
-import "github.com/Uspacy/uspacy-go-sdk/common"
+import "github.com/Uspacy/uspacy-go-sdk/v2/common"
 
 const (
 	FieldsUrl = "entities/%s/fields"

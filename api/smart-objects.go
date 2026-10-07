@@ -1,90 +1,70 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 
-	"github.com/Uspacy/uspacy-go-sdk/crm"
-	"github.com/Uspacy/uspacy-go-sdk/smartobjects"
+	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
+	"github.com/Uspacy/uspacy-go-sdk/v2/smartobjects"
 )
 
-// CreateSmartObject create smart object, retun created object and error
-func (us *Uspacy) CreateSmartObject(fieldData smartobjects.SmartObjectCreateRequest, headers ...map[string]string) (createdObject smartobjects.CrmSmartObject, err error) {
-	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, crm.EntitiesUrl), fieldData, headers...)
-	if err != nil {
-		return createdObject, err
-	}
-	return createdObject, json.Unmarshal(responseBody, &createdObject)
+// CreateSmartObject creates a smart object and returns it.
+func (us *Uspacy) CreateSmartObject(ctx context.Context, fieldData smartobjects.SmartObjectCreateRequest, opts ...RequestOption) (smartobjects.CrmSmartObject, error) {
+	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, crm.EntitiesUrl), fieldData, opts...)
+	return decodeJSON[smartobjects.CrmSmartObject](responseBody, err)
 }
 
-// CreateSmartObjectEntity this method return any created object id, responce come and error
-func (us *Uspacy) CreateSmartObjectEntity(tableName string, entityData map[string]any, headers ...map[string]string) (int64, int, error) {
-	respBytes, code, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, tableName)), entityData, headers...)
+// CreateSmartObjectEntity creates a smart object record and returns its ID and the HTTP status code.
+func (us *Uspacy) CreateSmartObjectEntity(ctx context.Context, tableName string, entityData map[string]any, opts ...RequestOption) (int64, int, error) {
+	respBytes, code, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.EntityUrl, tableName)), entityData, opts...)
+	created, err := decodeJSON[createdID](respBytes, err)
 	if err != nil {
 		return 0, code, err
 	}
-
-	var respData struct {
-		ID int64 `json:"id"`
-	}
-	if err := json.Unmarshal(respBytes, &respData); err != nil {
-		return 0, code, err
-	}
-
-	return respData.ID, code, nil
+	return created.ID, code, nil
 }
 
-// CreateSmartObjectField create field for selected smart object, retun created field and error
-func (us *Uspacy) CreateSmartObjectField(tableName string, fieldData smartobjects.Field, headers ...map[string]string) (entityField crm.Field, err error) {
-	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.CreateFieldUrl, tableName)), fieldData, headers...)
-	if err != nil {
-		return entityField, err
-	}
-	return entityField, json.Unmarshal(responseBody, &entityField)
+// CreateSmartObjectField creates a field of a smart object and returns it.
+func (us *Uspacy) CreateSmartObjectField(ctx context.Context, tableName string, fieldData smartobjects.Field, opts ...RequestOption) (crm.Field, error) {
+	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.CreateFieldUrl, tableName)), fieldData, opts...)
+	return decodeJSON[crm.Field](responseBody, err)
 }
 
-// CreateListValues returns arrey of values for given type of CRM list
-func (us *Uspacy) CreateSmartObjectListValues(tableName string, listName string, listValue any) (lists []crm.List, err error) {
-	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, tableName, listName)), listValue)
-	if err != nil {
-		return lists, err
-	}
-	return lists, json.Unmarshal(responseBody, &lists)
+// CreateSmartObjectListValues adds values to a smart object list field and returns the field's values.
+func (us *Uspacy) CreateSmartObjectListValues(ctx context.Context, tableName string, listName string, listValue any, opts ...RequestOption) ([]crm.List, error) {
+	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.ListsUrl, tableName, listName)), listValue, opts...)
+	return decodeJSON[[]crm.List](responseBody, err)
 }
 
-// CreateSmartObjectStage returns lwst of kanban stages
-func (us *Uspacy) CreateSmartObjectStage(tableName string, stageData any, headers ...map[string]string) (kanbanStage crm.KanbanStage, err error) {
-	responseBody, _, err := us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")), stageData, headers...)
-	if err != nil {
-		return kanbanStage, err
-	}
-	return kanbanStage, json.Unmarshal(responseBody, &kanbanStage)
+// CreateSmartObjectStage creates a kanban stage of a smart object and returns it.
+func (us *Uspacy) CreateSmartObjectStage(ctx context.Context, tableName string, stageData any, opts ...RequestOption) (crm.KanbanStage, error) {
+	responseBody, _, err := us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")), stageData, opts...)
+	return decodeJSON[crm.KanbanStage](responseBody, err)
 }
 
-// Move a funnel stage
-func (us *Uspacy) MoveSmartObjectFunnelStage(tableName string, entityId int64, stageId string, reason crm.KanbanFailReasonCRM, headers ...map[string]string) (err error) {
-	_, _, err = us.doPost(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.MoveKanbanStageUrl, tableName, entityId, stageId)), reason, headers...)
+// MoveSmartObjectFunnelStage moves a smart object record to another kanban stage. reason
+// explains a move to a failure stage.
+func (us *Uspacy) MoveSmartObjectFunnelStage(ctx context.Context, tableName string, entityId int64, stageId string, reason crm.KanbanFailReasonCRM, opts ...RequestOption) (err error) {
+	_, _, err = us.doPost(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.MoveKanbanStageUrl, tableName, entityId, stageId)), reason, opts...)
 	return err
 }
 
-// GetSmartObjectFields returns Fields struct for a given table name of smart object
-func (us *Uspacy) GetSmartObjectFields(tableName string) (fields []crm.Field, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(smartobjects.FieldsUrl, tableName)))
+// GetSmartObjectFields returns the fields of a smart object.
+func (us *Uspacy) GetSmartObjectFields(ctx context.Context, tableName string, opts ...RequestOption) ([]crm.Field, error) {
+	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(smartobjects.FieldsUrl, tableName)), opts...)
+	resp, err := decodeJSON[crm.Fields](body, err)
 	if err != nil {
-		return fields, err
+		return nil, err
 	}
-	var resp crm.Fields
-	err = json.Unmarshal(body, &resp)
-	return resp.Data, err
+	return resp.Data, nil
 }
 
-// GetSmartObjectStages list of smart object stages with given table name
-func (us *Uspacy) GetSmartObjectStages(tableName string) (kanbanStages []crm.KanbanStage, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")))
+// GetSmartObjectStages returns the kanban stages of a smart object.
+func (us *Uspacy) GetSmartObjectStages(ctx context.Context, tableName string, opts ...RequestOption) ([]crm.KanbanStage, error) {
+	body, err := us.doGet(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, tableName, "")), opts...)
+	resp, err := decodeJSON[crm.KanbanStages](body, err)
 	if err != nil {
-		return kanbanStages, err
+		return nil, err
 	}
-	var resp crm.KanbanStages
-	err = json.Unmarshal(body, &resp)
-	return resp.Data, err
+	return resp.Data, nil
 }

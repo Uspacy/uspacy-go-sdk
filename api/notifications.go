@@ -1,36 +1,32 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 
-	"github.com/Uspacy/uspacy-go-sdk/notifications"
+	"github.com/Uspacy/uspacy-go-sdk/v2/notifications"
 )
 
-func (us *Uspacy) GetNotifications() (entities notifications.Notifications, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(notifications.VersionURL, notifications.NotificationsURL))
-	if err != nil {
-		return entities, err
-	}
-
-	err = json.Unmarshal(body, &entities)
-	return entities, err
+// GetNotifications returns the notifications.
+func (us *Uspacy) GetNotifications(ctx context.Context, opts ...RequestOption) (notifications.Notifications, error) {
+	body, err := us.doGet(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL), opts...)
+	return decodeJSON[notifications.Notifications](body, err)
 }
 
-func (us *Uspacy) CreateNotification(request notifications.CreateNotificationRequest) (entities notifications.Notifications, statusCode int, err error) {
-	body, statusCode, err := us.doPost(us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request)
-	if err != nil {
-		return entities, statusCode, err
-	}
-
-	err = json.Unmarshal(body, &entities)
-	return entities, statusCode, err
+// CreateNotification creates a notification and returns the response with the HTTP status
+// code.
+func (us *Uspacy) CreateNotification(ctx context.Context, request notifications.CreateNotificationRequest, opts ...RequestOption) (notifications.Notifications, int, error) {
+	body, code, err := us.doPost(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request, opts...)
+	v, err := decodeJSON[notifications.Notifications](body, err)
+	return v, code, err
 }
 
-func (us *Uspacy) MarkNotificationsAsRead(request notifications.MarkNotificationsAsReadRequest) (statusCode int, err error) {
-	_, statusCode, err = us.doPost(us.buildURL(notifications.VersionURL, notifications.NotificationsURL, notifications.MarkAsReadURL), request)
+// MarkNotificationsAsRead marks notifications as read and returns the HTTP status code.
+func (us *Uspacy) MarkNotificationsAsRead(ctx context.Context, request notifications.MarkNotificationsAsReadRequest, opts ...RequestOption) (statusCode int, err error) {
+	_, statusCode, err = us.doPost(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL, notifications.MarkAsReadURL), request, opts...)
 	return statusCode, err
 }
 
-func (us *Uspacy) DeleteNotification(request notifications.DeleteNotificationRequest) (statusCode int, err error) {
-	return us.doDeleteEmptyHeaders(us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request)
+// DeleteNotification deletes notifications and returns the HTTP status code.
+func (us *Uspacy) DeleteNotification(ctx context.Context, request notifications.DeleteNotificationRequest, opts ...RequestOption) (statusCode int, err error) {
+	return us.doDelete(ctx, us.buildURL(notifications.VersionURL, notifications.NotificationsURL), request, opts...)
 }

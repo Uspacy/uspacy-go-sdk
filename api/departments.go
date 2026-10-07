@@ -1,44 +1,32 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 
-	"github.com/Uspacy/uspacy-go-sdk/departments"
+	"github.com/Uspacy/uspacy-go-sdk/v2/departments"
 )
 
-// GetDepartments returns list of departments
-func (us *Uspacy) GetDepartments() (departmentsArrey departments.Departments, err error) {
-	body, err := us.doGetEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")))
-	if err != nil {
-		return departmentsArrey, err
-	}
-	return departmentsArrey, json.Unmarshal(body, &departmentsArrey)
+// GetDepartments returns all departments.
+func (us *Uspacy) GetDepartments(ctx context.Context, opts ...RequestOption) (departments.Departments, error) {
+	body, err := us.doGet(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), opts...)
+	return decodeJSON[departments.Departments](body, err)
 }
 
-// CreateDepartment returns created department
-func (us *Uspacy) CreateDepartment(departmentData departments.Department, headers ...map[string]string) (department departments.Department, err error) {
-	body, _, err := us.doPost(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), departmentData, headers...)
-	if err != nil {
-		return department, err
-	}
-	return department, json.Unmarshal(body, &department)
+// CreateDepartment creates a department and returns it.
+func (us *Uspacy) CreateDepartment(ctx context.Context, departmentData departments.Department, opts ...RequestOption) (departments.Department, error) {
+	body, _, err := us.doPost(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, "")), departmentData, opts...)
+	return decodeJSON[departments.Department](body, err)
 }
 
-// PatchDepartment patch department by Id and return it
-func (us *Uspacy) PatchDepartment(departmentID int, departmentData map[string]any) (department departments.Department, err error) {
-	body, err := us.doPatchEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmentID)), departmentData)
-	if err != nil {
-		return department, err
-	}
-	return department, json.Unmarshal(body, &department)
+// PatchDepartment updates a department and returns it.
+func (us *Uspacy) PatchDepartment(ctx context.Context, departmentID int, departmentData map[string]any, opts ...RequestOption) (departments.Department, error) {
+	body, err := us.doPatch(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsUrl, departmentID)), departmentData, opts...)
+	return decodeJSON[departments.Department](body, err)
 }
 
-// DepartmentAddUsers patch department by Id and return it
-func (us *Uspacy) DepartmentAddUsers(departmentID int, usersIds []int) (department departments.Department, err error) {
-	body, err := us.doPatchEmptyHeaders(us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsAddUsers, departmentID)), usersIds)
-	if err != nil {
-		return department, err
-	}
-	return department, json.Unmarshal(body, &department)
+// DepartmentAddUsers adds users to a department and returns the department.
+func (us *Uspacy) DepartmentAddUsers(ctx context.Context, departmentID int, usersIds []int, opts ...RequestOption) (departments.Department, error) {
+	body, err := us.doPatch(ctx, us.buildURL(departments.VersionUrl, fmt.Sprintf(departments.DepartmentsAddUsers, departmentID)), usersIds, opts...)
+	return decodeJSON[departments.Department](body, err)
 }
