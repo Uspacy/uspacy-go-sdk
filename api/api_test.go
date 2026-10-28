@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Uspacy/uspacy-go-sdk/v2/activities"
 	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
 )
 
@@ -74,6 +75,45 @@ func TestPatchEntityURLHasSlashBeforeID(t *testing.T) {
 	want = "https://example.uspacy.ua/crm/v1/entities/contacts/mass_edit"
 	if got != want {
 		t.Errorf("EntityMassEdit URL = %q, want %q", got, want)
+	}
+}
+
+// Regression for the activity URLs: they were /activities/v1/entities/{id} and
+// /activities/v1/entities/mass_deletion, which activities-backend doesn't serve. It serves one
+// activity and mass deletion under the activities collection.
+func TestActivityMethodsCallTheActivitiesCollection(t *testing.T) {
+	var got []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = append(got, r.Method+" "+r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"id":9}`)
+	}))
+	defer server.Close()
+	us := New("token", "", server.URL)
+	ctx := context.Background()
+
+	for _, tc := range []struct {
+		name string
+		call func() error
+		want string
+	}{
+		{"GetActivity", func() error { _, err := us.GetActivity(ctx, 9, nil); return err }, "GET /activities/v1/activities/9"},
+		{"PatchActivity", func() error { return us.PatchActivity(ctx, 9, map[string]any{"status": "done"}) }, "PATCH /activities/v1/activities/9"},
+		{"DeleteActivity", func() error { _, err := us.DeleteActivity(ctx, 9); return err }, "DELETE /activities/v1/activities/9"},
+		{"MassDeleteActivities", func() error {
+			_, err := us.MassDeleteActivities(ctx, activities.MassDeletionBody{EntityIds: []string{"9"}})
+			return err
+		}, "DELETE /activities/v1/activities/mass_deletion"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got = nil
+			if err := tc.call(); err != nil {
+				t.Fatalf("%s() error = %v", tc.name, err)
+			}
+			if len(got) != 1 || got[0] != tc.want {
+				t.Errorf("requests = %q, want [%q]", got, tc.want)
+			}
+		})
 	}
 }
 

@@ -10,10 +10,12 @@ const (
 	VersionUrl = "activities/v1"
 )
 
+// activities-backend serves one activity and mass deletion under the activities collection:
+// /activities/v1/activities/{id} and /activities/v1/activities/mass_deletion.
 const (
 	ActivitiesUrl = "activities"
-	ActivityUrl   = "entities/%s"
-	MassDeletion  = "entities/mass_deletion"
+	ActivityUrl   = "activities/%s"
+	MassDeletion  = "activities/mass_deletion"
 )
 
 type ActivitiesList struct {
