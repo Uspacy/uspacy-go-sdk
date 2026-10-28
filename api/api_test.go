@@ -79,16 +79,27 @@ func TestPatchEntityURLHasSlashBeforeID(t *testing.T) {
 }
 
 // Regression for the activity URLs: they were /activities/v1/entities/{id} and
-// /activities/v1/entities/mass_deletion, which activities-backend doesn't serve. It serves one
-// activity and mass deletion under the activities collection.
+// /activities/v1/entities/mass_deletion, which the API doesn't serve. It serves one activity and
+// mass deletion under the activities collection.
 func TestActivityMethodsCallTheActivitiesCollection(t *testing.T) {
-	var got []string
+	// The handler runs on the server's goroutine; each call must make exactly one request.
+	var (
+		mu  sync.Mutex
+		got []string
+	)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
 		got = append(got, r.Method+" "+r.URL.Path)
+		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"id":9}`)
 	}))
 	defer server.Close()
+	requests := func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), got...)
+	}
 	us := New("token", "", server.URL)
 	ctx := context.Background()
 
@@ -106,12 +117,14 @@ func TestActivityMethodsCallTheActivitiesCollection(t *testing.T) {
 		}, "DELETE /activities/v1/activities/mass_deletion"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			mu.Lock()
 			got = nil
+			mu.Unlock()
 			if err := tc.call(); err != nil {
 				t.Fatalf("%s() error = %v", tc.name, err)
 			}
-			if len(got) != 1 || got[0] != tc.want {
-				t.Errorf("requests = %q, want [%q]", got, tc.want)
+			if reqs := requests(); len(reqs) != 1 || reqs[0] != tc.want {
+				t.Errorf("requests = %q, want [%q]", reqs, tc.want)
 			}
 		})
 	}
