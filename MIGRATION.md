@@ -13,9 +13,10 @@ below. Read those even if your code compiles.
 4. Replace `client.RefreshToken` with `client.Tokens()` and `TokenRefresh()` with `TokenRefresh(ctx)` ([details](#tokens)).
 5. Rename `MassDeletionActivies` and `GetFunnelStageDyId` ([details](#renamed-methods)).
    Pass `nil` or a `url.Values` to `GetGroups` and `GetTaskById` ([details](#optional-query-parameters)).
-6. **Runtime:** check code that matches on error text ([details](#errors)).
-7. **Runtime:** check code that relies on POST/PATCH being retried ([details](#retries)).
-8. **Runtime:** check calls to `DeleteFilesByEntityId` ([details](#other-behavior-changes)).
+6. Pass the fields to change as a map to `PatchUser` and `PatchFunnelStage` ([details](#patch-methods-send-only-the-given-fields)).
+7. **Runtime:** check code that matches on error text ([details](#errors)).
+8. **Runtime:** check code that relies on POST/PATCH being retried ([details](#retries)).
+9. **Runtime:** check calls to `DeleteFilesByEntityId` ([details](#other-behavior-changes)).
 
 ## Module path and Go version
 
@@ -124,6 +125,26 @@ task, err := client.GetTaskById(ctx, id, nil)
 ```
 
 `GetGroups` used to merge several `url.Values` passed to it; merge them before the call.
+
+## Patch methods send only the given fields
+
+`PatchUser` and `PatchFunnelStage` took a struct and sent all of its fields. The fields left
+unset went out as zero values (`"registered": false`, `"email": null`, `"color": ""`) and
+could overwrite the stored ones. Like `PatchTask`, `PatchEntity` and the other patch
+methods, they now take a `map[string]any` and send only its keys, which are the JSON names
+of the fields.
+
+```go
+// v1
+updated, err := client.PatchUser(user.User{ID: id, FirstName: "John", Active: true})
+stage, err := client.PatchFunnelStage("deals", stageID, crm.FunnelStage{
+	FunnelStageBase: crm.FunnelStageBase{Title: "Won"},
+})
+
+// v2
+updated, err := client.PatchUser(ctx, id, map[string]any{"firstName": "John", "active": true})
+stage, err := client.PatchFunnelStage(ctx, "deals", stageID, map[string]any{"title": "Won"})
+```
 
 ## Errors
 

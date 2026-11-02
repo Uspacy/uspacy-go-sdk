@@ -130,6 +130,80 @@ func TestActivityMethodsCallTheActivitiesCollection(t *testing.T) {
 	}
 }
 
+// Regression for PatchUser and PatchFunnelStage sending a whole struct: the fields the
+// caller did not set went out as zero values ("registered": false, "email": null,
+// "color": ""), so the backend could overwrite them. They now send only the given keys,
+// including explicit zero values such as "active": false.
+func TestPatchMethodsSendOnlyGivenFields(t *testing.T) {
+	type request struct {
+		line string
+		body map[string]any
+	}
+	// The handler runs on the server's goroutine; each call must make exactly one request.
+	var (
+		mu  sync.Mutex
+		got []request
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read body: %v", err)
+		}
+		var body map[string]any
+		if err := json.Unmarshal(raw, &body); err != nil {
+			t.Errorf("body %q is not a JSON object: %v", raw, err)
+		}
+		mu.Lock()
+		got = append(got, request{r.Method + " " + r.URL.Path, body})
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"id":7}`)
+	}))
+	defer server.Close()
+	requests := func() []request {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]request(nil), got...)
+	}
+	us := New("token", "", server.URL)
+	ctx := context.Background()
+
+	for _, tc := range []struct {
+		name     string
+		call     func() error
+		wantReq  string
+		wantBody map[string]any
+	}{
+		{"PatchUser", func() error {
+			_, err := us.PatchUser(ctx, 7, map[string]any{"firstName": "John", "active": false})
+			return err
+		}, "PATCH /company/v1/users/7", map[string]any{"firstName": "John", "active": false}},
+		{"PatchFunnelStage", func() error {
+			_, err := us.PatchFunnelStage(ctx, "deals", 7, map[string]any{"title": "Won"})
+			return err
+		}, "PATCH /crm/v1/entities/deals/kanban/stage/7", map[string]any{"title": "Won"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mu.Lock()
+			got = nil
+			mu.Unlock()
+			if err := tc.call(); err != nil {
+				t.Fatalf("%s() error = %v", tc.name, err)
+			}
+			reqs := requests()
+			if len(reqs) != 1 {
+				t.Fatalf("got %d requests, want 1: %v", len(reqs), reqs)
+			}
+			if reqs[0].line != tc.wantReq {
+				t.Errorf("request = %q, want %q", reqs[0].line, tc.wantReq)
+			}
+			if !reflect.DeepEqual(reqs[0].body, tc.wantBody) {
+				t.Errorf("body = %v, want %v", reqs[0].body, tc.wantBody)
+			}
+		})
+	}
+}
+
 func TestGetEntityProductList(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/crm/v1/static/entity-product-lists" {
