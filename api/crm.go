@@ -174,9 +174,10 @@ func (us *Uspacy) GetFunnelStageById(ctx context.Context, entityType string, id 
 	return decodeJSON[crm.KanbanStages](responseBody, err)
 }
 
-// PatchFunnelStage updates a kanban stage and returns it.
-func (us *Uspacy) PatchFunnelStage(ctx context.Context, entityType string, id int, stage crm.FunnelStage, opts ...RequestOption) (crm.KanbanStage, error) {
-	responseBody, err := us.doPatch(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, id)), stage, opts...)
+// PatchFunnelStage updates a kanban stage and returns it. Only the keys of stageData are
+// sent; the other fields keep their values.
+func (us *Uspacy) PatchFunnelStage(ctx context.Context, entityType string, id int, stageData map[string]any, opts ...RequestOption) (crm.KanbanStage, error) {
+	responseBody, err := us.doPatch(ctx, us.buildURL(crm.VersionUrl, fmt.Sprintf(crm.KanbanStageUrl, entityType, id)), stageData, opts...)
 	return decodeJSON[crm.KanbanStage](responseBody, err)
 }
 
