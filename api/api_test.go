@@ -135,28 +135,36 @@ func TestActivityMethodsCallTheActivitiesCollection(t *testing.T) {
 // "color": ""), so the backend could overwrite them. They now send only the given keys,
 // including explicit zero values such as "active": false.
 func TestPatchMethodsSendOnlyGivenFields(t *testing.T) {
-	// The handler runs on the server's goroutine.
-	var (
-		mu   sync.Mutex
-		got  string
+	type request struct {
+		line string
 		body map[string]any
+	}
+	// The handler runs on the server's goroutine; each call must make exactly one request.
+	var (
+		mu  sync.Mutex
+		got []request
 	)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("read body: %v", err)
 		}
-		var decoded map[string]any
-		if err := json.Unmarshal(raw, &decoded); err != nil {
+		var body map[string]any
+		if err := json.Unmarshal(raw, &body); err != nil {
 			t.Errorf("body %q is not a JSON object: %v", raw, err)
 		}
 		mu.Lock()
-		got, body = r.Method+" "+r.URL.Path, decoded
+		got = append(got, request{r.Method + " " + r.URL.Path, body})
 		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"id":7}`)
 	}))
 	defer server.Close()
+	requests := func() []request {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]request(nil), got...)
+	}
 	us := New("token", "", server.URL)
 	ctx := context.Background()
 
@@ -176,16 +184,21 @@ func TestPatchMethodsSendOnlyGivenFields(t *testing.T) {
 		}, "PATCH /crm/v1/entities/deals/kanban/stage/7", map[string]any{"title": "Won"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			mu.Lock()
+			got = nil
+			mu.Unlock()
 			if err := tc.call(); err != nil {
 				t.Fatalf("%s() error = %v", tc.name, err)
 			}
-			mu.Lock()
-			defer mu.Unlock()
-			if got != tc.wantReq {
-				t.Errorf("request = %q, want %q", got, tc.wantReq)
+			reqs := requests()
+			if len(reqs) != 1 {
+				t.Fatalf("got %d requests, want 1: %v", len(reqs), reqs)
 			}
-			if !reflect.DeepEqual(body, tc.wantBody) {
-				t.Errorf("body = %v, want %v", body, tc.wantBody)
+			if reqs[0].line != tc.wantReq {
+				t.Errorf("request = %q, want %q", reqs[0].line, tc.wantReq)
+			}
+			if !reflect.DeepEqual(reqs[0].body, tc.wantBody) {
+				t.Errorf("body = %v, want %v", reqs[0].body, tc.wantBody)
 			}
 		})
 	}
