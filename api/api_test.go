@@ -20,6 +20,7 @@ import (
 
 	"github.com/Uspacy/uspacy-go-sdk/v2/activities"
 	"github.com/Uspacy/uspacy-go-sdk/v2/crm"
+	"github.com/Uspacy/uspacy-go-sdk/v2/user"
 )
 
 func TestBuildURL(t *testing.T) {
@@ -201,6 +202,256 @@ func TestPatchMethodsSendOnlyGivenFields(t *testing.T) {
 				t.Errorf("body = %v, want %v", reqs[0].body, tc.wantBody)
 			}
 		})
+	}
+}
+
+// --- User custom fields ---
+
+// recordedRequest is a request seen by recordingServer.
+type recordedRequest struct {
+	line string // method and request URI
+	body []byte
+}
+
+// recordingServer answers every request with resp as JSON, or with 204 when resp is "",
+// and records each request, so a test can check that a call made exactly the expected one.
+func recordingServer(t *testing.T, resp string) (*httptest.Server, func() []recordedRequest) {
+	t.Helper()
+	// The handler runs on the server's goroutine.
+	var (
+		mu  sync.Mutex
+		got []recordedRequest
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read body: %v", err)
+		}
+		mu.Lock()
+		got = append(got, recordedRequest{r.Method + " " + r.URL.RequestURI(), raw})
+		mu.Unlock()
+		if resp == "" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, resp)
+	}))
+	t.Cleanup(server.Close)
+	return server, func() []recordedRequest {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]recordedRequest(nil), got...)
+	}
+}
+
+// onlyRequest fails the test unless reqs is exactly one request, to want, and returns it.
+func onlyRequest(t *testing.T, reqs []recordedRequest, want string) recordedRequest {
+	t.Helper()
+	if len(reqs) != 1 || reqs[0].line != want {
+		lines := make([]string, len(reqs))
+		for i, r := range reqs {
+			lines[i] = r.line
+		}
+		t.Fatalf("requests = %q, want [%q]", lines, want)
+	}
+	return reqs[0]
+}
+
+func TestUserFieldMethodsRequests(t *testing.T) {
+	ctx := context.Background()
+	for _, tc := range []struct {
+		name     string
+		call     func(us *Uspacy) error
+		wantReq  string
+		wantBody string // JSON; "" = no body
+		resp     string // "" = 204 No Content
+	}{
+		{"GetUserFields", func(us *Uspacy) error {
+			_, err := us.GetUserFields(ctx)
+			return err
+		}, "GET /company/v1/custom_fields/users/fields", "", `[]`},
+		{"GetUserField", func(us *Uspacy) error {
+			_, err := us.GetUserField(ctx, "favourite_colour")
+			return err
+		}, "GET /company/v1/custom_fields/users/fields/favourite_colour", "", `{}`},
+		// Zero FieldSectionId, EntityReferenceId and Sort are left out (the backend rejects
+		// field_section_id 0), as are the empty Values, Access and permission roles.
+		{"CreateUserField", func(us *Uspacy) error {
+			_, err := us.CreateUserField(ctx, user.Field{
+				Name: "Favourite colour", Type: "list", Editable: true, Show: true, Multiple: true, FieldSectionId: 3,
+				Permissions: &user.FieldPermissions{View: user.FieldPermission{All: true}, Edit: user.FieldPermission{Users: []int{5}}},
+			})
+			return err
+		}, "POST /company/v1/custom_fields/users/fields", `{
+			"name":"Favourite colour","code":"","type":"list","required":false,"editable":true,"show":true,
+			"hidden":false,"multiple":true,"system_field":false,"base_field":false,"field_section_id":3,
+			"default_value":"","tooltip":"","display_in_tabs":false,
+			"permissions":{"view":{"all":true},"edit":{"all":false,"users":[5]}}
+		}`, `{}`},
+		{"PatchUserField", func(us *Uspacy) error {
+			_, err := us.PatchUserField(ctx, "favourite_colour", map[string]any{"name": "Colour", "show": false})
+			return err
+		}, "PATCH /company/v1/custom_fields/users/fields/favourite_colour", `{"name":"Colour","show":false}`, `{}`},
+		{"DeleteUserField", func(us *Uspacy) error {
+			return us.DeleteUserField(ctx, "favourite_colour")
+		}, "DELETE /company/v1/custom_fields/users/fields/favourite_colour", "", ""},
+		{"GetUserListValues", func(us *Uspacy) error {
+			_, err := us.GetUserListValues(ctx, "favourite_colour")
+			return err
+		}, "GET /company/v1/custom_fields/users/lists/favourite_colour", "", `[]`},
+		{"CreateUserListValues", func(us *Uspacy) error {
+			_, err := us.CreateUserListValues(ctx, "favourite_colour", []user.ListValue{{Title: "Red", Value: "red", Color: "#FF4C51", Sort: 10}})
+			return err
+		}, "POST /company/v1/custom_fields/users/lists/favourite_colour",
+			`[{"title":"Red","value":"red","color":"#FF4C51","sort":10,"selected":false}]`, `[]`},
+		{"DeleteUserListValue", func(us *Uspacy) error {
+			return us.DeleteUserListValue(ctx, "favourite_colour", "red")
+		}, "DELETE /company/v1/custom_fields/users/lists/favourite_colour/red", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server, requests := recordingServer(t, tc.resp)
+			if err := tc.call(New("token", "", server.URL)); err != nil {
+				t.Fatalf("%s() error = %v", tc.name, err)
+			}
+			body := onlyRequest(t, requests(), tc.wantReq).body
+			if tc.wantBody == "" {
+				if len(body) != 0 {
+					t.Errorf("body = %s, want none", body)
+				}
+				return
+			}
+			var got, want any
+			if err := json.Unmarshal(body, &got); err != nil {
+				t.Fatalf("body %q is not JSON: %v", body, err)
+			}
+			if err := json.Unmarshal([]byte(tc.wantBody), &want); err != nil {
+				t.Fatalf("wantBody is not JSON: %v", err)
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("body = %s, want %s", body, tc.wantBody)
+			}
+		})
+	}
+}
+
+// The response is a bare array; the backend sends "" for an unset field_section_id,
+// entity_reference_id and sort.
+func TestGetUserFieldsDecode(t *testing.T) {
+	server, requests := recordingServer(t, `[
+			{"name":"email","code":"email","entity_reference_id":"","type":"email","required":false,"editable":true,
+			 "show":true,"hidden":false,"multiple":true,"system_field":true,"base_field":false,"field_section_id":1,
+			 "sort":"","default_value":"","tooltip":"","display_in_tabs":false,"permissions":null,
+			 "access":{"view":true,"edit":true}},
+			{"name":"Favourite colour","code":"favourite_colour","entity_reference_id":"","type":"list","required":false,
+			 "editable":true,"show":true,"hidden":false,"multiple":true,"system_field":false,"base_field":false,
+			 "field_section_id":3,"sort":"","default_value":"","tooltip":"","display_in_tabs":false,
+			 "permissions":{"view":{"all":true,"roles":[],"users":[]},"edit":{"all":false,"roles":[2],"users":[5,7]}},
+			 "values":[
+				{"title":"червоний","value":"chervoniy","color":"#9155FD","sort":10,"selected":false},
+				{"title":"синій","value":"siniy","color":"#FF4C51","sort":20,"selected":false}
+			 ],
+			 "access":{"view":true,"edit":false}}
+		]`)
+
+	fields, err := New("token", "", server.URL).GetUserFields(context.Background())
+	if err != nil {
+		t.Fatalf("GetUserFields() error = %v", err)
+	}
+	onlyRequest(t, requests(), "GET /company/v1/custom_fields/users/fields")
+	if len(fields) != 2 {
+		t.Fatalf("len(fields) = %d, want 2", len(fields))
+	}
+	email, colour := fields[0], fields[1]
+	if email.Code != "email" || !email.SystemField || email.FieldSectionId != 1 || email.Sort != 0 || email.EntityReferenceId != 0 {
+		t.Errorf("fields[0] = %+v", email)
+	}
+	if email.Permissions != nil || email.Access == nil || !email.Access.Edit {
+		t.Errorf("fields[0] Permissions = %v, Access = %v, want nil and edit allowed", email.Permissions, email.Access)
+	}
+	wantValue := user.ListValue{Title: "синій", Value: "siniy", Color: "#FF4C51", Sort: 20}
+	if colour.FieldSectionId != 3 || len(colour.Values) != 2 || colour.Values[1] != wantValue {
+		t.Errorf("fields[1] = %+v, want section 3 and Values[1] = %+v", colour, wantValue)
+	}
+	wantPerms := &user.FieldPermissions{
+		View: user.FieldPermission{All: true, Roles: []int{}, Users: []int{}},
+		Edit: user.FieldPermission{Roles: []int{2}, Users: []int{5, 7}},
+	}
+	if !reflect.DeepEqual(colour.Permissions, wantPerms) {
+		t.Errorf("fields[1].Permissions = %+v, want %+v", colour.Permissions, wantPerms)
+	}
+	if colour.Access == nil || !colour.Access.View || colour.Access.Edit {
+		t.Errorf("fields[1].Access = %v, want view only", colour.Access)
+	}
+}
+
+// Custom fields come as top-level keys named by their code; an empty list field is "".
+func TestGetUserCustomFieldValues(t *testing.T) {
+	server, requests := recordingServer(t, `{
+			"id":1,"patronymic":"","email":[{"id":"","type":"main","value":"john@example.com","main":true}],
+			"active":true,"registered":true,"position":"Developer","birthday":498690000,
+			"about_myself":"<p>Hi</p>","is_app_bot":false,"is_online":true,
+			"favourite_colour":[{"title":"Blue","value":"blue","color":"#FF4C51","sort":20,"selected":true}],
+			"vacation_days":"31","skills":"",
+			"firstName":"John","lastName":"Doe","showBirthYear":true,"authUserId":922,"status":null,
+			"phone":[],"departmentsIds":["29"],"roles":["OWNER"],"socialMedia":[],
+			"emailInvitation":"","dateOfInvitation":""
+		}`)
+
+	u, err := New("token", "", server.URL).GetUser(context.Background(), 1)
+	if err != nil {
+		t.Fatalf("GetUser() error = %v", err)
+	}
+	onlyRequest(t, requests(), "GET /company/v1/users/1")
+	if u.ID != 1 || u.FirstName != "John" || u.AboutMyself != "<p>Hi</p>" || len(u.Email) != 1 {
+		t.Errorf("user = %+v", u)
+	}
+	if got := string(u.Raw["is_online"]); got != "true" {
+		t.Errorf(`Raw["is_online"] = %q, want "true"`, got)
+	}
+
+	var colours []user.ListValue
+	if ok, err := u.FieldValue("favourite_colour", &colours); !ok || err != nil {
+		t.Fatalf("FieldValue(favourite_colour) = %v, %v; want true, nil", ok, err)
+	}
+	want := []user.ListValue{{Title: "Blue", Value: "blue", Color: "#FF4C51", Sort: 20, Selected: true}}
+	if !reflect.DeepEqual(colours, want) {
+		t.Errorf("favourite_colour = %+v, want %+v", colours, want)
+	}
+	var days string
+	if ok, err := u.FieldValue("vacation_days", &days); !ok || err != nil || days != "31" {
+		t.Errorf("FieldValue(vacation_days) = %v, %v, %q; want true, nil, \"31\"", ok, err, days)
+	}
+	for _, code := range []string{"skills", "status", "no_such_field"} {
+		var v []user.ListValue
+		if ok, err := u.FieldValue(code, &v); ok || err != nil || v != nil {
+			t.Errorf("FieldValue(%s) = %v, %v, %v; want false, nil, nil", code, ok, err, v)
+		}
+	}
+	var wrong string
+	if ok, err := u.FieldValue("favourite_colour", &wrong); ok || err == nil {
+		t.Errorf("FieldValue(favourite_colour) into a string = %v, %v; want false and an error", ok, err)
+	}
+}
+
+func TestGetAllUsersKeepsRawPerUser(t *testing.T) {
+	server, requests := recordingServer(t, `[{"id":1,"vacation_days":"31"},{"id":2,"vacation_days":"7"}]`)
+
+	users, err := New("token", "", server.URL).GetAllUsers(context.Background())
+	if err != nil {
+		t.Fatalf("GetAllUsers() error = %v", err)
+	}
+	onlyRequest(t, requests(), "GET /company/v1/users/?show=all&list=all")
+	var got []string
+	for _, u := range users {
+		var days string
+		if _, err := u.FieldValue("vacation_days", &days); err != nil {
+			t.Fatalf("user %d: FieldValue() error = %v", u.ID, err)
+		}
+		got = append(got, days)
+	}
+	if !reflect.DeepEqual(got, []string{"31", "7"}) {
+		t.Errorf("vacation_days = %q, want [31 7]", got)
 	}
 }
 
