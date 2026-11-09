@@ -69,6 +69,8 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, (*plain)(u)); err != nil {
 		return err
 	}
+	// A new map, not &u.Raw: decoding into a non-nil map adds to it, so a reused User would
+	// keep the keys of an earlier decode and FieldValue would report values it does not have.
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
